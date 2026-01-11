@@ -1,0 +1,38 @@
+{
+	"maikeconfig":
+	{
+		"source_file_info_loaders":
+		{
+			"app":
+			{
+				"compiler":
+				{
+					"config":
+					{
+						"cflags":["-ggdb3"]
+					}
+				}
+			},
+			"cxx":
+			{
+				"compiler":
+				{
+					"config":
+					{
+						"cflags": ["-ggdb3"]
+					}
+				}
+			},
+			"cxx_test":
+			{
+				"compiler":
+				{
+					"config":
+					{
+						"cflags": ["-ggdb3"]
+					}
+				}
+			}
+		}
+	}
+}
