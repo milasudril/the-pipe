@@ -6,6 +6,22 @@
 
 namespace prog::utils
 {
+	/**
+	 * \brief Struct to specialize to enable conversions from a tagged_file_descriptor<Tag> to another
+	 *        tagged_file_descriptor type
+	 *
+	 * To enable conversion from `foo` to `bar`, do the following
+	 *
+	 * ```
+	 * //bar and foo should have been declared earlier
+	 *
+	 * template<>
+	 * struct prog::utils::enabled_fd_conversions<foo>
+	 * {
+	 * 	static void supports(bar){}
+	 * };
+	 * ```
+	 */
 	template<class Tag>
 	struct enabled_fd_conversions
 	{};
@@ -90,11 +106,11 @@ namespace prog::utils
 	};
 
 	template<class Tag>
-	inline bool operator==(nullptr_t, tagged_file_descriptor_ref<Tag> other)
+	inline bool operator==(std::nullptr_t, tagged_file_descriptor_ref<Tag> other)
 	{ return other == nullptr; }
 
 	template<class Tag>
-	inline bool operator!=(nullptr_t, tagged_file_descriptor_ref<Tag> other)
+	inline bool operator!=(std::nullptr_t, tagged_file_descriptor_ref<Tag> other)
 	{ return other != nullptr; }
 
 	/**
