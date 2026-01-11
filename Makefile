@@ -4,12 +4,16 @@
 .PHONY: clean
 .PHONY: coverage
 .PHONY: coverage-build
+.PHONY: doc
 
 release:
 	maike2 --configfiles=maikeconfig2.json,maikeconfig2-rel.json --target-dir=__targets_rel
 
 debug:
 	maike2 --configfiles=maikeconfig2.json,maikeconfig2-dbg.json --target-dir=__targets_dbg
+
+doc:
+	doxygen
 
 clean:
 	rm -rf __targets_*
