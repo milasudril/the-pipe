@@ -7,8 +7,8 @@
 namespace prog::utils
 {
 	/**
-	 * \brief Struct to specialize to enable conversions from a tagged_file_descriptor<Tag> to another
-	 *        tagged_file_descriptor type
+	 * \brief Struct to specialize to enable conversions from a \ref tagged_file_descriptor_ref "tagged_file_descriptor_ref<Tag>"
+	 *        to another tagged_file_descriptor_ref.
 	 *
 	 * To enable conversion from `foo` to `bar`, do the following
 	 *

@@ -13,6 +13,7 @@ debug:
 	maike2 --configfiles=maikeconfig2.json,maikeconfig2-dbg.json --target-dir=__targets_dbg
 
 doc:
+	mkdir -p __targets/doc
 	doxygen
 
 clean:
