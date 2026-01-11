@@ -18,7 +18,7 @@ namespace prog::utils
 	 * template<>
 	 * struct prog::utils::enabled_fd_conversions<foo>
 	 * {
-	 * 	static void supports(bar){}
+	 * 	static consteval void supports(bar){}
 	 * };
 	 * ```
 	 */
@@ -39,6 +39,7 @@ namespace prog::utils
 		 * \brief The tag type, stored for introspection purposes
 		 */
 		using tag_type = Tag;
+		using native_handle_type = int;
 
 		tagged_file_descriptor_ref() = default;
 
@@ -50,7 +51,8 @@ namespace prog::utils
 		 * \brief Constructs a tagged_file_descriptor_ref with the file descriptor given by fd
 		 * \post native_handle will return fd
 		 */
-		tagged_file_descriptor_ref(int fd) noexcept: m_ref{fd} {}
+		tagged_file_descriptor_ref(int fd) noexcept: m_ref{fd}
+		{ }
 
 		/**
 		 * \brief Constructs a tagged_file_descriptor_ref from nullptr_t
@@ -62,7 +64,7 @@ namespace prog::utils
 		/**
 		 * \brief Returns the underlying file descriptor
 		 */
-		auto native_handle() const noexcept
+		[[nodiscard]] auto native_handle() const noexcept
 		{ return m_ref; }
 
 		bool operator==(tagged_file_descriptor_ref const& other) const = default;
@@ -75,20 +77,26 @@ namespace prog::utils
 		/**
 		 * \brief Checks whether or not the referenced file descriptor is valid
 		 */
-		auto is_valid() const noexcept
+		[[nodiscard]] auto is_valid() const noexcept
 		{ return m_ref != -1; }
 
 		/**
 		 * \brief Operator to make tagged_file_descriptor_ref objects de-referenceable
 		 */
-		auto operator*() const noexcept
+		[[nodiscard]] auto operator*() const noexcept
 		{ return m_ref; }
 
 		/**
 		 * \brief Operator to convert to bool
 		 */
-		operator bool() const noexcept
+		[[nodiscard]] operator bool() const noexcept
 		{ return is_valid(); }
+
+		/**
+		 * \brief Operator to convert to the native handle type
+		 */
+		[[nodiscard]] operator native_handle_type() const noexcept
+		{ return native_handle(); }
 
 		/**
 		 * \brief Enables conversion to another type of file descriptor
@@ -102,15 +110,15 @@ namespace prog::utils
 		{ return tagged_file_descriptor_ref<OtherTag>{m_ref}; }
 
 	private:
-		int m_ref{-1};
+		native_handle_type m_ref{-1};
 	};
 
 	template<class Tag>
-	inline bool operator==(std::nullptr_t, tagged_file_descriptor_ref<Tag> other)
+	[[nodiscard]] inline bool operator==(std::nullptr_t, tagged_file_descriptor_ref<Tag> other)
 	{ return other == nullptr; }
 
 	template<class Tag>
-	inline bool operator!=(std::nullptr_t, tagged_file_descriptor_ref<Tag> other)
+	[[nodiscard]] inline bool operator!=(std::nullptr_t, tagged_file_descriptor_ref<Tag> other)
 	{ return other != nullptr; }
 
 	/**

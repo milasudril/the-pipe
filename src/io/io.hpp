@@ -5,6 +5,7 @@
 #include "src/utils/system_error.hpp"
 #include <cerrno>
 #include <expected>
+#include <cassert>
 
 /**
  * \brief Contains basic I/O support functions
@@ -12,9 +13,38 @@
 namespace prog::io
 {
 	/**
-	 * \brief Tag used to detect that an I/O operation could not complete without blocking
+	 * \brief A class holding the result of an I/O operation
 	 */
-	struct retry_tag{};
+	class io_result
+	{
+	public:
+		/**
+		 * \brief Constructs an io_result from a ssize_t value, as returned by `::read` or
+		 * `::write` syscalls
+		 * \note If `value` < 0 and `err` indicates something other than EAGAIN or EWOULDBLOCK
+		 * an exception is thrown
+		 */
+		explicit io_result(ssize_t value, int err): m_value{value}
+		{
+			if(m_value < 0 && err != EAGAIN && err != EWOULDBLOCK)
+			{ throw utils::system_error{"I/O operation failed", err}; }
+		}
+
+		/**
+		 * \brief Indicates whether or not the I/O operation would have blocked the calling thread
+		 */
+		[[nodiscard]] bool operation_would_have_blocked() const noexcept
+		{ return m_value == -1; }
+
+		/**
+		 * \brief Returns the number of bytes transferred during the I/O operation
+		 */
+		[[nodiscard]] size_t bytes_transferred() const noexcept
+		{ return m_value < 0? static_cast<size_t>(0): static_cast<size_t>(m_value); }
+
+	private:
+		ssize_t m_value;
+	};
 
 	/**
 	 * \brief Tag used to identify a file descriptor that can be read from
@@ -28,24 +58,10 @@ namespace prog::io
 
 	/**
 	 * \brief Tries to read data from fd into buffer
-	 * \return If the operation would not block, the part of buffer that has not yet been filled,
-	 *         otherwise a retry_tag
-	 * \throw utils::system_error for any other error
+	 * \return An io_result, containing the number of bytes transferred during the operation
 	 */
-	std::expected<std::span<std::byte>, retry_tag>
-	read(input_file_descriptor_ref fd, std::span<std::byte> buffer)
-	{
-		auto const res = ::read(fd.native_handle(), std::data(buffer), std::size(buffer));
-		if(res != -1) [[likely]]
-		{ return std::span{std::begin(buffer) + res, std::end(buffer)}; }
-
-		auto const err = errno;
-
-		if(err == EAGAIN || errno == EWOULDBLOCK)
-		{ return std::unexpected(retry_tag{}); }
-
-		throw utils::system_error{"`read` failed", err};
-	}
+	inline io_result read(input_file_descriptor_ref fd, std::span<std::byte> buffer)
+	{ return io_result{::read(fd.native_handle(), std::data(buffer), std::size(buffer)), errno}; }
 
 	/**
 	 * \brief Tag used to identify a file descriptor that can be written to
@@ -60,24 +76,10 @@ namespace prog::io
 
 	/**
 	 * \brief Tries to write data from buffer to fd
-	 * \return If the operation would not block, the part of buffer that has not yet been written,
-	 *         otherwise a retry_tag
-	 * \throw utils::system_error for any other error
+	 * \return An io_result, containing the number of bytes transferred during the operation
 	 */
-	std::expected<std::span<std::byte const>, retry_tag>
-	write(output_file_descriptor_ref fd, std::span<std::byte const> buffer)
-	{
-		auto const res = ::write(fd.native_handle(), std::data(buffer), std::size(buffer));
-		if(res != -1) [[likely]]
-		{ return std::span{std::begin(buffer) + res, std::end(buffer)}; }
-
-		auto const err = errno;
-
-		if(err == EAGAIN || err == EWOULDBLOCK)
-		{ return std::unexpected(retry_tag{}); }
-
-		throw utils::system_error{"`write` failed", err};
-	}
+	inline io_result write(output_file_descriptor_ref fd, std::span<std::byte const> buffer)
+	{ return io_result{::write(fd.native_handle(), std::data(buffer), std::size(buffer)), errno}; }
 }
 
 #endif
