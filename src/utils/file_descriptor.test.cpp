@@ -7,11 +7,38 @@
 #include <fcntl.h>
 #include <functional>
 
+namespace
+{
+	struct convert_from
+	{};
+
+	struct convert_to
+	{};
+}
+
+template<>
+struct prog::utils::enabled_fd_conversions<convert_from>
+{
+	static consteval void supports(convert_to){}
+};
+
 // Static checks
 static_assert(std::is_same_v<prog::utils::tagged_file_descriptor_ref<int>::tag_type, int>);
 static_assert(std::equality_comparable<prog::utils::tagged_file_descriptor_ref<int>>);
 static_assert(std::equality_comparable_with<prog::utils::tagged_file_descriptor_ref<int>, nullptr_t>);
 static_assert(std::is_convertible_v<prog::utils::tagged_file_descriptor_ref<int>, bool>);
+static_assert(
+	std::is_convertible_v<
+		prog::utils::tagged_file_descriptor_ref<convert_from>,
+		prog::utils::tagged_file_descriptor_ref<convert_to>
+	>
+);
+static_assert(
+	!std::is_convertible_v<
+		prog::utils::tagged_file_descriptor_ref<convert_from>,
+		prog::utils::tagged_file_descriptor_ref<int>
+	>
+);
 
 TESTCASE(prog_utils_tagged_file_descriptor_ref_create_id)
 {
@@ -32,6 +59,14 @@ TESTCASE(prog_utils_tagged_file_descriptor_ref_create_from_nullptr)
 	prog::utils::tagged_file_descriptor_ref<int> fd{nullptr};
 	EXPECT_EQ(fd.native_handle(), -1);
 	EXPECT_EQ(fd.is_valid(), false);
+}
+
+TESTCASE(prog_utils_tagged_file_descriptor_ref_convert)
+{
+	prog::utils::tagged_file_descriptor_ref<convert_from> from{213};
+	prog::utils::tagged_file_descriptor_ref<convert_to> to = from;
+	EXPECT_EQ(from.native_handle(), 213);
+	EXPECT_EQ(to.native_handle(), 213);
 }
 
 TESTCASE(prog_utils_tagged_file_descriptor_create)

@@ -6,6 +6,10 @@
 
 namespace prog::utils
 {
+	template<class Tag>
+	struct enabled_fd_conversions
+	{};
+
 	/**
 	 * \brief Class referring to a file descriptor
 	 * \tparam Tag An arbitrary type that can be used to identify the kind of file descriptor
@@ -64,8 +68,22 @@ namespace prog::utils
 		auto operator*() const noexcept
 		{ return m_ref; }
 
+		/**
+		 * \brief Operator to convert to bool
+		 */
 		operator bool() const noexcept
 		{ return is_valid(); }
+
+		/**
+		 * \brief Enables conversion to another type of file descriptor
+		 *
+		 * \note Specialize enabled_fd_conversions<Tag>::supports to enable conversion to a specific
+		 * type of file descriptor
+		 */
+		template<class OtherTag>
+		requires requires{{enabled_fd_conversions<Tag>::supports(std::declval<OtherTag>())};}
+		operator tagged_file_descriptor_ref<OtherTag>() const noexcept
+		{ return tagged_file_descriptor_ref<OtherTag>{m_ref}; }
 
 	private:
 		int m_ref{-1};
