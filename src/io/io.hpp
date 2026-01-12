@@ -56,6 +56,8 @@ namespace prog::io
 	 */
 	using input_file_descriptor_ref = utils::tagged_file_descriptor_ref<input_file_descriptor_tag>;
 
+	using input_file_descriptor = utils::tagged_file_descriptor<input_file_descriptor_tag>;
+
 	/**
 	 * \brief Tries to read data from fd into buffer
 	 * \return An io_result, containing the number of bytes transferred during the operation
@@ -73,6 +75,8 @@ namespace prog::io
 	 * \brief Tag used to identify a file descriptor that can be written to
 	 */
 	using output_file_descriptor_ref = utils::tagged_file_descriptor_ref<output_file_descriptor_tag>;
+
+	using output_file_descriptor = utils::tagged_file_descriptor<output_file_descriptor_tag>;
 
 	/**
 	 * \brief Tries to write data from buffer to fd
