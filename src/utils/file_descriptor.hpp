@@ -87,12 +87,6 @@ namespace prog::utils
 		{ return m_ref; }
 
 		/**
-		 * \brief Operator to convert to bool
-		 */
-		[[nodiscard]] operator bool() const noexcept
-		{ return is_valid(); }
-
-		/**
 		 * \brief Operator to convert to the native handle type
 		 */
 		[[nodiscard]] operator native_handle_type() const noexcept

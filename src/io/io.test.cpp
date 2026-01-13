@@ -47,7 +47,7 @@ TESTCASE(prog_io_write_and_read_succesful)
 	EXPECT_EQ(write_result.operation_would_have_blocked(), false);
 	EXPECT_EQ(write_result.bytes_transferred(), std::size(value_to_write));
 
-	auto const seek_res = ::lseek(fd.get(), 0, SEEK_SET);
+	auto const seek_res = ::lseek(fd.get().native_handle(), 0, SEEK_SET);
 	if(seek_res == -1)
 	{ perror("lseek failed"); }
 	REQUIRE_NE(seek_res, -1);
