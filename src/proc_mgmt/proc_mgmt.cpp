@@ -1,4 +1,4 @@
-//@	{"target":{"name":"proc_mgmt.hpp"}}
+//@	{"target":{"name":"proc_mgmt.o"}}
 
 #include "./proc_mgmt.hpp"
 #include "src/io/io.hpp"
@@ -46,13 +46,13 @@ namespace
 			{ goto fail; }
 		}
 
-		close_range(STDERR_FILENO + 1, ~0u, CLOSE_RANGE_CLOEXEC | CLOSE_RANGE_UNSHARE);
+		close_range(STDERR_FILENO + 1, ~0u, CLOSE_RANGE_CLOEXEC);
 
 		execve(path, argv, env);
 
 	fail:
 		auto errval = errno;
-		write(errstream, std::as_bytes(std::span{&errval, 1}));
+		prog::io::write_while_eintr(errstream, &errval, sizeof(errval));
 	}
 };
 
@@ -66,7 +66,7 @@ prog::proc_mgmt::spawn(
 {
 	ipc::pipe exec_err_pipe;
 	auto const exec_err_pipe_read_end = exec_err_pipe.close_read_end_on_exec();
-	auto const parent_ready_fd = ipc::make_eventfd();
+	auto parent_ready_fd = ipc::make_eventfd();
 
 	// Before fork, prepare stuff to be passed to exec
 	std::vector<char*> argv_out{const_cast<char*>(path)};
@@ -90,6 +90,7 @@ prog::proc_mgmt::spawn(
 			// In child
 			uint64_t val{};
 			io::read_while_eintr(parent_ready_fd.get().native_handle(), &val, sizeof(val));
+			parent_ready_fd.reset();
 			::close(exec_err_pipe_read_end);
 			do_exec(path, std::data(argv_out), std::data(env_out), io_redir, exec_err_pipe.write_end());
 			exec_err_pipe.close_write_end();
@@ -99,6 +100,7 @@ prog::proc_mgmt::spawn(
 
 		default:
 		{
+			exec_err_pipe.close_write_end();
 			// In parent
 			auto fd = pidfd_open(fork_res, 0);
 			if(fd == -1)
@@ -108,6 +110,7 @@ prog::proc_mgmt::spawn(
 				waitpid(fork_res, nullptr, 0);
 				throw utils::system_error{"Failed to create pidfd", saved_errno};
 			}
+			pidfd ret{fd};
 			uint64_t val{1};
 			io::write_while_eintr(
 				parent_ready_fd.get().native_handle(),
@@ -121,10 +124,14 @@ prog::proc_mgmt::spawn(
 				std::as_writable_bytes(std::span{&child_errno, 1})
 			);
 			if(read_result.bytes_transferred() != 0)
-			{ throw utils::system_error{std::format("Failed to launch application {}", path), child_errno}; }
+			{
+				::close(exec_err_pipe_read_end);
+				wait(ret.get());
+				throw utils::system_error{std::format("Failed to launch application {}", path), child_errno};
+			}
 
-
-			return pidfd{fd};
+			::close(exec_err_pipe_read_end);
+			return ret;
 		}
 	};
 }

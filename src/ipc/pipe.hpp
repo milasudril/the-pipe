@@ -59,6 +59,13 @@ namespace prog::ipc
 			return m_read_end.release();
 		}
 
+		[[nodiscard]] auto close_write_end_on_exec()
+		{
+			if(fcntl(m_write_end.get().native_handle(), F_SETFD, FD_CLOEXEC) == -1)
+			{ throw utils::system_error{"Failed to set FD_CLOEXEC on pipe write end", errno}; }
+			return m_write_end.release();
+		}
+
 	private:
 		io::input_file_descriptor m_read_end;
 		io::output_file_descriptor m_write_end;

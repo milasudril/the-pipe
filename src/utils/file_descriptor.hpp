@@ -3,6 +3,7 @@
 
 #include <unistd.h>
 #include <memory>
+#include <cassert>
 
 namespace prog::utils
 {
@@ -134,7 +135,10 @@ namespace prog::utils
 		 * \brief Function call operator that implements the delete operation
 		 */
 		static void operator()(tagged_file_descriptor_ref<Tag> fd) noexcept
-		{ close(fd.native_handle()); }
+		{
+			if(fd.native_handle() != -1)
+			{ close(fd.native_handle()); }
+		}
 	};
 
 	/**
