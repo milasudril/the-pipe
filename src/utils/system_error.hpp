@@ -15,8 +15,9 @@ namespace prog::utils
 	{
 	public:
 		/**
-		 * \brief Constructs a system_error from a message and an error code using strerror
+		 * \name Constructs a system_error from a message and an error code using strerror
 		 */
+		//@{
 		explicit system_error(char const* msg, int err):
 			std::runtime_error{std::format("{}: {}", msg, strerror(err))}
 		{}
@@ -24,6 +25,7 @@ namespace prog::utils
 		explicit system_error(std::string const& msg, int err):
 			std::runtime_error{std::format("{}: {}", msg, strerror(err))}
 		{}
+		//@}
 	};
 };
 

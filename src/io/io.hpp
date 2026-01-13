@@ -3,6 +3,7 @@
 
 #include "src/utils/file_descriptor.hpp"
 #include "src/utils/system_error.hpp"
+
 #include <cerrno>
 #include <expected>
 #include <cassert>
@@ -47,6 +48,20 @@ namespace prog::io
 	};
 
 	/**
+	 * \brief Repeatedly calls func, until it returns a value different from -1, or errno is no
+	 *        longer EINTR
+	 */
+	template<class Callable, class... Args>
+	auto do_while_eintr(Callable func, Args... args) noexcept
+	{
+		errno = EINTR;
+		std::invoke_result_t<Callable, Args...> result = -1;
+		while(errno == EINTR && result == -1)
+		{ result = func(args...); }
+		return result;
+	}
+
+	/**
 	 * \brief Tag used to identify a file descriptor that can be read from
 	 */
 	struct input_file_descriptor_tag{};
@@ -63,7 +78,12 @@ namespace prog::io
 	 * \return An io_result, containing the number of bytes transferred during the operation
 	 */
 	inline io_result read(input_file_descriptor_ref fd, std::span<std::byte> buffer)
-	{ return io_result{::read(fd.native_handle(), std::data(buffer), std::size(buffer)), errno}; }
+	{
+		return io_result{
+			do_while_eintr(::read, fd.native_handle(), std::data(buffer), std::size(buffer)),
+			errno
+		};
+	}
 
 	/**
 	 * \brief Tag used to identify a file descriptor that can be written to
@@ -83,7 +103,12 @@ namespace prog::io
 	 * \return An io_result, containing the number of bytes transferred during the operation
 	 */
 	inline io_result write(output_file_descriptor_ref fd, std::span<std::byte const> buffer)
-	{ return io_result{::write(fd.native_handle(), std::data(buffer), std::size(buffer)), errno}; }
+	{
+		return io_result{
+			do_while_eintr(::write, fd.native_handle(), std::data(buffer), std::size(buffer)),
+			errno
+		};
+	}
 }
 
 #endif
