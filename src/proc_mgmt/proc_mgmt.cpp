@@ -3,6 +3,7 @@
 #include "./proc_mgmt.hpp"
 #include "src/io/io.hpp"
 #include "src/ipc/pipe.hpp"
+#include "src/ipc/eventfd.hpp"
 #include "src/utils/file_descriptor.hpp"
 
 #include <cstdint>
@@ -12,7 +13,6 @@
 #include <vector>
 #include <signal.h>
 #include <sys/wait.h>
-#include <sys/eventfd.h>
 
 namespace
 {
@@ -66,10 +66,7 @@ prog::proc_mgmt::spawn(
 {
 	ipc::pipe exec_err_pipe;
 	auto const exec_err_pipe_read_end = exec_err_pipe.close_read_end_on_exec();
-
-	utils::file_descriptor parent_ready_fd{eventfd(0, 0)};
-	if(parent_ready_fd == nullptr)
-	{ throw utils::system_error{"Failed to create parent to child sync fd", errno}; }
+	auto const parent_ready_fd = ipc::make_eventfd();
 
 	// Before fork, prepare stuff to be passed to exec
 	std::vector<char*> argv_out{const_cast<char*>(path)};
@@ -92,7 +89,7 @@ prog::proc_mgmt::spawn(
 		{
 			// In child
 			uint64_t val{};
-			std::ignore = ::read(parent_ready_fd.get().native_handle(), &val, sizeof(val));
+			io::read_while_eintr(parent_ready_fd.get().native_handle(), &val, sizeof(val));
 			::close(exec_err_pipe_read_end);
 			do_exec(path, std::data(argv_out), std::data(env_out), io_redir, exec_err_pipe.write_end());
 			exec_err_pipe.close_write_end();
@@ -112,7 +109,11 @@ prog::proc_mgmt::spawn(
 				throw utils::system_error{"Failed to create pidfd", saved_errno};
 			}
 			uint64_t val{1};
-			std::ignore = ::write(parent_ready_fd.get().native_handle(), &val, sizeof(val));
+			io::write_while_eintr(
+				parent_ready_fd.get().native_handle(),
+				&val,
+				sizeof(val)
+			);
 
 			int child_errno{};
 			auto const read_result = read(

@@ -73,6 +73,9 @@ namespace prog::io
 
 	using input_file_descriptor = utils::tagged_file_descriptor<input_file_descriptor_tag>;
 
+	inline auto read_while_eintr(int fd, void* buffer, size_t count) noexcept
+	{ return do_while_eintr(::read, fd, buffer, count); }
+
 	/**
 	 * \brief Tries to read data from fd into buffer
 	 * \return An io_result, containing the number of bytes transferred during the operation
@@ -80,7 +83,7 @@ namespace prog::io
 	inline io_result read(input_file_descriptor_ref fd, std::span<std::byte> buffer)
 	{
 		return io_result{
-			do_while_eintr(::read, fd.native_handle(), std::data(buffer), std::size(buffer)),
+			read_while_eintr(fd.native_handle(), std::data(buffer), std::size(buffer)),
 			errno
 		};
 	}
@@ -97,6 +100,9 @@ namespace prog::io
 	using output_file_descriptor_ref = utils::tagged_file_descriptor_ref<output_file_descriptor_tag>;
 
 	using output_file_descriptor = utils::tagged_file_descriptor<output_file_descriptor_tag>;
+
+	inline auto write_while_eintr(int fd, void const* buffer, size_t count) noexcept
+	{ return do_while_eintr(::write, fd, buffer, count); }
 
 	/**
 	 * \brief Tries to write data from buffer to fd
