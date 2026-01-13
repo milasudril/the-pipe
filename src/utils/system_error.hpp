@@ -20,6 +20,10 @@ namespace prog::utils
 		explicit system_error(char const* msg, int err):
 			std::runtime_error{std::format("{}: {}", msg, strerror(err))}
 		{}
+
+		explicit system_error(std::string const& msg, int err):
+			std::runtime_error{std::format("{}: {}", msg, strerror(err))}
+		{}
 	};
 };
 

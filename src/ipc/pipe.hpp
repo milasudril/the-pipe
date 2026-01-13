@@ -4,6 +4,7 @@
 #include "src/io/io.hpp"
 #include "src/utils/system_error.hpp"
 #include <cstdlib>
+#include <fcntl.h>
 
 namespace prog::ipc
 {
@@ -50,6 +51,13 @@ namespace prog::ipc
 		 */
 		void close_write_end() noexcept
 		{ return m_write_end.reset(); }
+
+		[[nodiscard]] auto close_read_end_on_exec()
+		{
+			if(fcntl(m_read_end.get().native_handle(), F_SETFD, FD_CLOEXEC) == -1)
+			{ throw utils::system_error{"Failed to set FD_CLOEXEC on pipe read end", errno}; }
+			return m_read_end.release();
+		}
 
 	private:
 		io::input_file_descriptor m_read_end;
