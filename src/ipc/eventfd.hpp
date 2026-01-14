@@ -9,12 +9,25 @@
 
 namespace prog::ipc
 {
+	/**
+	 * \brief A tag type used to identify an event file descriptor
+	 */
 	struct eventfd_tag
 	{};
 
+	/**
+	 * \brief A reference to an event file descriptor
+	 */
 	using eventfd_ref = utils::tagged_file_descriptor_ref<eventfd_tag>;
+
+	/**
+	 * \brief An owner of an event file descriptor
+	 */
 	using eventfd = utils::tagged_file_descriptor<eventfd_tag>;
 
+	/**
+	 * \brief Creates an event file descriptor, to be used for synchronization between processes
+	 */
 	auto make_eventfd()
 	{
 		eventfd ret{::eventfd(0, 0)};

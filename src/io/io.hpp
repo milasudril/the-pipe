@@ -71,8 +71,14 @@ namespace prog::io
 	 */
 	using input_file_descriptor_ref = utils::tagged_file_descriptor_ref<input_file_descriptor_tag>;
 
+	/**
+	 * \brief An owner of a file descriptor that can be read from
+	 */
 	using input_file_descriptor = utils::tagged_file_descriptor<input_file_descriptor_tag>;
 
+	/**
+	 * \brief Helper function for writing until EINTR is no longer raised
+	 */
 	inline auto read_while_eintr(int fd, void* buffer, size_t count) noexcept
 	{ return do_while_eintr(::read, fd, buffer, count); }
 
@@ -99,8 +105,14 @@ namespace prog::io
 	 */
 	using output_file_descriptor_ref = utils::tagged_file_descriptor_ref<output_file_descriptor_tag>;
 
+	/**
+	 * \brief An owner of a file descriptor that can be written to
+	 */
 	using output_file_descriptor = utils::tagged_file_descriptor<output_file_descriptor_tag>;
 
+	/**
+	 * \brief Helper function for writing until EINTR is no longer raised
+	 */
 	inline auto write_while_eintr(int fd, void const* buffer, size_t count) noexcept
 	{ return do_while_eintr(::write, fd, buffer, count); }
 
