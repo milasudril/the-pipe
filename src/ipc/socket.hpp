@@ -153,14 +153,21 @@ namespace prog::ipc
 	/**
 	 * \brief Enum controlling the behaviour of shutdown
 	 */
-	enum class shutdown_ops{read = SHUT_RD, write = SHUT_WR, read_write = SHUT_RDWR};
+	enum class connection_shutdown_ops{read = SHUT_RD, write = SHUT_WR, read_write = SHUT_RDWR};
 
 	/**
 	 * \brief Shuts down all or part of a connection
 	 */
 	template<auto Domain, auto Type>
-	void shutdown(connected_socket_ref<Domain, Type> socket, shutdown_ops ops_to_disable)
+	void shutdown(connected_socket_ref<Domain, Type> socket, connection_shutdown_ops ops_to_disable)
 	{ ::shutdown(socket.native_handle(), static_cast<int>(ops_to_disable)); }
 }
+
+template<auto Domain, auto Type>
+struct prog::utils::enabled_fd_conversions<prog::ipc::connected_socket_tag<Domain, Type>>
+{
+	static consteval void supports(io::input_file_descriptor_tag){};
+	static consteval void supports(io::output_file_descriptor_tag){};
+};
 
 #endif

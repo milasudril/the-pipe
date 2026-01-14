@@ -37,4 +37,11 @@ namespace prog::ipc
 	}
 }
 
+template<>
+struct prog::utils::enabled_fd_conversions<prog::ipc::eventfd_tag>
+{
+	static consteval void supports(io::input_file_descriptor_tag){}
+	static consteval void supports(io::output_file_descriptor_tag){}
+};
+
 #endif
