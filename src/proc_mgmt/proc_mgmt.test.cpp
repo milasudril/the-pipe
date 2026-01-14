@@ -1,4 +1,4 @@
-//@	{"target":{"name": "proc_mgmt.test"}}
+//@	{"target": {"name": "proc_mgmt.test"}}
 
 #include "./proc_mgmt.hpp"
 #include "src/ipc/pipe.hpp"
@@ -127,6 +127,30 @@ TESTCASE(prog_proc_mgmt_spawn_run_pass_through)
 	stdin_pipe.close_write_end();
 
 	auto const proc_result = wait(proc.get());	EXPECT_EQ(std::get<prog::proc_mgmt::process_exited>(proc_result).return_value, 0);
+}
+
+TESTCASE(prog_proc_mgmt_spawn_run_redirect_stderr)
+{
+	prog::ipc::pipe stderr_pipe;
+	std::array<char const*, 4> args{"-c", ">&2 echo Hello, World"};
+	auto const proc = prog::proc_mgmt::spawn(
+		"/usr/bin/bash",
+		args,
+		std::span<char const*>{},
+		prog::proc_mgmt::io_redirection{
+			.sysin = {},
+			.sysout = {},
+			.syserr = stderr_pipe.write_end()
+		}
+	);
+
+	std::array<char, 32> buffer{};
+	auto read_result = read(stderr_pipe.read_end(), std::as_writable_bytes(std::span{buffer}));
+	EXPECT_EQ(read_result.bytes_transferred(), 13);
+	EXPECT_EQ((std::string_view{std::data(buffer), 13}), "Hello, World\n");
+
+	auto proc_result = wait(proc.get());
+	EXPECT_EQ(std::get<prog::proc_mgmt::process_exited>(proc_result).return_value, 0);
 }
 
 TESTCASE(prog_proc_mgmt_spawn_run_kill)

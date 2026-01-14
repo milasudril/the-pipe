@@ -14,6 +14,12 @@
 #include <signal.h>
 #include <sys/wait.h>
 
+#ifdef COVERAGE_BUILD
+extern "C" void __gcov_dump();
+#else
+#define __gcov_dump()
+#endif
+
 namespace
 {
 	int pidfd_open(pid_t pid, unsigned int flags) noexcept
@@ -47,7 +53,7 @@ namespace
 		}
 
 		close_range(STDERR_FILENO + 1, ~0u, CLOSE_RANGE_CLOEXEC);
-
+		__gcov_dump();
 		execve(path, argv, env);
 
 	fail:
@@ -94,6 +100,7 @@ prog::proc_mgmt::spawn(
 			::close(exec_err_pipe_read_end);
 			do_exec(path, std::data(argv_out), std::data(env_out), io_redir, exec_err_pipe.write_end());
 			exec_err_pipe.close_write_end();
+			__gcov_dump();
 			_exit(127);
 			break;
 		}
