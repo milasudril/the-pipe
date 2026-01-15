@@ -12,7 +12,7 @@ namespace prog::ipc
 	 * \brief Defines the domain type for sockaddr_un
 	 */
 	template<>
-	struct domain_for_sockaddr<sockaddr_un>
+	struct sockaddr_to_domain<sockaddr_un>
 	{
 		static constexpr auto domain = AF_UNIX;
 	};

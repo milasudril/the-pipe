@@ -15,13 +15,13 @@ namespace prog::ipc
 	 * which for sockaddr_in would be set to AF_INET.
 	 */
 	template<class AddressType>
-	struct domain_for_sockaddr{};
+	struct sockaddr_to_domain{};
 
 	/**
 	 * \brief A helper to lookup the domain number, given AddressType
 	 */
 	template<class AddressType>
-	inline constexpr auto domain_v = domain_for_sockaddr<AddressType>::domain;
+	inline constexpr auto domain_v = sockaddr_to_domain<AddressType>::domain;
 
 	/**
 	 * \brief A tag type used to identify a socket
