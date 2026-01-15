@@ -24,9 +24,9 @@ TESTCASE(prog_ipc_unix_domain_socket_create_sockets_and_connect)
 	auto const address = prog::ipc::make_abstract_sockaddr_un("testsocket");
 	std::jthread server_thread{[address](){
 		auto const server = prog::ipc::make_socket<AF_UNIX, SOCK_SEQPACKET>();
-		auto const listening_socket = bind(server.get(), address);
-		listen(listening_socket, 1024);
-		auto const connection = accept(listening_socket);
+		auto const server_socket = bind_and_listen(server.get(), address, 1024);
+
+		auto const connection = accept(server_socket);
 		std::array<char, 32> buffer{};
 		auto const read_result = prog::io::read(
 			connection.get(),

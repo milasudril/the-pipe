@@ -105,19 +105,24 @@ namespace prog::ipc
 	 * \brief Binds socket to listening address so it becomes a server socket
 	 */
 	template<auto Domain, auto Type>
-	server_socket_ref<Domain, Type> bind(
+	server_socket_ref<Domain, Type> bind_and_listen(
 		basic_socket_ref<Domain, Type> socket,
-		sockaddr_t<Domain> const& listening_address
+		sockaddr_t<Domain> const& listening_address,
+		int connection_backlog
 	)
 	{
-		auto const result = ::bind(
+		auto const bind_result = ::bind(
 			socket.native_handle(),
 			reinterpret_cast<sockaddr const*>(&listening_address),
 			sizeof(listening_address)
 		);
-
-		if(result == -1)
+		if(bind_result == -1)
 		{ throw utils::system_error{"Failed to bind socket", errno}; }
+
+		auto const listen_result = ::listen(socket.native_handle(), connection_backlog);
+		if(listen_result == -1)
+		{ throw utils::system_error{"Failed to enable listening on socket", errno}; }
+
 		return server_socket_ref<Domain, Type>{socket.native_handle()};
 	}
 
@@ -137,17 +142,6 @@ namespace prog::ipc
 		{ throw utils::system_error{"Failed to connect socket", errno}; }
 
 		return connected_socket_ref<Domain, Type>{socket.native_handle()};
-	}
-
-	/**
-	 * \brief Makes server_socket listening with a certain backlog
-	 */
-	template<auto Domain, auto Type>
-	void listen(server_socket_ref<Domain, Type> server_socket, int backlog)
-	{
-		auto const result = ::listen(server_socket.native_handle(), backlog);
-		if(result == -1)
-		{ throw utils::system_error{"Failed to enable listening on socket", errno}; }
 	}
 
 	/**
