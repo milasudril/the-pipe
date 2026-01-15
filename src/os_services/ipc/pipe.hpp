@@ -23,7 +23,7 @@ namespace prog::ipc
 			std::array<int, 2> fds{};
 			auto const res = ::pipe(std::data(fds));
 			if(res == -1)
-			{ throw utils::system_error{"Failed to create pipe", errno}; }
+			{ throw error_handling::system_error{"Failed to create pipe", errno}; }
 
 			m_read_end = io::input_file_descriptor{fds[0]};
 			m_write_end = io::output_file_descriptor{fds[1]};
@@ -56,14 +56,14 @@ namespace prog::ipc
 		[[nodiscard]] auto close_read_end_on_exec()
 		{
 			if(fcntl(m_read_end.get().native_handle(), F_SETFD, FD_CLOEXEC) == -1)
-			{ throw utils::system_error{"Failed to set FD_CLOEXEC on pipe read end", errno}; }
+			{ throw error_handling::system_error{"Failed to set FD_CLOEXEC on pipe read end", errno}; }
 			return m_read_end.release();
 		}
 
 		[[nodiscard]] auto close_write_end_on_exec()
 		{
 			if(fcntl(m_write_end.get().native_handle(), F_SETFD, FD_CLOEXEC) == -1)
-			{ throw utils::system_error{"Failed to set FD_CLOEXEC on pipe write end", errno}; }
+			{ throw error_handling::system_error{"Failed to set FD_CLOEXEC on pipe write end", errno}; }
 			return m_write_end.release();
 		}
 

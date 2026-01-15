@@ -28,7 +28,7 @@ namespace prog::io
 		explicit io_result(ssize_t value, int err): m_value{value}
 		{
 			if(m_value < 0 && err != EAGAIN && err != EWOULDBLOCK)
-			{ throw utils::system_error{"I/O operation failed", err}; }
+			{ throw error_handling::system_error{"I/O operation failed", err}; }
 		}
 
 		/**

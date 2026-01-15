@@ -50,7 +50,7 @@ namespace prog::ipc
 	{
 		basic_socket<SocketType, AddressType> ret{::socket(domain_v<AddressType>, SocketType, 0)};
 		if(ret == nullptr)
-		{ throw utils::system_error{"Failed to create a socket", errno}; }
+		{ throw error_handling::system_error{"Failed to create a socket", errno}; }
 		return ret;
 	}
 
@@ -106,7 +106,7 @@ namespace prog::ipc
 	{
 		connected_socket<SocketType, AddressType> ret{::accept(server_socket.native_handle(), nullptr, nullptr)};
 		if(ret == nullptr)
-		{ throw utils::system_error{"Failed to accept connection from socket", errno}; }
+		{ throw error_handling::system_error{"Failed to accept connection from socket", errno}; }
 		return ret;
 	}
 
@@ -126,11 +126,11 @@ namespace prog::ipc
 			sizeof(listening_address)
 		);
 		if(bind_result == -1)
-		{ throw utils::system_error{"Failed to bind socket", errno}; }
+		{ throw error_handling::system_error{"Failed to bind socket", errno}; }
 
 		auto const listen_result = ::listen(socket.native_handle(), connection_backlog);
 		if(listen_result == -1)
-		{ throw utils::system_error{"Failed to enable listening on socket", errno}; }
+		{ throw error_handling::system_error{"Failed to enable listening on socket", errno}; }
 
 		return server_socket_ref<SocketType, AddressType>{socket.native_handle()};
 	}
@@ -165,7 +165,7 @@ namespace prog::ipc
 		);
 
 		if(result == -1)
-		{ throw utils::system_error{"Failed to connect socket", errno}; }
+		{ throw error_handling::system_error{"Failed to connect socket", errno}; }
 
 		return connected_socket_ref<SocketType, AddressType>{socket.native_handle()};
 	}

@@ -89,7 +89,7 @@ prog::proc_mgmt::spawn(
 	switch(fork_res)
 	{
 		case -1:
-			throw utils::system_error{"Fork failed: ", errno};
+			throw error_handling::system_error{"Fork failed: ", errno};
 
 		case 0:
 		{
@@ -115,7 +115,7 @@ prog::proc_mgmt::spawn(
 				auto const saved_errno = errno;
 				kill(fork_res, SIGKILL);
 				waitpid(fork_res, nullptr, 0);
-				throw utils::system_error{"Failed to create pidfd", saved_errno};
+				throw error_handling::system_error{"Failed to create pidfd", saved_errno};
 			}
 			pidfd ret{fd};
 			uint64_t val{1};
@@ -134,7 +134,7 @@ prog::proc_mgmt::spawn(
 			{
 				::close(exec_err_pipe_read_end);
 				wait(ret.get());
-				throw utils::system_error{std::format("Failed to launch application {}", path), child_errno};
+				throw error_handling::system_error{std::format("Failed to launch application {}", path), child_errno};
 			}
 
 			::close(exec_err_pipe_read_end);

@@ -33,7 +33,7 @@ namespace prog::ipc
 	{
 		eventfd ret{::eventfd(0, 0)};
 		if(ret == nullptr)
-		{ throw utils::system_error{"Failed to create eventfd", errno}; }
+		{ throw error_handling::system_error{"Failed to create eventfd", errno}; }
 		return ret;
 	}
 }
