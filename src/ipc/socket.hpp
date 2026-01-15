@@ -8,32 +8,38 @@
 
 namespace prog::ipc
 {
+	template<class AddressType>
+	struct domain_for_sockaddr{};
+
+	template<class AddressType>
+	constexpr auto  domain_v = domain_for_sockaddr<AddressType>::domain;
+
 	/**
 	 * \brief A tag type used to identify a socket
 	 */
-	template<auto Domain, auto Type>
+	template<class AddressType, auto SocketType>
 	struct basic_socket_tag
 	{};
 
 	/**
 	 * \brief A reference to a basic socket
 	 */
-	template<auto Domain, auto Type>
-	using basic_socket_ref = utils::tagged_file_descriptor_ref<basic_socket_tag<Domain, Type>>;
+	template<class AddressType, auto SocketType>
+	using basic_socket_ref = utils::tagged_file_descriptor_ref<basic_socket_tag<AddressType, SocketType>>;
 
 	/**
 	 * \brief An owner of a basic socket
 	 */
-	template<auto Domain, auto Type>
-	using basic_socket = utils::tagged_file_descriptor<basic_socket_tag<Domain, Type>>;
+	template<class AddressType, auto SocketType>
+	using basic_socket = utils::tagged_file_descriptor<basic_socket_tag<AddressType, SocketType>>;
 
 	/**
 	 * \brief Creates a basic socket
 	 */
-	template<auto Domain, auto Type>
+	template<class AddressType, auto SocketType>
 	auto make_socket()
 	{
-		basic_socket<Domain, Type> ret{::socket(Domain, Type, 0)};
+		basic_socket<AddressType, SocketType> ret{::socket(domain_v<AddressType>, SocketType, 0)};
 		if(ret == nullptr)
 		{ throw utils::system_error{"Failed to create a socket", errno}; }
 		return ret;
@@ -42,78 +48,66 @@ namespace prog::ipc
 	/**
 	 * \brief A tag type used to identify a server socket
 	 */
-	template<auto Domain, auto Type>
+	template<class AddressType, auto SocketType>
 	struct server_socket_tag
 	{};
 
 	/**
 	 * \brief A reference to a server socket
 	 */
-	template<auto Domain, auto Type>
-	using server_socket_ref = utils::tagged_file_descriptor_ref<server_socket_tag<Domain, Type>>;
+	template<class AddressType, auto SocketType>
+	using server_socket_ref = utils::tagged_file_descriptor_ref<server_socket_tag<AddressType, SocketType>>;
 
 	/**
 	 * \brief An owner of a server socket
 	 */
-	template<auto Domain, auto Type>
-	using server_socket = utils::tagged_file_descriptor<server_socket_tag<Domain, Type>>;
+	template<class AddressType, auto SocketType>
+	using server_socket = utils::tagged_file_descriptor<server_socket_tag<AddressType, SocketType>>;
 
 	/**
 	 * \brief A Tag type used to identify a connected socket
 	 */
-	template<auto Domain, auto Type>
+	template<class AddressType, auto SocketType>
 	struct connected_socket_tag
 	{};
 
 	/**
 	 * \brief A reference to a connected socket
 	 */
-	template<auto Domain, auto Type>
-	using connected_socket_ref = utils::tagged_file_descriptor_ref<connected_socket_tag<Domain, Type>>;
+	template<class AddressType, auto SocketType>
+	using connected_socket_ref = utils::tagged_file_descriptor_ref<connected_socket_tag<AddressType, SocketType>>;
 
 	/**
 	 * \brief A reference to a connected socket
 	 */
-	template<auto Domain, auto Type>
-	using connected_socket_ref = utils::tagged_file_descriptor_ref<connected_socket_tag<Domain, Type>>;
+	template<class AddressType, auto SocketType>
+	using connected_socket_ref = utils::tagged_file_descriptor_ref<connected_socket_tag<AddressType, SocketType>>;
 
 	/**
 	 * \brief An owner of a connected socket
 	 */
-	template<auto Domain, auto Type>
-	using connected_socket = utils::tagged_file_descriptor<connected_socket_tag<Domain, Type>>;
+	template<class AddressType, auto SocketType>
+	using connected_socket = utils::tagged_file_descriptor<connected_socket_tag<AddressType, SocketType>>;
 
 	/**
 	 * \brief Accepts an incoming connection on server_socket
 	 */
-	template<auto Domain, auto Type>
-	connected_socket<Domain, Type> accept(server_socket_ref<Domain, Type> server_socket)
+	template<class AddressType, auto SocketType>
+	connected_socket<AddressType, SocketType> accept(server_socket_ref<AddressType, SocketType> server_socket)
 	{
-		connected_socket<Domain, Type> ret{::accept(server_socket.native_handle(), nullptr, nullptr)};
+		connected_socket<AddressType, SocketType> ret{::accept(server_socket.native_handle(), nullptr, nullptr)};
 		if(ret == nullptr)
 		{ throw utils::system_error{"Failed to accept connection from socket", errno}; }
 		return ret;
 	}
 
 	/**
-	 * \brief Type used for storing a socket address. To be specialized for different domains.
-	 */
-	template<auto Domain>
-	struct sockaddr_for_domain{};
-
-	/**
-	 * \brief Helper alias to find the correct sockaddr type
-	 */
-	template<auto Domain>
-	using sockaddr_t = typename sockaddr_for_domain<Domain>::type;
-
-	/**
 	 * \brief Binds socket to listening address so it becomes a server socket
 	 */
-	template<auto Domain, auto Type>
-	server_socket_ref<Domain, Type> bind_and_listen(
-		basic_socket_ref<Domain, Type> socket,
-		sockaddr_t<Domain> const& listening_address,
+	template<auto SocketType, class AddressType>
+	server_socket_ref<AddressType, SocketType> bind_and_listen(
+		basic_socket_ref<AddressType, SocketType> socket,
+		AddressType const& listening_address,
 		int connection_backlog
 	)
 	{
@@ -129,28 +123,31 @@ namespace prog::ipc
 		if(listen_result == -1)
 		{ throw utils::system_error{"Failed to enable listening on socket", errno}; }
 
-		return server_socket_ref<Domain, Type>{socket.native_handle()};
+		return server_socket_ref<AddressType, SocketType>{socket.native_handle()};
 	}
 
 	/**
 	 * \brief Creates a server socket, that can accept incoming connections
 	 */
-	template<auto Domain, auto Type>
-	server_socket<Domain, Type> make_server_socket(
-		sockaddr_t<Domain> const& listening_address,
+	template<auto SocketType, class AddressType>
+	server_socket<AddressType, SocketType> make_server_socket(
+		AddressType const& listening_address,
 		int connection_backlog
 	)
 	{
-		auto socket = make_socket<Domain, Type>();
+		auto socket = make_socket<AddressType, SocketType>();
 		auto server_socket_ref = bind_and_listen(socket.release(),listening_address, connection_backlog);
-		return server_socket<Domain, Type>{server_socket_ref};
+		return server_socket<AddressType, SocketType>{server_socket_ref};
 	}
 
 	/**
 	 * \brief Connects socket to the address given by connect_to
 	 */
-	template<auto Domain, auto Type>
-	connected_socket_ref<Domain, Type> connect(basic_socket_ref<Domain, Type> socket, sockaddr_t<Domain> const& connect_to)
+	template<auto SocketType, class AddressType>
+	connected_socket_ref<AddressType, SocketType> connect(
+		basic_socket_ref<AddressType, SocketType> socket,
+		AddressType const& connect_to
+	)
 	{
 		auto const result = ::connect(
 			socket.native_handle(),
@@ -161,19 +158,19 @@ namespace prog::ipc
 		if(result == -1)
 		{ throw utils::system_error{"Failed to connect socket", errno}; }
 
-		return connected_socket_ref<Domain, Type>{socket.native_handle()};
+		return connected_socket_ref<AddressType, SocketType>{socket.native_handle()};
 	}
 
 	/**
 	 * \brief Creates a connection to the socket at the other end of connect_to
 	 */
-	template<auto Domain, auto Type>
-	connected_socket<Domain, Type> make_connection(sockaddr_t<Domain> const& connect_to)
+	template<auto SocketType, class AddressType>
+	connected_socket<AddressType, SocketType> make_connection(AddressType const& connect_to)
 	{
-		auto socket = make_socket<Domain, Type>();
+		auto socket = make_socket<AddressType, SocketType>();
 		auto conn_socket = connect(socket.release(), connect_to);
 
-		return connected_socket<Domain, Type>{conn_socket};
+		return connected_socket<AddressType, SocketType>{conn_socket};
 	}
 
 	/**
@@ -184,13 +181,13 @@ namespace prog::ipc
 	/**
 	 * \brief Shuts down all or part of a connection
 	 */
-	template<auto Domain, auto Type>
-	void shutdown(connected_socket_ref<Domain, Type> socket, connection_shutdown_ops ops_to_disable)
+	template<class AddressType, auto SocketType>
+	void shutdown(connected_socket_ref<AddressType, SocketType> socket, connection_shutdown_ops ops_to_disable)
 	{ ::shutdown(socket.native_handle(), static_cast<int>(ops_to_disable)); }
 }
 
-template<auto Domain, auto Type>
-struct prog::utils::enabled_fd_conversions<prog::ipc::connected_socket_tag<Domain, Type>>
+template<class AddressType, auto SocketType>
+struct prog::utils::enabled_fd_conversions<prog::ipc::connected_socket_tag<AddressType, SocketType>>
 {
 	static consteval void supports(io::input_file_descriptor_tag){};
 	static consteval void supports(io::output_file_descriptor_tag){};

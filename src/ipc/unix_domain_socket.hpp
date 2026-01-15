@@ -9,12 +9,12 @@
 namespace prog::ipc
 {
 	/**
-	 * \brief Defines the socket address type for sockets in UNIX domain
+	 * \brief Defines the domain type for sockaddr_un
 	 */
 	template<>
-	struct sockaddr_for_domain<AF_UNIX>
+	struct domain_for_sockaddr<sockaddr_un>
 	{
-		using type = sockaddr_un;
+		static constexpr auto domain = AF_UNIX;
 	};
 
 	/**
