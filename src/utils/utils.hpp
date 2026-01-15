@@ -5,12 +5,18 @@
 
 #include <string>
 #include <cmath>
+#include <vector>
 
 /**
  * \brief Contains various utility functions
  */
 namespace prog::utils
 {
+	/**
+	 * \brief Generates an array of random bytes
+	 */
+	std::vector<std::byte> random_bytes(size_t n);
+
 	/**
 	 * \brief The number of printable ASCII characters (all white-space excluded)
 	 */
