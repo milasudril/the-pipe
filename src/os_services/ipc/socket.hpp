@@ -34,13 +34,13 @@ namespace prog::ipc
 	 * \brief A reference to a basic socket
 	 */
 	template<auto SocketType, class AddressType>
-	using basic_socket_ref = utils::tagged_file_descriptor_ref<basic_socket_tag<SocketType, AddressType>>;
+	using basic_socket_ref = fd::tagged_file_descriptor_ref<basic_socket_tag<SocketType, AddressType>>;
 
 	/**
 	 * \brief An owner of a basic socket
 	 */
 	template<auto SocketType, class AddressType>
-	using basic_socket = utils::tagged_file_descriptor<basic_socket_tag<SocketType, AddressType>>;
+	using basic_socket = fd::tagged_file_descriptor<basic_socket_tag<SocketType, AddressType>>;
 
 	/**
 	 * \brief Creates a basic socket
@@ -65,13 +65,13 @@ namespace prog::ipc
 	 * \brief A reference to a server socket
 	 */
 	template<auto SocketType, class AddressType>
-	using server_socket_ref = utils::tagged_file_descriptor_ref<server_socket_tag<SocketType, AddressType>>;
+	using server_socket_ref = fd::tagged_file_descriptor_ref<server_socket_tag<SocketType, AddressType>>;
 
 	/**
 	 * \brief An owner of a server socket
 	 */
 	template<auto SocketType, class AddressType>
-	using server_socket = utils::tagged_file_descriptor<server_socket_tag<SocketType, AddressType>>;
+	using server_socket = fd::tagged_file_descriptor<server_socket_tag<SocketType, AddressType>>;
 
 	/**
 	 * \brief A Tag type used to identify a connected socket
@@ -84,19 +84,19 @@ namespace prog::ipc
 	 * \brief A reference to a connected socket
 	 */
 	template<auto SocketType, class AddressType>
-	using connected_socket_ref = utils::tagged_file_descriptor_ref<connected_socket_tag<SocketType, AddressType>>;
+	using connected_socket_ref = fd::tagged_file_descriptor_ref<connected_socket_tag<SocketType, AddressType>>;
 
 	/**
 	 * \brief A reference to a connected socket
 	 */
 	template<auto SocketType, class AddressType>
-	using connected_socket_ref = utils::tagged_file_descriptor_ref<connected_socket_tag<SocketType, AddressType>>;
+	using connected_socket_ref = fd::tagged_file_descriptor_ref<connected_socket_tag<SocketType, AddressType>>;
 
 	/**
 	 * \brief An owner of a connected socket
 	 */
 	template<auto SocketType, class AddressType>
-	using connected_socket = utils::tagged_file_descriptor<connected_socket_tag<SocketType, AddressType>>;
+	using connected_socket = fd::tagged_file_descriptor<connected_socket_tag<SocketType, AddressType>>;
 
 	/**
 	 * \brief Accepts an incoming connection on server_socket
@@ -196,7 +196,7 @@ namespace prog::ipc
 }
 
 template<auto SocketType, class AddressType>
-struct prog::utils::enabled_fd_conversions<prog::ipc::connected_socket_tag<SocketType, AddressType>>
+struct prog::fd::enabled_fd_conversions<prog::ipc::connected_socket_tag<SocketType, AddressType>>
 {
 	static consteval void supports(io::input_file_descriptor_tag){};
 	static consteval void supports(io::output_file_descriptor_tag){};

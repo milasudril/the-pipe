@@ -19,12 +19,12 @@ namespace prog::ipc
 	/**
 	 * \brief A reference to an event file descriptor
 	 */
-	using eventfd_ref = utils::tagged_file_descriptor_ref<eventfd_tag>;
+	using eventfd_ref = fd::tagged_file_descriptor_ref<eventfd_tag>;
 
 	/**
 	 * \brief An owner of an event file descriptor
 	 */
-	using eventfd = utils::tagged_file_descriptor<eventfd_tag>;
+	using eventfd = fd::tagged_file_descriptor<eventfd_tag>;
 
 	/**
 	 * \brief Creates an event file descriptor, to be used for synchronization between processes
@@ -39,7 +39,7 @@ namespace prog::ipc
 }
 
 template<>
-struct prog::utils::enabled_fd_conversions<prog::ipc::eventfd_tag>
+struct prog::fd::enabled_fd_conversions<prog::ipc::eventfd_tag>
 {
 	static consteval void supports(io::input_file_descriptor_tag){}
 	static consteval void supports(io::output_file_descriptor_tag){}

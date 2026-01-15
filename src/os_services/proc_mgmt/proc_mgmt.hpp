@@ -25,12 +25,12 @@ namespace prog::proc_mgmt
 	/**
 	 * \brief A reference to a process file descriptor
 	 */
-	using pidfd_ref = utils::tagged_file_descriptor_ref<pidfd_tag>;
+	using pidfd_ref = fd::tagged_file_descriptor_ref<pidfd_tag>;
 
 	/**
 	 * \brief An owner type for a process file descriptor
 	 */
-	using pidfd = utils::tagged_file_descriptor<pidfd_tag>;
+	using pidfd = fd::tagged_file_descriptor<pidfd_tag>;
 
 	/**
 	 * \brief Provides information about redirection of the standard streams

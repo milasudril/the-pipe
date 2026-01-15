@@ -5,7 +5,7 @@
 #include <memory>
 #include <cassert>
 
-namespace prog::utils
+namespace prog::fd
 {
 	/**
 	 * \brief Struct to specialize to enable conversions from a \ref tagged_file_descriptor_ref "tagged_file_descriptor_ref<Tag>"
@@ -17,7 +17,7 @@ namespace prog::utils
 	 * //bar and foo should have been declared earlier
 	 *
 	 * template<>
-	 * struct prog::utils::enabled_fd_conversions<foo>
+	 * struct prog::fd::enabled_fd_conversions<foo>
 	 * {
 	 * 	static consteval void supports(bar){}
 	 * };

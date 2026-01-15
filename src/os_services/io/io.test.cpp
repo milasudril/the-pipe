@@ -15,7 +15,7 @@ namespace
 }
 
 template<>
-struct prog::utils::enabled_fd_conversions<memfd_tag>
+struct prog::fd::enabled_fd_conversions<memfd_tag>
 {
 	static consteval void supports(prog::io::input_file_descriptor_tag){}
 	static consteval void supports(prog::io::output_file_descriptor_tag){}
@@ -23,7 +23,7 @@ struct prog::utils::enabled_fd_conversions<memfd_tag>
 
 TESTCASE(prog_io_read_zero_bytes_available)
 {
-	prog::utils::tagged_file_descriptor<memfd_tag> fd{memfd_create("foo", 0)};
+	prog::fd::tagged_file_descriptor<memfd_tag> fd{memfd_create("foo", 0)};
 	REQUIRE_NE(fd, nullptr);
 
 	std::array<std::byte, 4096> buffer{};
@@ -34,7 +34,7 @@ TESTCASE(prog_io_read_zero_bytes_available)
 
 TESTCASE(prog_io_write_and_read_succesful)
 {
-	prog::utils::tagged_file_descriptor<memfd_tag> fd{memfd_create("foo", 0)};
+	prog::fd::tagged_file_descriptor<memfd_tag> fd{memfd_create("foo", 0)};
 	REQUIRE_NE(fd, nullptr);
 	REQUIRE_NE(fd.get().native_handle(), STDOUT_FILENO);
 	REQUIRE_NE(fd.get().native_handle(), STDIN_FILENO);

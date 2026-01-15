@@ -69,12 +69,12 @@ namespace prog::io
 	/**
 	 * \brief A reference to a file descriptor that can be read from
 	 */
-	using input_file_descriptor_ref = utils::tagged_file_descriptor_ref<input_file_descriptor_tag>;
+	using input_file_descriptor_ref = fd::tagged_file_descriptor_ref<input_file_descriptor_tag>;
 
 	/**
 	 * \brief An owner of a file descriptor that can be read from
 	 */
-	using input_file_descriptor = utils::tagged_file_descriptor<input_file_descriptor_tag>;
+	using input_file_descriptor = fd::tagged_file_descriptor<input_file_descriptor_tag>;
 
 	/**
 	 * \brief Helper function for writing until EINTR is no longer raised
@@ -103,12 +103,12 @@ namespace prog::io
 	/**
 	 * \brief Tag used to identify a file descriptor that can be written to
 	 */
-	using output_file_descriptor_ref = utils::tagged_file_descriptor_ref<output_file_descriptor_tag>;
+	using output_file_descriptor_ref = fd::tagged_file_descriptor_ref<output_file_descriptor_tag>;
 
 	/**
 	 * \brief An owner of a file descriptor that can be written to
 	 */
-	using output_file_descriptor = utils::tagged_file_descriptor<output_file_descriptor_tag>;
+	using output_file_descriptor = fd::tagged_file_descriptor<output_file_descriptor_tag>;
 
 	/**
 	 * \brief Helper function for writing until EINTR is no longer raised
