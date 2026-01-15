@@ -49,17 +49,14 @@ namespace
 
 TESTCASE(prog_ipc_unix_domain_socket_create_sockets_and_connect)
 {
-	auto const client = prog::ipc::make_socket<AF_UNIX, SOCK_SEQPACKET>();
 	event server_created;
-	// TODO: Need an auto-generated address
 	auto const sockname = prog::utils::random_printable_ascii_string(prog::utils::num_chars_16_bytes);
 	auto const address = prog::ipc::make_abstract_sockaddr_un(sockname);
 	std::jthread server_thread{[address, &server_created](){
-		auto const server = prog::ipc::make_socket<AF_UNIX, SOCK_SEQPACKET>();
-		auto const server_socket = bind_and_listen(server.get(), address, 1024);
+		auto const server_socket = prog::ipc::make_server_socket<AF_UNIX, SOCK_SEQPACKET>(address, 1024);
 		server_created.raise();
 
-		auto const connection = accept(server_socket);
+		auto const connection = accept(server_socket.get());
 		std::array<char, 32> buffer{};
 		auto const read_result = prog::io::read(
 			connection.get(),
@@ -75,12 +72,12 @@ TESTCASE(prog_ipc_unix_domain_socket_create_sockets_and_connect)
 	}};
 	server_created.wait();
 
-	auto const connected_socket = connect(client.get(), address);
+	auto const connected_socket = prog::ipc::make_connection<AF_UNIX, SOCK_SEQPACKET>(address);
 	auto const write_result = prog::io::write(
-		connected_socket,
+		connected_socket.get(),
 		std::as_bytes(std::span{std::string_view{"Hello, World"}})
 	);
 	EXPECT_EQ(write_result.bytes_transferred(), 12);
 
-	shutdown(connected_socket, prog::ipc::connection_shutdown_ops::write);
+	shutdown(connected_socket.get(), prog::ipc::connection_shutdown_ops::write);
 }

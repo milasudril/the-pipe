@@ -47,10 +47,16 @@ namespace prog::ipc
 	{};
 
 	/**
-	 * \brief A reference to a basic socket
+	 * \brief A reference to a server socket
 	 */
 	template<auto Domain, auto Type>
 	using server_socket_ref = utils::tagged_file_descriptor_ref<server_socket_tag<Domain, Type>>;
+
+	/**
+	 * \brief An owner of a server socket
+	 */
+	template<auto Domain, auto Type>
+	using server_socket = utils::tagged_file_descriptor<server_socket_tag<Domain, Type>>;
 
 	/**
 	 * \brief A Tag type used to identify a connected socket
@@ -127,6 +133,20 @@ namespace prog::ipc
 	}
 
 	/**
+	 * \brief Creates a server socket, that can accept incoming connections
+	 */
+	template<auto Domain, auto Type>
+	server_socket<Domain, Type> make_server_socket(
+		sockaddr_t<Domain> const& listening_address,
+		int connection_backlog
+	)
+	{
+		auto socket = make_socket<Domain, Type>();
+		auto server_socket_ref = bind_and_listen(socket.release(),listening_address, connection_backlog);
+		return server_socket<Domain, Type>{server_socket_ref};
+	}
+
+	/**
 	 * \brief Connects socket to the address given by connect_to
 	 */
 	template<auto Domain, auto Type>
@@ -142,6 +162,18 @@ namespace prog::ipc
 		{ throw utils::system_error{"Failed to connect socket", errno}; }
 
 		return connected_socket_ref<Domain, Type>{socket.native_handle()};
+	}
+
+	/**
+	 * \brief Creates a connection to the socket at the other end of connect_to
+	 */
+	template<auto Domain, auto Type>
+	connected_socket<Domain, Type> make_connection(sockaddr_t<Domain> const& connect_to)
+	{
+		auto socket = make_socket<Domain, Type>();
+		auto conn_socket = connect(socket.release(), connect_to);
+
+		return connected_socket<Domain, Type>{conn_socket};
 	}
 
 	/**
