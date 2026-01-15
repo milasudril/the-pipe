@@ -1,8 +1,7 @@
 //@	{"target":{"name":"io.test"}}
 
 #include "./io.hpp"
-#include "src/utils/file_descriptor.hpp"
-#include "testfwk/validation.hpp"
+#include "src/os_services/fd/file_descriptor.hpp"
 
 #include <cerrno>
 #include <testfwk/testfwk.hpp>

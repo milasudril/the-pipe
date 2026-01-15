@@ -1,7 +1,7 @@
 #ifndef PROG_CLIENT_HPP
 #define PROG_CLIENT_HPP
 
-#include "src/io/io.hpp"
+#include "src/os_services/io/io.hpp"
 
 /**
  * \brief Contains the API published by the client

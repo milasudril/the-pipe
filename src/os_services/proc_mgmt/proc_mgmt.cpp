@@ -1,10 +1,10 @@
 //@	{"target":{"name":"proc_mgmt.o"}}
 
 #include "./proc_mgmt.hpp"
-#include "src/io/io.hpp"
-#include "src/ipc/pipe.hpp"
-#include "src/ipc/eventfd.hpp"
-#include "src/utils/file_descriptor.hpp"
+#include "src/os_services/io/io.hpp"
+#include "src/os_services/ipc/pipe.hpp"
+#include "src/os_services/ipc/eventfd.hpp"
+#include "src/os_services/fd/file_descriptor.hpp"
 
 #include <cstdint>
 #include <linux/close_range.h>

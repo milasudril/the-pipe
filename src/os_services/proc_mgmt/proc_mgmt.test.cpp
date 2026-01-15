@@ -1,8 +1,7 @@
 //@	{"target": {"name": "proc_mgmt.test"}}
 
 #include "./proc_mgmt.hpp"
-#include "src/ipc/pipe.hpp"
-#include "testfwk/validation.hpp"
+#include "src/os_services/ipc/pipe.hpp"
 
 #include <testfwk/testfwk.hpp>
 #include <thread>

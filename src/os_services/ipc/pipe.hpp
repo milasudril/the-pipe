@@ -1,8 +1,9 @@
 #ifndef PROG_IPC_PIPE_HPP
 #define PROG_IPC_PIPE_HPP
 
-#include "src/io/io.hpp"
-#include "src/utils/system_error.hpp"
+#include "src/os_services/io/io.hpp"
+#include "src/os_services/error_handling/system_error.hpp"
+
 #include <cstdlib>
 #include <fcntl.h>
 

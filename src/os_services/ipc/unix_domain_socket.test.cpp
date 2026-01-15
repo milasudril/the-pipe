@@ -1,9 +1,8 @@
 //@	{"target": {"name":"unix_domain_socket.test"}}
 
 #include "./unix_domain_socket.hpp"
-#include "src/ipc/socket.hpp"
+#include "src/os_services/ipc/socket.hpp"
 #include "src/utils/utils.hpp"
-#include "testfwk/validation.hpp"
 
 #include <condition_variable>
 #include <sys/socket.h>

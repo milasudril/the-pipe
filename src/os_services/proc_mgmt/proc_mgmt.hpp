@@ -3,9 +3,10 @@
 #ifndef PROG_PROC_MGMT_HPP
 #define PROG_PROC_MGMT_HPP
 
-#include "src/io/io.hpp"
-#include "src/utils/file_descriptor.hpp"
-#include "src/utils/system_error.hpp"
+#include "src/os_services/io/io.hpp"
+#include "src/os_services/fd/file_descriptor.hpp"
+#include "src/os_services/error_handling/system_error.hpp"
+
 #include <csignal>
 #include <sys/wait.h>
 #include <filesystem>

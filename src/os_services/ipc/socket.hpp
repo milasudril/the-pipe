@@ -1,8 +1,8 @@
 #ifndef PROG_IPC_SOCKET_HPP
 #define PROG_IPC_SOCKET_HPP
 
-#include "src/io/io.hpp"
-#include "src/utils/system_error.hpp"
+#include "src/os_services/io/io.hpp"
+#include "src/os_services/error_handling/system_error.hpp"
 
 #include <sys/socket.h>
 
