@@ -2,6 +2,7 @@
 
 #include "./unix_domain_socket.hpp"
 #include "src/ipc/socket.hpp"
+#include "src/utils/utils.hpp"
 #include "testfwk/validation.hpp"
 
 #include <condition_variable>
@@ -11,9 +12,10 @@
 
 TESTCASE(prog_ipc_unix_domain_socket_make_abstract_sockaddr_un)
 {
-	auto const res = prog::ipc::make_abstract_sockaddr_un("testsocket");
+	auto const address = prog::utils::random_printable_ascii_string(prog::utils::num_chars_16_bytes);
+	auto const res = prog::ipc::make_abstract_sockaddr_un(address);
 	EXPECT_EQ(res.sun_family, AF_UNIX);
-	EXPECT_EQ(res.sun_path + 1, std::string_view{"testsocket"});
+	EXPECT_EQ(res.sun_path + 1, std::string_view{address});
 	EXPECT_EQ(res.sun_path[0], '\0');
 }
 
@@ -50,7 +52,8 @@ TESTCASE(prog_ipc_unix_domain_socket_create_sockets_and_connect)
 	auto const client = prog::ipc::make_socket<AF_UNIX, SOCK_SEQPACKET>();
 	event server_created;
 	// TODO: Need an auto-generated address
-	auto const address = prog::ipc::make_abstract_sockaddr_un("testsocket");
+	auto const sockname = prog::utils::random_printable_ascii_string(prog::utils::num_chars_16_bytes);
+	auto const address = prog::ipc::make_abstract_sockaddr_un(sockname);
 	std::jthread server_thread{[address, &server_created](){
 		auto const server = prog::ipc::make_socket<AF_UNIX, SOCK_SEQPACKET>();
 		auto const server_socket = bind_and_listen(server.get(), address, 1024);
