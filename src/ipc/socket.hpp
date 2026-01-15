@@ -8,11 +8,20 @@
 
 namespace prog::ipc
 {
+	/**
+	 * \brief Trait for deriving the domain number, given AddressType
+	 *
+	 * A specialization of this trait should include a static constexpr data member called domain,
+	 * which for sockaddr_in would be set to AF_INET.
+	 */
 	template<class AddressType>
 	struct domain_for_sockaddr{};
 
+	/**
+	 * \brief A helper to lookup the domain number, given AddressType
+	 */
 	template<class AddressType>
-	constexpr auto  domain_v = domain_for_sockaddr<AddressType>::domain;
+	inline constexpr auto domain_v = domain_for_sockaddr<AddressType>::domain;
 
 	/**
 	 * \brief A tag type used to identify a socket
