@@ -6,7 +6,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-namespace prog::ipc
+namespace prog::os_services::ipc
 {
 	/**
 	 * \brief Defines the domain type for sockaddr_un

@@ -6,7 +6,7 @@
 #include <format>
 #include <utility>
 
-namespace prog::error_handling
+namespace prog::os_services::error_handling
 {
 	/**
 	 *\brief Exception to be thrown when a syscalls fails in a semi-fatal way

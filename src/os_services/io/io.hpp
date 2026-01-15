@@ -11,7 +11,7 @@
 /**
  * \brief Contains basic I/O support functions
  */
-namespace prog::io
+namespace prog::os_services::io
 {
 	/**
 	 * \brief A class holding the result of an I/O operation

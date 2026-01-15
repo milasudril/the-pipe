@@ -7,7 +7,7 @@
 #include <cstdlib>
 #include <fcntl.h>
 
-namespace prog::ipc
+namespace prog::os_services::ipc
 {
 	/**
 	 * \brief A pipe is a unidirectional communication channel, with a read end and a write end

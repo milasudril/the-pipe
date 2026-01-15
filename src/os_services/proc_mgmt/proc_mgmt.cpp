@@ -31,8 +31,8 @@ namespace
 		char const* path,
 		char* const* argv,
 		char* const* env,
-		prog::proc_mgmt::io_redirection const& io_redir,
-		prog::io::output_file_descriptor_ref errstream
+		prog::os_services::proc_mgmt::io_redirection const& io_redir,
+		prog::os_services::io::output_file_descriptor_ref errstream
 	) noexcept
 	{
 		if(io_redir.sysin != nullptr)
@@ -58,12 +58,12 @@ namespace
 
 	fail:
 		auto errval = errno;
-		prog::io::write_while_eintr(errstream, &errval, sizeof(errval));
+		prog::os_services::io::write_while_eintr(errstream, &errval, sizeof(errval));
 	}
 };
 
-prog::proc_mgmt::pidfd
-prog::proc_mgmt::spawn(
+prog::os_services::proc_mgmt::pidfd
+prog::os_services::proc_mgmt::spawn(
 	char const* path,
 	std::span<char const*> argv,
 	std::span<char const*> env,

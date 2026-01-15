@@ -14,7 +14,7 @@
 /**
  * \brief Process management
  */
-namespace prog::proc_mgmt
+namespace prog::os_services::proc_mgmt
 {
 	/**
 	 * \brief Tag type used to identify a file descriptor referring to a process

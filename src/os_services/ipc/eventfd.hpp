@@ -8,7 +8,7 @@
 #include <fcntl.h>
 #include <sys/eventfd.h>
 
-namespace prog::ipc
+namespace prog::os_services::ipc
 {
 	/**
 	 * \brief A tag type used to identify an event file descriptor
@@ -39,7 +39,7 @@ namespace prog::ipc
 }
 
 template<>
-struct prog::fd::enabled_fd_conversions<prog::ipc::eventfd_tag>
+struct prog::os_services::fd::enabled_fd_conversions<prog::os_services::ipc::eventfd_tag>
 {
 	static consteval void supports(io::input_file_descriptor_tag){}
 	static consteval void supports(io::output_file_descriptor_tag){}

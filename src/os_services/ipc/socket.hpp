@@ -6,7 +6,7 @@
 
 #include <sys/socket.h>
 
-namespace prog::ipc
+namespace prog::os_services::ipc
 {
 	/**
 	 * \brief Trait for deriving the domain number, given AddressType
@@ -196,7 +196,7 @@ namespace prog::ipc
 }
 
 template<auto SocketType, class AddressType>
-struct prog::fd::enabled_fd_conversions<prog::ipc::connected_socket_tag<SocketType, AddressType>>
+struct prog::os_services::fd::enabled_fd_conversions<prog::os_services::ipc::connected_socket_tag<SocketType, AddressType>>
 {
 	static consteval void supports(io::input_file_descriptor_tag){};
 	static consteval void supports(io::output_file_descriptor_tag){};

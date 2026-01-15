@@ -4,7 +4,7 @@
 /**
  * \brief IPC support
  */
-namespace prog::ipc
+namespace prog::os_services::ipc
 {};
 
 #endif
