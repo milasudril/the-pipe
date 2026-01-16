@@ -3,6 +3,7 @@
 
 #include "src/os_services/fd/file_descriptor.hpp"
 #include "src/os_services/error_handling/system_error.hpp"
+#include "src/os_services/error_handling/error_handling.hpp"
 
 #include <cerrno>
 #include <expected>
@@ -48,20 +49,6 @@ namespace prog::os_services::io
 	};
 
 	/**
-	 * \brief Repeatedly calls func, until it returns a value different from -1, or errno is no
-	 *        longer EINTR
-	 */
-	template<class Callable, class... Args>
-	auto do_while_eintr(Callable func, Args... args) noexcept
-	{
-		errno = EINTR;
-		std::invoke_result_t<Callable, Args...> result = -1;
-		while(errno == EINTR && result == -1)
-		{ result = func(args...); }
-		return result;
-	}
-
-	/**
 	 * \brief Tag used to identify a file descriptor that can be read from
 	 */
 	struct input_file_descriptor_tag{};
@@ -80,7 +67,7 @@ namespace prog::os_services::io
 	 * \brief Helper function for writing until EINTR is no longer raised
 	 */
 	inline auto read_while_eintr(int fd, void* buffer, size_t count) noexcept
-	{ return do_while_eintr(::read, fd, buffer, count); }
+	{ return error_handling::do_while_eintr(::read, fd, buffer, count); }
 
 	/**
 	 * \brief Tries to read data from fd into buffer
@@ -114,7 +101,7 @@ namespace prog::os_services::io
 	 * \brief Helper function for writing until EINTR is no longer raised
 	 */
 	inline auto write_while_eintr(int fd, void const* buffer, size_t count) noexcept
-	{ return do_while_eintr(::write, fd, buffer, count); }
+	{ return error_handling::do_while_eintr(::write, fd, buffer, count); }
 
 	/**
 	 * \brief Tries to write data from buffer to fd
@@ -123,7 +110,7 @@ namespace prog::os_services::io
 	inline io_result write(output_file_descriptor_ref fd, std::span<std::byte const> buffer)
 	{
 		return io_result{
-			do_while_eintr(::write, fd.native_handle(), std::data(buffer), std::size(buffer)),
+			write_while_eintr(fd.native_handle(), std::data(buffer), std::size(buffer)),
 			errno
 		};
 	}
