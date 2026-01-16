@@ -1,5 +1,5 @@
-#ifndef PROG_IPC_HPP
-#define PROG_IPC_HPP
+#ifndef PROG_OS_SERVICES_IPC_HPP
+#define PROG_OS_SERVICES_IPC_HPP
 
 /**
  * \brief IPC support

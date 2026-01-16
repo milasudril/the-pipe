@@ -1,7 +1,7 @@
 //@	{"dependencies_extra":[{"ref":"./proc_mgmt.o", "rel":"implementation"}]}
 
-#ifndef PROG_PROC_MGMT_HPP
-#define PROG_PROC_MGMT_HPP
+#ifndef PROG_OS_SERVICES_PROC_MGMT_HPP
+#define PROG_OS_SERVICES_PROC_MGMT_HPP
 
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"

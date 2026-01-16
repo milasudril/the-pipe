@@ -1,5 +1,5 @@
-#ifndef PROG_IPC_SOCKET_HPP
-#define PROG_IPC_SOCKET_HPP
+#ifndef PROG_OS_SERVICES_IPC_SOCKET_HPP
+#define PROG_OS_SERVICES_IPC_SOCKET_HPP
 
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/error_handling/system_error.hpp"
