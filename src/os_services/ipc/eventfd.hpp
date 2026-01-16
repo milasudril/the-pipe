@@ -29,7 +29,7 @@ namespace prog::os_services::ipc
 	/**
 	 * \brief Creates an event file descriptor, to be used for synchronization between processes
 	 */
-	auto make_eventfd()
+	inline auto make_eventfd()
 	{
 		eventfd ret{::eventfd(0, 0)};
 		if(ret == nullptr)
