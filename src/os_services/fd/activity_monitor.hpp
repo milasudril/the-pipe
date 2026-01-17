@@ -39,7 +39,7 @@ namespace prog::os_services::fd
 		if(event & EPOLLOUT)
 		{ return activity_status::write; }
 
-		throw std::runtime_error{"Bad epoll event"};
+		return activity_status::none;
 	}
 
 	class epoll_entry_data
