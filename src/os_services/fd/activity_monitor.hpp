@@ -121,8 +121,6 @@ namespace prog::os_services::fd
 	class activity_monitor
 	{
 	public:
-		enum class post_process_action{keep_entry, remove_entry_and_close_fd};
-
 		activity_monitor():
 			m_epoll_fd{::epoll_create1(0)}
 		{
