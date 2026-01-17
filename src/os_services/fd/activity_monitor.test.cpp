@@ -2,6 +2,7 @@
 
 #include "./activity_monitor.hpp"
 #include "src/os_services/fd/activity_event.hpp"
+#include "src/os_services/fd/file_descriptor.hpp"
 #include "testfwk/validation.hpp"
 
 #include <testfwk/testfwk.hpp>
@@ -96,4 +97,56 @@ TESTCASE(prog_os_services_fd_epoll_fd_activity_no_valid_epoll_instance)
 	EXPECT_EQ(status.dtor_callcount, 1);
 
 	EXPECT_EQ(activity.get_activity_status(), prog::os_services::fd::activity_status::read);
+}
+
+namespace
+{
+	struct my_fd_activity_event_handler_status
+	{
+		prog::os_services::fd::activity_event const* last_activity_event{nullptr};
+		prog::os_services::fd::file_descriptor_ref fd;
+	};
+
+	struct my_fd_activity_event_handler
+	{
+		void handle_event(
+			prog::os_services::fd::activity_event const& event,
+			prog::os_services::fd::file_descriptor_ref fd
+		)
+		{
+			status.get().last_activity_event = &event;
+			status.get().fd = fd;
+		}
+
+		std::reference_wrapper<my_fd_activity_event_handler_status> status;
+	};
+
+	class my_activity_event:public prog::os_services::fd::activity_event
+	{
+	public:
+		void update_listening_status(prog::os_services::fd::activity_status) const override
+		{}
+
+		void close_fd() const noexcept override
+		{}
+
+		prog::os_services::fd::activity_status get_activity_status() const noexcept override
+		{ return prog::os_services::fd::activity_status::none; }
+	};
+};
+
+TESTCASE(prog_os_services_fd_epoll_entry_data_impl)
+{
+	my_fd_activity_event_handler_status status;
+	auto const testfd = ::dup(STDOUT_FILENO);
+	prog::os_services::fd::epoll_entry_data_impl entry_data{
+		my_fd_activity_event_handler{status},
+		prog::os_services::fd::file_descriptor{testfd}
+	};
+
+	EXPECT_EQ(entry_data.get_fd_native_handle(), testfd);
+	my_activity_event event{};
+	entry_data.handle_event(event);
+	EXPECT_EQ(status.last_activity_event, &event)
+	EXPECT_EQ(status.fd.native_handle(), testfd);
 }

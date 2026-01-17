@@ -1,6 +1,7 @@
 #ifndef PROG_OS_SERVICES_FD_ACITIVITY_EVENT_HPP
 #define PROG_OS_SERVICES_FD_ACITIVITY_EVENT_HPP
 
+#include "src/os_services/fd/file_descriptor.hpp"
 #include <concepts>
 
 namespace prog::os_services::fd
@@ -31,10 +32,14 @@ namespace prog::os_services::fd
 		virtual void close_fd() const noexcept = 0;
 	};
 
-	template<class T>
-	concept activity_event_handler = requires(T& obj, activity_event const& e)
+	template<class T, class FileDescriptorTag>
+	concept activity_event_handler = requires(
+		T& obj,
+		activity_event const& e,
+		tagged_file_descriptor_ref<FileDescriptorTag> fd
+	)
 	{
-		{obj.handle_event(e)} -> std::same_as<void>;
+		{obj.handle_event(e, fd)} -> std::same_as<void>;
 	};
 }
 
