@@ -85,7 +85,15 @@ namespace prog::os_services::fd
 		}
 
 		void close_fd() const noexcept override
-		{ delete m_epoll_event_data; }
+		{
+			::epoll_ctl(
+				m_epoll_fd.native_handle(),
+				EPOLL_CTL_DEL,
+				m_epoll_event_data->get_fd_native_handle(),
+				nullptr
+			);
+			delete m_epoll_event_data;
+		}
 
 		activity_status get_activity_status() const noexcept override
 		{ return m_status; }
@@ -132,12 +140,12 @@ namespace prog::os_services::fd
 
 		template<class FileDescriptorTag, activity_event_handler<FileDescriptorTag> EventHandler>
 		void add(
-			tagged_file_descriptor_ref<FileDescriptorTag> fd_to_watch,
+			tagged_file_descriptor<FileDescriptorTag> fd_to_watch,
 			activity_status initial_listen_status,
 			EventHandler&& eh
 		)
 		{
-			auto const raw_fd = fd_to_watch.native_handle();
+			auto const raw_fd = fd_to_watch.get().native_handle();
 			::epoll_event event{
 				.events = to_epoll_event(initial_listen_status),
 				.data = ::epoll_data{
