@@ -34,6 +34,6 @@ The procedure is as follows
  */
 namespace prog::handshaking_protocol
 {
-	using server_socket_name = std::array<char, num_chars_16_bytes>;
+	using server_socket_name = std::array<char, prog::utils::num_chars_16_bytes>;
 	using handshake_key = std::array<std::byte, 16>;
 }

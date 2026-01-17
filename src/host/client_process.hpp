@@ -2,13 +2,20 @@
 #include "src/os_services/ipc/socket.hpp"
 #include "src/os_services/ipc/unix_domain_socket.hpp"
 #include "src/os_services/proc_mgmt/proc_mgmt.hpp"
+#include "src/handshaking_protocol/handshaking_protocol.hpp"
+#include "src/utils/utils.hpp"
+
+#include <filesystem>
 
 namespace prog::host
 {
 	class client_process
 	{
 	public:
-		explicit client_process(std::file_system::path const& client_binary):
+		explicit client_process(
+			handshaking_protocol::server_socket_name const& socket_name,
+			std::filesystem::path const& client_binary
+		):
 			m_handle{
 				os_services::proc_mgmt::spawn(
 					client_binary.c_str(),
@@ -22,6 +29,20 @@ namespace prog::host
 				)
 			}
 		{
+			auto const my_key = utils::random_bytes(std::tuple_size_v<handshaking_protocol::handshake_key>);
+			os_services::io::write(
+				m_host_to_client_handshake_pipe.write_end(),
+				my_key
+			);
+			handshaking_protocol::handshake_key client_key{};
+			os_services::io::read(
+				m_client_to_host_handshake_pipe.read_end(),
+				client_key
+			);
+			os_services::io::write(
+				m_host_to_client_handshake_pipe.write_end(),
+				std::as_bytes(std::span{socket_name})
+			);
 		}
 
 
