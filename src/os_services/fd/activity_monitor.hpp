@@ -95,7 +95,7 @@ namespace prog::os_services::fd
 		file_descriptor_ref m_epoll_fd;
 	};
 
-	template<class EventHandler, class FileDescriptorTag>
+	template<activity_event_handler EventHandler, class FileDescriptorTag>
 	class epoll_entry_data_impl: public epoll_entry_data
 	{
 	public:
@@ -130,7 +130,7 @@ namespace prog::os_services::fd
 			{ throw error_handling::system_error{"Failed to an fd activity monitor", errno}; }
 		}
 
-		template<class FileDescriptorTag, class EventHandler>
+		template<class FileDescriptorTag, activity_event_handler EventHandler>
 		void add(
 			tagged_file_descriptor_ref<FileDescriptorTag> fd_to_watch,
 			activity_status initial_listen_status,

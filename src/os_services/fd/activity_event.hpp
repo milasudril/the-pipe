@@ -17,6 +17,12 @@ namespace prog::os_services::fd
 		virtual void update_listening_status(activity_status new_status) const = 0;
 		virtual void close_fd() const noexcept = 0;
 	};
+
+	template<class T>
+	concept activity_event_handler = requires(T& obj, activity_event const& e)
+	{
+		{obj.handle_event(e)} -> std::same_as<void>;
+	};
 }
 
 #endif
