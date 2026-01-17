@@ -17,6 +17,8 @@ namespace prog::os_services::fd
 	{
 		switch(status)
 		{
+			case activity_status::none:
+				return 0;
 			case activity_status::read:
 				return EPOLLIN;
 			case activity_status::write:

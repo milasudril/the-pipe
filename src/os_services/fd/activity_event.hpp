@@ -7,10 +7,21 @@ namespace prog::os_services::fd
 {
 	enum class activity_status
 	{
-		read,
-		write,
-		read_or_write
+		none = 0x0,
+		read = 0x1,
+		write = 0x2,
+		read_or_write = 0x3
 	};
+
+	inline constexpr bool can_read(activity_status status)
+	{
+		return static_cast<int>(status) & static_cast<int>(activity_status::read);
+	}
+
+	inline constexpr bool can_write(activity_status status)
+	{
+		return static_cast<int>(status) & static_cast<int>(activity_status::write);
+	}
 
 	class activity_event
 	{
