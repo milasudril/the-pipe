@@ -97,9 +97,9 @@ TESTCASE(prog_os_services_fd_epoll_fd_activity_no_valid_epoll_instance)
 	} catch (...)
 	{ }
 
-	EXPECT_EQ(status.dtor_callcount, 0);
-	activity.close_fd();
-	EXPECT_EQ(status.dtor_callcount, 1);
+	EXPECT_EQ(activity.event_data_should_be_deleted(), false);
+	activity.stop_listening();
+	EXPECT_EQ(activity.event_data_should_be_deleted(), true);
 
 	EXPECT_EQ(activity.get_activity_status(), prog::os_services::fd::activity_status::read);
 }
@@ -132,7 +132,7 @@ namespace
 		void update_listening_status(prog::os_services::fd::activity_status) const override
 		{}
 
-		void close_fd() const noexcept override
+		void stop_listening() const noexcept override
 		{}
 
 		prog::os_services::fd::activity_status get_activity_status() const noexcept override
@@ -170,7 +170,7 @@ namespace
 				std::array<std::byte, 1024> buffer;
 				auto res = prog::os_services::io::read(fd, buffer);
 				if(res.bytes_transferred() == 0)
-				{ activity.close_fd(); }
+				{ activity.stop_listening(); }
 				else
 				{ prog::os_services::io::write(fd, std::span{std::data(buffer), res.bytes_transferred()}); }
 			}

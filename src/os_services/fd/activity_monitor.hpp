@@ -13,6 +13,9 @@
 
 namespace prog::os_services::fd
 {
+	/**
+	 * \brief Converts an activity_status to epoll event flags
+	 */
 	constexpr unsigned int to_epoll_event(activity_status status)
 	{
 		switch(status)
@@ -30,6 +33,9 @@ namespace prog::os_services::fd
 		throw std::runtime_error{"Bad activity status"};
 	}
 
+	/**
+	 * \brief Converts epoll flags to an activity_status
+	 */
 	constexpr activity_status epoll_event_to_activity_status(unsigned int event)
 	{
 		if((event & EPOLLIN) && (event & EPOLLOUT))
@@ -42,17 +48,43 @@ namespace prog::os_services::fd
 		return activity_status::none;
 	}
 
+	/**
+	 * \brief Abstract base class used for data within an epoll event
+	 */
 	class epoll_entry_data
 	{
 	public:
+		/**
+		 * \brief This function should return the file descriptor associated with the event
+		 */
 		virtual int get_fd_native_handle() const noexcept = 0;
+
+		/**
+		 * \brief This function should process an activity_event
+		 */
 		virtual void handle_event(activity_event const& event) = 0;
+
+		/**
+		 * \brief Add virtual destructor so objects can be destructed polymorphically
+		 */
 		virtual ~epoll_entry_data() noexcept = default;
 	};
 
-	class epoll_fd_activity:public activity_event
+	/**
+	 * \brief Epoll specific implementation of activity_event
+	 */
+	class epoll_fd_activity final:public activity_event
 	{
 	public:
+		/**
+		 * \brief Constructs an epoll_fd_activity
+		 * \param epoll_event_data The epoll_entry_data read from epoll_wait
+		 * \param status The current file descriptor activity_status
+		 * \param epoll_fd The epoll instance that issued this activity
+		 *
+		 * \warning Assume that the object takes ownership of epoll_event_data. The object pointed to
+		 *          by epoll_event_data must have been created by new.
+		 */
 		explicit epoll_fd_activity(
 			epoll_entry_data* epoll_event_data,
 			activity_status status,
@@ -63,6 +95,18 @@ namespace prog::os_services::fd
 			m_epoll_fd{epoll_fd}
 		{}
 
+		/**
+		 * \brief Destructs the epoll_fd_activity
+		 */
+		~epoll_fd_activity()
+		{
+			if(m_event_data_should_be_deleted)
+			{ delete m_epoll_event_data; }
+		}
+
+		/**
+		 * \brief Processes the associated event
+		 */
 		void process()
 		{ m_epoll_event_data->handle_event(*this); }
 
@@ -84,7 +128,7 @@ namespace prog::os_services::fd
 			{ throw error_handling::system_error{"Failed to update epoll event", errno}; }
 		}
 
-		void close_fd() const noexcept override
+		void stop_listening() const noexcept override
 		{
 			::epoll_ctl(
 				m_epoll_fd.native_handle(),
@@ -92,8 +136,14 @@ namespace prog::os_services::fd
 				m_epoll_event_data->get_fd_native_handle(),
 				nullptr
 			);
-			delete m_epoll_event_data;
+			m_event_data_should_be_deleted = true;
 		}
+
+		/**
+		 * \brief Check whether or not the event_data_should_be_deleted should be deleted
+		 */
+		bool event_data_should_be_deleted() const
+		{ return m_event_data_should_be_deleted; }
 
 		activity_status get_activity_status() const noexcept override
 		{ return m_status; }
@@ -102,13 +152,22 @@ namespace prog::os_services::fd
 		epoll_entry_data* m_epoll_event_data;
 		activity_status m_status;
 		file_descriptor_ref m_epoll_fd;
+		mutable bool m_event_data_should_be_deleted{false};
 	};
 
+	/**
+	 * \brief A generic implementation of epoll_entry_data
+	 * \tparam EventHandler The type of activity_event_handler to use
+	 * \tparam FileDescriptorTag The tag used to identify the type of file descriptor to use
+	 */
 	template<class EventHandler, class FileDescriptorTag>
 	requires(activity_event_handler<EventHandler, FileDescriptorTag>)
-	class epoll_entry_data_impl: public epoll_entry_data
+	class epoll_entry_data_impl final: public epoll_entry_data
 	{
 	public:
+		/**
+		 * \brief Constructs a epoll_entry_data_impl
+		 */
 		explicit epoll_entry_data_impl(
 			EventHandler&& eh,
 			tagged_file_descriptor<FileDescriptorTag> fd
@@ -128,9 +187,15 @@ namespace prog::os_services::fd
 		tagged_file_descriptor<FileDescriptorTag> m_file_descriptor;
 	};
 
+	/**
+	 * \brief Used to monitor activity on file descriptors
+	 */
 	class activity_monitor
 	{
 	public:
+		/**
+		 * \brief Constructs an activity_monitor
+		 */
 		activity_monitor():
 			m_epoll_fd{::epoll_create1(0)}
 		{
@@ -138,6 +203,10 @@ namespace prog::os_services::fd
 			{ throw error_handling::system_error{"Failed to an fd activity monitor", errno}; }
 		}
 
+		/**
+		 * \brief Adds fd_to_watch to the activity_monitor, and starts listen for the activity_status
+		 * given by initial_listen_status
+		 */
 		template<class FileDescriptorTag, activity_event_handler<FileDescriptorTag> EventHandler>
 		void add(
 			tagged_file_descriptor<FileDescriptorTag> fd_to_watch,
@@ -166,6 +235,9 @@ namespace prog::os_services::fd
 			}
 		}
 
+		/**
+		 * \brief Waits for incoming events
+		 */
 		void wait_for_and_distpatch_events();
 
 	private:
