@@ -17,8 +17,10 @@ void prog::os_services::fd::activity_monitor::wait_for_and_distpatch_events()
 
 	for(auto const& item : std::span{std::data(events), static_cast<size_t>(res)})
 	{
-		auto callback = static_cast<fd_event_callback*>(item.data.ptr);
-		if((*callback)(epoll_event_to_activity_status(item.events)) == post_process_action::remove_entry_and_close_fd)
-		{ delete callback; }
+		epoll_fd_activity{
+			static_cast<epoll_entry_data*>(item.data.ptr),
+			epoll_event_to_activity_status(item.events),
+			m_epoll_fd.get()
+		}.process();
 	}
 }
