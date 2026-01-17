@@ -10,7 +10,6 @@
 #include "src/os_services/error_handling/system_error.hpp"
 
 #include <sys/epoll.h>
-#include <functional>
 
 namespace prog::os_services::fd
 {
