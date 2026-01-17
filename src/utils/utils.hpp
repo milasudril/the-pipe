@@ -38,14 +38,15 @@ namespace prog::utils
 		// x = num_bytes*8/log2(num_printable_ascii_chars)
 
 		return static_cast<size_t>(
-			static_cast<double>(num_bytes)*8.0
-				/std::log2(static_cast<double>(num_printable_ascii_chars))
-			+ 0.5
+			std::ceil(
+				static_cast<double>(num_bytes)*8.0
+					/std::log2(static_cast<double>(num_printable_ascii_chars))
+			)
 		);
 	}
 
 	/**
-	 * \brief The number of printable ASCII characters requires for 16 butes
+	 * \brief The number of printable ASCII characters requires for 16 bytes
 	 */
 	constexpr size_t num_chars_16_bytes = byte_count_to_printable_ascii_string_length(16);
 };
