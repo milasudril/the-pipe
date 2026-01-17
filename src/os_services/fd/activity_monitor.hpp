@@ -1,9 +1,10 @@
-//@	{"dependencies_extra":[{"ref": "./fd_activity_monitor.o", "rel": "implementation"}]}
+//@	{"dependencies_extra":[{"ref": "./activity_monitor.o", "rel": "implementation"}]}
 
 #ifndef PROG_OS_SERVICES_FD_ACTIVITY_MONITOR_HPP
 #define PROG_OS_SERVICES_FD_ACTIVITY_MONITOR_HPP
 
 #include "./file_descriptor.hpp"
+#include "./activity_event.hpp"
 
 #include "src/os_services/error_handling/error_handling.hpp"
 #include "src/os_services/error_handling/system_error.hpp"
@@ -13,21 +14,6 @@
 
 namespace prog::os_services::fd
 {
-	enum class activity_status
-	{
-		read,
-		write,
-		read_or_write
-	};
-
-	class fd_activity_event
-	{
-	public:
-		virtual activity_status get_activity_status() const noexcept = 0;
-		virtual void update_listening_status(activity_status new_status) const = 0;
-		virtual void close_fd() const noexcept = 0;
-	};
-
 	constexpr unsigned int to_epoll_event(activity_status status)
 	{
 		switch(status)
@@ -59,11 +45,11 @@ namespace prog::os_services::fd
 	{
 	public:
 		virtual int get_fd_native_handle() const noexcept = 0;
-		virtual void handle_event(fd_activity_event const& event) const noexcept = 0;
+		virtual void handle_event(activity_event const& event) const noexcept = 0;
 		virtual ~epoll_entry_data() noexcept = default;
 	};
 
-	class epoll_fd_activity:public fd_activity_event
+	class epoll_fd_activity:public activity_event
 	{
 	public:
 		explicit epoll_fd_activity(
@@ -124,7 +110,7 @@ namespace prog::os_services::fd
 		int get_fd_native_handle() const noexcept override
 		{ return m_file_descriptor.get().native_handle(); }
 
-		void handle_event(fd_activity_event const& event) override
+		void handle_event(activity_event const& event) override
 		{ m_event_handler.handle_event(event, m_file_descriptor.get()); }
 
 	private:

@@ -1,6 +1,6 @@
-//@	{"target":{"name": "fd_activity_monitor.o"}}
+//@	{"target":{"name": "activity_monitor.o"}}
 
-#include "./fd_activity_monitor.hpp"
+#include "./activity_monitor.hpp"
 
 void prog::os_services::fd::activity_monitor::wait_for_and_distpatch_events()
 {
