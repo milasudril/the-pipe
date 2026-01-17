@@ -1,6 +1,9 @@
 #ifndef PROG_OS_SERVICES_ERROR_HANDLING_HPP
 #define PROG_OS_SERVICES_ERROR_HANDLING_HPP
 
+#include <cerrno>
+#include <type_traits>
+
 /**
  * \brief Error handling utilities
  */

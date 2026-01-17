@@ -1,6 +1,8 @@
 #ifndef PROG_OS_SERVICES_FD_ACITIVITY_EVENT_HPP
 #define PROG_OS_SERVICES_FD_ACITIVITY_EVENT_HPP
 
+#include <concepts>
+
 namespace prog::os_services::fd
 {
 	enum class activity_status

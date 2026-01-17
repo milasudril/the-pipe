@@ -45,7 +45,7 @@ namespace prog::os_services::fd
 	{
 	public:
 		virtual int get_fd_native_handle() const noexcept = 0;
-		virtual void handle_event(activity_event const& event) const noexcept = 0;
+		virtual void handle_event(activity_event const& event) = 0;
 		virtual ~epoll_entry_data() noexcept = default;
 	};
 
@@ -141,7 +141,7 @@ namespace prog::os_services::fd
 			::epoll_event event{
 				.events = to_epoll_event(initial_listen_status),
 				.data = ::epoll_data{
-					.ptr = new epoll_entry_data{std::move(eh), std::move(fd_to_watch)}
+					.ptr = new epoll_entry_data_impl{std::move(eh), std::move(fd_to_watch)}
 				}
 			};
 
