@@ -67,6 +67,12 @@ namespace prog::os_services::ipc
 			return m_write_end.release();
 		}
 
+		auto take_write_end()
+		{ return std::move(m_write_end); }
+
+		auto take_read_end()
+		{ return std::move(m_read_end); }
+
 	private:
 		io::input_file_descriptor m_read_end;
 		io::output_file_descriptor m_write_end;

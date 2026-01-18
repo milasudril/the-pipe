@@ -1,16 +1,92 @@
 #include "./client_process.hpp"
 
 #include "src/os_services/fd/activity_event.hpp"
+#include "src/os_services/io/io.hpp"
+#include "src/os_services/ipc/pipe.hpp"
 #include "src/os_services/ipc/socket.hpp"
 #include "src/os_services/ipc/unix_domain_socket.hpp"
 #include "src/os_services/fd/activity_monitor.hpp"
 #include "src/handshaking_protocol/handshaking_protocol.hpp"
+#include "src/os_services/proc_mgmt/proc_mgmt.hpp"
 #include "src/utils/utils.hpp"
 
+#include <random>
 #include <unordered_map>
 
 namespace prog::host
 {
+	class handshake_handler
+	{
+	public:
+		explicit handshake_handler(client_process& proc):
+			m_proc{proc}
+		{}
+
+		void handle_event(
+			os_services::fd::activity_event const&,
+			os_services::io::output_file_descriptor_ref
+		)
+		{
+		}
+
+		void handle_event(
+			os_services::fd::activity_event const&,
+			os_services::io::input_file_descriptor_ref
+		)
+		{
+		}
+
+	private:
+		std::reference_wrapper<client_process> m_proc;
+	};
+
+	class client_process_repository:std::unordered_map<pid_t, std::unique_ptr<client_process>>
+	{
+	public:
+		using base = std::unordered_map<pid_t, std::unique_ptr<client_process>>;
+		using base::find;
+		using base::contains;
+		using base::begin;
+		using base::end;
+		using base::size;
+
+		client_process& load(
+			std::filesystem::path const& client_binary,
+			os_services::fd::activity_monitor& activity_monitor
+		)
+		{
+			os_services::ipc::pipe server_to_client_handshake_pipe;
+			os_services::ipc::pipe client_to_server_handshake_pipe;
+
+			auto proc = std::make_unique<client_process>(
+				client_binary,
+				os_services::proc_mgmt::io_redirection{
+					.sysin = server_to_client_handshake_pipe.read_end(),
+					.sysout = server_to_client_handshake_pipe.write_end(),
+					.syserr = {}
+				}
+			);
+
+			activity_monitor.add(
+				server_to_client_handshake_pipe.take_write_end(),
+				os_services::fd::activity_status::write,
+				handshake_handler{*proc}
+			);
+
+			activity_monitor.add(
+				client_to_server_handshake_pipe.take_read_end(),
+				os_services::fd::activity_status::read,
+				handshake_handler{*proc}
+			);
+
+			auto res = base::emplace(proc->pid(), std::move(proc));
+			if(!res.second)
+			{ throw std::runtime_error{"Client pid already exists"}; }
+
+			return *res.first->second;
+		}
+	};
+
 	class server_activity_handler
 	{
 	public:
