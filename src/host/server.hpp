@@ -15,11 +15,10 @@
 
 namespace prog::host
 {
-	class handshake_handler
+	class client_activity_handler
 	{
 	public:
-		explicit handshake_handler(client_process& proc):
-			m_proc{proc}
+		client_activity_handler()
 		{}
 
 		void handle_event(
@@ -36,8 +35,19 @@ namespace prog::host
 		{
 		}
 
+		void handle_event(
+			os_services::fd::activity_event const& event,
+			os_services::proc_mgmt::pidfd_ref pid
+		)
+		{
+			if(can_read(event.get_activity_status()))
+			{
+				wait(pid);
+				event.stop_listening();
+			}
+		}
+
 	private:
-		std::reference_wrapper<client_process> m_proc;
 	};
 
 	class client_process_repository:std::unordered_map<pid_t, std::unique_ptr<client_process>>
@@ -50,16 +60,17 @@ namespace prog::host
 		using base::end;
 		using base::size;
 
-		client_process& load(
+		void load(
 			std::filesystem::path const& client_binary,
 			os_services::fd::activity_monitor& activity_monitor
 		)
 		{
 			os_services::ipc::pipe server_to_client_handshake_pipe;
 			os_services::ipc::pipe client_to_server_handshake_pipe;
-
-			auto proc = std::make_unique<client_process>(
-				client_binary,
+			auto process = os_services::proc_mgmt::spawn(
+				client_binary.c_str(),
+				std::span<char const*>{},
+				std::span<char const*>{},
 				os_services::proc_mgmt::io_redirection{
 					.sysin = server_to_client_handshake_pipe.read_end(),
 					.sysout = server_to_client_handshake_pipe.write_end(),
@@ -68,22 +79,23 @@ namespace prog::host
 			);
 
 			activity_monitor.add(
+				std::move(process.second),
+				os_services::fd::activity_status::read,
+				client_activity_handler{}
+			);
+
+			activity_monitor.add(
 				server_to_client_handshake_pipe.take_write_end(),
 				os_services::fd::activity_status::write,
-				handshake_handler{*proc}
+				client_activity_handler{}
 			);
 
 			activity_monitor.add(
 				client_to_server_handshake_pipe.take_read_end(),
 				os_services::fd::activity_status::read,
-				handshake_handler{*proc}
+				client_activity_handler{}
 			);
 
-			auto res = base::emplace(proc->pid(), std::move(proc));
-			if(!res.second)
-			{ throw std::runtime_error{"Client pid already exists"}; }
-
-			return *res.first->second;
 		}
 	};
 
