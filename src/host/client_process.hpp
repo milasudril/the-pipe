@@ -16,17 +16,15 @@ namespace prog::host
 			handshaking_protocol::server_socket_name const& socket_name,
 			std::filesystem::path const& client_binary
 		):
-			m_handle{
-				os_services::proc_mgmt::spawn(
-					client_binary.c_str(),
-					std::span<char const*>{},
-					std::span<char const*>{},
-					os_services::proc_mgmt::io_redirection{
-						.sysin = m_host_to_client_handshake_pipe.read_end(),
-						.sysout = m_client_to_host_handshake_pipe.write_end(),
-						.syserr = {}
-					}
-				)
+			m_process{
+				client_binary.c_str(),
+				std::span<char const*>{},
+				std::span<char const*>{},
+				os_services::proc_mgmt::io_redirection{
+					.sysin = m_host_to_client_handshake_pipe.read_end(),
+					.sysout = m_client_to_host_handshake_pipe.write_end(),
+					.syserr = {}
+				}
 			}
 		{
 			auto const my_key = utils::random_bytes(std::tuple_size_v<handshaking_protocol::handshake_key>);
@@ -49,7 +47,7 @@ namespace prog::host
 	private:
 		os_services::ipc::pipe m_host_to_client_handshake_pipe;
 		os_services::ipc::pipe m_client_to_host_handshake_pipe;
-		os_services::proc_mgmt::pidfd m_handle;
+		os_services::proc_mgmt::process m_process;
 		os_services::ipc::connected_socket<SOCK_STREAM, sockaddr_un> m_control_socket;
 	};
 }

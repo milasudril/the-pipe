@@ -62,7 +62,7 @@ namespace
 	}
 };
 
-prog::os_services::proc_mgmt::pidfd
+std::pair<pid_t, prog::os_services::proc_mgmt::pidfd>
 prog::os_services::proc_mgmt::spawn(
 	char const* path,
 	std::span<char const*> argv,
@@ -117,7 +117,7 @@ prog::os_services::proc_mgmt::spawn(
 				waitpid(fork_res, nullptr, 0);
 				throw error_handling::system_error{"Failed to create pidfd", saved_errno};
 			}
-			pidfd ret{fd};
+			std::pair ret{fork_res, pidfd{fd}};
 			uint64_t val{1};
 			io::write_while_eintr(
 				parent_ready_fd.get().native_handle(),
@@ -133,7 +133,7 @@ prog::os_services::proc_mgmt::spawn(
 			if(read_result.bytes_transferred() != 0)
 			{
 				::close(exec_err_pipe_read_end);
-				wait(ret.get());
+				wait(ret.second.get());
 				throw error_handling::system_error{std::format("Failed to launch application {}", path), child_errno};
 			}
 

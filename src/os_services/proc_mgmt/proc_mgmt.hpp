@@ -55,7 +55,7 @@ namespace prog::os_services::proc_mgmt
 	 *
 	 * \param io_redir An io_redirection object used to configure redirection of the standard streams.
 	 */
-	pidfd spawn(
+	std::pair<pid_t, pidfd> spawn(
 		char const* path,
 		std::span<char const*> argv,
 		std::span<char const*> env,
@@ -116,6 +116,28 @@ namespace prog::os_services::proc_mgmt
 			};
 		}
 	}
+
+	class process
+	{
+	public:
+		explicit process(
+			char const* path,
+			std::span<char const*> argv,
+			std::span<char const*> env,
+			io_redirection const& io_redir
+		):
+			m_handle{spawn(path, argv, env, io_redir)}
+		{}
+
+		auto file_descriptor() const
+		{ return m_handle.second.get(); }
+
+		auto pid() const
+		{ return m_handle.first; }
+
+	private:
+		std::pair<pid_t, pidfd> m_handle;
+	};
 }
 
 #endif

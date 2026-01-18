@@ -35,7 +35,7 @@ TESTCASE(prog_proc_mgmt_spawn_run_expect_exit_status_1)
 		prog::os_services::proc_mgmt::io_redirection{}
 	);
 
-	auto res = wait(proc.get());
+	auto res = wait(proc.second.get());
 	EXPECT_EQ(std::get<prog::os_services::proc_mgmt::process_exited>(res).return_value, 1);
 }
 
@@ -48,7 +48,7 @@ TESTCASE(prog_proc_mgmt_spawn_run_expect_exit_status_0)
 		prog::os_services::proc_mgmt::io_redirection{}
 	);
 
-	auto res = wait(proc.get());
+	auto res = wait(proc.second.get());
 	EXPECT_EQ(std::get<prog::os_services::proc_mgmt::process_exited>(res).return_value, 0);
 }
 
@@ -72,7 +72,7 @@ TESTCASE(prog_proc_mgmt_spawn_run_with_args)
 	EXPECT_EQ(read_result.bytes_transferred(), 15);
 	EXPECT_EQ((std::string_view{std::data(buffer), 15}), "This is a test\n");
 
-	auto proc_result = wait(proc.get());
+	auto proc_result = wait(proc.second.get());
 	EXPECT_EQ(std::get<prog::os_services::proc_mgmt::process_exited>(proc_result).return_value, 0);
 }
 
@@ -96,7 +96,7 @@ TESTCASE(prog_proc_mgmt_spawn_run_with_env)
 	EXPECT_EQ(read_result.bytes_transferred(), 15);
 	EXPECT_EQ((std::string_view{std::data(buffer), 15}), "FOO=bar\nX=kaka\n");
 
-	auto const proc_result = wait(proc.get());	EXPECT_EQ(std::get<prog::os_services::proc_mgmt::process_exited>(proc_result).return_value, 0);
+	auto const proc_result = wait(proc.second.get());	EXPECT_EQ(std::get<prog::os_services::proc_mgmt::process_exited>(proc_result).return_value, 0);
 }
 
 TESTCASE(prog_proc_mgmt_spawn_run_pass_through)
@@ -125,7 +125,7 @@ TESTCASE(prog_proc_mgmt_spawn_run_pass_through)
 	EXPECT_EQ(read_result.bytes_transferred(), 12);
 	stdin_pipe.close_write_end();
 
-	auto const proc_result = wait(proc.get());	EXPECT_EQ(std::get<prog::os_services::proc_mgmt::process_exited>(proc_result).return_value, 0);
+	auto const proc_result = wait(proc.second.get());	EXPECT_EQ(std::get<prog::os_services::proc_mgmt::process_exited>(proc_result).return_value, 0);
 }
 
 TESTCASE(prog_proc_mgmt_spawn_run_redirect_stderr)
@@ -148,7 +148,7 @@ TESTCASE(prog_proc_mgmt_spawn_run_redirect_stderr)
 	EXPECT_EQ(read_result.bytes_transferred(), 13);
 	EXPECT_EQ((std::string_view{std::data(buffer), 13}), "Hello, World\n");
 
-	auto proc_result = wait(proc.get());
+	auto proc_result = wait(proc.second.get());
 	EXPECT_EQ(std::get<prog::os_services::proc_mgmt::process_exited>(proc_result).return_value, 0);
 }
 
@@ -165,6 +165,6 @@ TESTCASE(prog_proc_mgmt_spawn_run_kill)
 		}
 	);
 
-	kill(proc.get(), SIGTERM);
-	auto const proc_result = wait(proc.get());	EXPECT_EQ(std::get<prog::os_services::proc_mgmt::process_killed>(proc_result).signo, SIGTERM);
+	kill(proc.second.get(), SIGTERM);
+	auto const proc_result = wait(proc.second.get());	EXPECT_EQ(std::get<prog::os_services::proc_mgmt::process_killed>(proc_result).signo, SIGTERM);
 }
