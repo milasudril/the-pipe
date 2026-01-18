@@ -27,40 +27,6 @@ namespace prog::os_services::proc_mgmt
 	 */
 	using pidfd_ref = fd::tagged_file_descriptor_ref<pidfd_tag>;
 
-	/**
-	 * \brief An owner type for a process file descriptor
-	 */
-	using pidfd = fd::tagged_file_descriptor<pidfd_tag>;
-
-	/**
-	 * \brief Provides information about redirection of the standard streams
-	 */
-	struct io_redirection
-	{
-		io::input_file_descriptor_ref sysin;   /**<\brief stdin*/
-		io::output_file_descriptor_ref sysout; /**<\brief stdout*/
-		io::output_file_descriptor_ref syserr; /**<\brief stderr*/
-	};
-
-	/**
-	 * \brief Spawns a new process
-	 *
-	 * \param path The path to the executable file. Notice that the PATH variable is not taken into
-	 *             account.
-	 *
-	 * \param argv The argument to be passed to `main`. The application path is prepended
-	 *             automatically
-	 *
-	 * \param env A list of environment variable strings, on the form key=value
-	 *
-	 * \param io_redir An io_redirection object used to configure redirection of the standard streams.
-	 */
-	std::pair<pid_t, pidfd> spawn(
-		char const* path,
-		std::span<char const*> argv,
-		std::span<char const*> env,
-		io_redirection const& io_redir
-	);
 
 	/**
 	 * \brief Kills the process referred to by fd, by signo
@@ -116,6 +82,65 @@ namespace prog::os_services::proc_mgmt
 			};
 		}
 	}
+}
+
+template<>
+struct prog::os_services::fd::file_descriptor_deleter<prog::os_services::proc_mgmt::pidfd_tag>
+{
+	using pointer = proc_mgmt::pidfd_ref;
+
+	static void operator()(proc_mgmt::pidfd_ref pid) noexcept
+	{
+		if(pid != nullptr)
+		{
+			try
+			{
+				kill(pid, SIGKILL);
+				wait(pid);
+			}
+			catch(...)
+			{}
+		}
+	}
+};
+
+namespace prog::os_services::proc_mgmt
+{
+
+	/**
+	 * \brief An owner type for a process file descriptor
+	 */
+	using pidfd = fd::tagged_file_descriptor<pidfd_tag>;
+
+	/**
+	 * \brief Provides information about redirection of the standard streams
+	 */
+	struct io_redirection
+	{
+		io::input_file_descriptor_ref sysin;   /**<\brief stdin*/
+		io::output_file_descriptor_ref sysout; /**<\brief stdout*/
+		io::output_file_descriptor_ref syserr; /**<\brief stderr*/
+	};
+
+	/**
+	 * \brief Spawns a new process
+	 *
+	 * \param path The path to the executable file. Notice that the PATH variable is not taken into
+	 *             account.
+	 *
+	 * \param argv The argument to be passed to `main`. The application path is prepended
+	 *             automatically
+	 *
+	 * \param env A list of environment variable strings, on the form key=value
+	 *
+	 * \param io_redir An io_redirection object used to configure redirection of the standard streams.
+	 */
+	std::pair<pid_t, pidfd> spawn(
+		char const* path,
+		std::span<char const*> argv,
+		std::span<char const*> env,
+		io_redirection const& io_redir
+	);
 
 	class process
 	{

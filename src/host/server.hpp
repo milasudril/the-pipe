@@ -95,7 +95,6 @@ namespace prog::host
 				os_services::fd::activity_status::read,
 				client_activity_handler{}
 			);
-
 		}
 	};
 
