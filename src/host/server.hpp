@@ -18,7 +18,8 @@ namespace prog::host
 	class client_activity_handler
 	{
 	public:
-		client_activity_handler()
+		client_activity_handler(std::reference_wrapper<client_process> client_proc):
+			m_client_proc{client_proc}
 		{}
 
 		void handle_event(
@@ -48,6 +49,7 @@ namespace prog::host
 		}
 
 	private:
+		std::reference_wrapper<client_process> m_client_proc;
 	};
 
 	class client_process_repository:std::unordered_map<pid_t, std::unique_ptr<client_process>>
@@ -60,7 +62,7 @@ namespace prog::host
 		using base::end;
 		using base::size;
 
-		void load(
+		client_process& load(
 			std::filesystem::path const& client_binary,
 			os_services::fd::activity_monitor& activity_monitor
 		)
@@ -78,23 +80,29 @@ namespace prog::host
 				}
 			);
 
+			auto client_proc = std::make_unique<client_process>();
+
 			activity_monitor.add(
 				std::move(process.second),
 				os_services::fd::activity_status::read,
-				client_activity_handler{}
+				client_activity_handler{*client_proc}
 			);
 
 			activity_monitor.add(
 				server_to_client_handshake_pipe.take_write_end(),
 				os_services::fd::activity_status::write,
-				client_activity_handler{}
+				client_activity_handler{*client_proc}
 			);
 
 			activity_monitor.add(
 				client_to_server_handshake_pipe.take_read_end(),
 				os_services::fd::activity_status::read,
-				client_activity_handler{}
+				client_activity_handler{*client_proc}
 			);
+
+			assert(emplace(process.first, std::move(client_proc)).second): }
+
+			return *client_proc;
 		}
 	};
 
