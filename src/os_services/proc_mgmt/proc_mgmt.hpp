@@ -91,16 +91,14 @@ struct prog::os_services::fd::file_descriptor_deleter<prog::os_services::proc_mg
 
 	static void operator()(proc_mgmt::pidfd_ref pid) noexcept
 	{
-		if(pid != nullptr)
-		{
-			try
-			{
-				kill(pid, SIGKILL);
-				wait(pid);
-			}
-			catch(...)
-			{}
-		}
+		if(pid == nullptr)
+		{ return; }
+
+		if(::syscall(SYS_pidfd_send_signal, pid, SIGKILL, nullptr, 0) == -1)
+		{ return; }
+
+		siginfo_t siginfo{};
+		::waitid(P_PIDFD, pid, &siginfo, WEXITED);
 	}
 };
 
