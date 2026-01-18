@@ -56,6 +56,10 @@ TESTCASE(prog_ipc_unix_domain_socket_create_sockets_and_connect)
 		server_created.raise();
 
 		auto const connection = accept(server_socket.get());
+
+		auto const creds = get_peer_credentials(connection.get());
+		printf("%d %d %d\n", creds.gid, creds.pid, creds.uid);
+
 		std::array<char, 32> buffer{};
 		auto const read_result = prog::os_services::io::read(
 			connection.get(),
@@ -72,6 +76,8 @@ TESTCASE(prog_ipc_unix_domain_socket_create_sockets_and_connect)
 	server_created.wait();
 
 	auto const connected_socket = prog::os_services::ipc::make_connection<SOCK_SEQPACKET>(address);
+	auto const creds = get_peer_credentials(connected_socket.get());
+	printf("%d %d %d\n", creds.gid, creds.pid, creds.uid);
 	auto const write_result = prog::os_services::io::write(
 		connected_socket.get(),
 		std::as_bytes(std::span{std::string_view{"Hello, World"}})
