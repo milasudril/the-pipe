@@ -237,6 +237,11 @@ namespace prog::os_services::fd
 			{ throw error_handling::system_error{"Failed to an fd activity monitor", errno}; }
 		}
 
+		auto make_config_transaction()
+		{
+			return config_transaction{*this};
+		}
+
 		/**
 		 * \brief Adds fd_to_watch to the activity_monitor, and starts listen for the activity_status
 		 * given by initial_listen_status
