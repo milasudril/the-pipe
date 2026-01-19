@@ -100,7 +100,7 @@ namespace prog::host
 				client_activity_handler{*client_proc}
 			);
 
-			assert(emplace(process.first, std::move(client_proc)).second): }
+			assert(emplace(process.first, std::move(client_proc)).second);
 
 			return *client_proc;
 		}

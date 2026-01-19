@@ -10,6 +10,7 @@
 #include "src/os_services/error_handling/system_error.hpp"
 
 #include <sys/epoll.h>
+#include <unordered_map>
 
 namespace prog::os_services::fd
 {
@@ -81,12 +82,9 @@ namespace prog::os_services::fd
 		 * \param epoll_event_data The epoll_entry_data read from epoll_wait
 		 * \param status The current file descriptor activity_status
 		 * \param epoll_fd The epoll instance that issued this activity
-		 *
-		 * \warning Assume that the object takes ownership of epoll_event_data. The object pointed to
-		 *          by epoll_event_data must have been created by new.
 		 */
 		explicit epoll_fd_activity(
-			epoll_entry_data* epoll_event_data,
+			epoll_entry_data& epoll_event_data,
 			activity_status status,
 			file_descriptor_ref epoll_fd
 		) noexcept:
@@ -96,32 +94,26 @@ namespace prog::os_services::fd
 		{}
 
 		/**
-		 * \brief Destructs the epoll_fd_activity
-		 */
-		~epoll_fd_activity()
-		{
-			if(m_event_data_should_be_deleted)
-			{ delete m_epoll_event_data; }
-		}
-
-		/**
 		 * \brief Processes the associated event
 		 */
-		void process()
-		{ m_epoll_event_data->handle_event(*this); }
+		epoll_fd_activity process()
+		{
+			m_epoll_event_data.get().handle_event(*this);
+			return*this;
+		}
 
 		void update_listening_status(activity_status new_status) const override
 		{
 			::epoll_event event{
 				.events = to_epoll_event(new_status),
 				.data = ::epoll_data{
-					.ptr = m_epoll_event_data
+					.ptr = &m_epoll_event_data.get()
 				}
 			};
 			auto const result = ::epoll_ctl(
 				m_epoll_fd.native_handle(),
 				EPOLL_CTL_MOD,
-				m_epoll_event_data->get_fd_native_handle(),
+				m_epoll_event_data.get().get_fd_native_handle(),
 				&event
 			);
 			if(result == -1)
@@ -133,26 +125,26 @@ namespace prog::os_services::fd
 			::epoll_ctl(
 				m_epoll_fd.native_handle(),
 				EPOLL_CTL_DEL,
-				m_epoll_event_data->get_fd_native_handle(),
+				m_epoll_event_data.get().get_fd_native_handle(),
 				nullptr
 			);
-			m_event_data_should_be_deleted = true;
+			m_item_should_be_removed = true;
 		}
 
 		/**
 		 * \brief Check whether or not the event_data_should_be_deleted should be deleted
 		 */
-		bool event_data_should_be_deleted() const
-		{ return m_event_data_should_be_deleted; }
+		bool item_should_be_removed() const
+		{ return m_item_should_be_removed; }
 
 		activity_status get_activity_status() const noexcept override
 		{ return m_status; }
 
 	private:
-		epoll_entry_data* m_epoll_event_data;
+		std::reference_wrapper<epoll_entry_data> m_epoll_event_data;
 		activity_status m_status;
 		file_descriptor_ref m_epoll_fd;
-		mutable bool m_event_data_should_be_deleted{false};
+		mutable bool m_item_should_be_removed{false};
 	};
 
 	/**
@@ -215,10 +207,22 @@ namespace prog::os_services::fd
 		)
 		{
 			auto const raw_fd = fd_to_watch.get().native_handle();
+			auto const ip = m_listeners.emplace(
+				raw_fd,
+				std::make_unique<
+					epoll_entry_data_impl<EventHandler, FileDescriptorTag>
+				>(
+					std::move(eh),
+					std::move(fd_to_watch)
+				)
+			);
+			if(!ip.second)
+			{ throw std::runtime_error{"File descriptor already added"}; }
+
 			::epoll_event event{
 				.events = to_epoll_event(initial_listen_status),
 				.data = ::epoll_data{
-					.ptr = new epoll_entry_data_impl{std::move(eh), std::move(fd_to_watch)}
+					.ptr = ip.first->second.get()
 				}
 			};
 
@@ -230,7 +234,7 @@ namespace prog::os_services::fd
 			);
 			if(res == -1)
 			{
-				delete static_cast<epoll_entry_data*>(event.data.ptr);
+				m_listeners.erase(ip.first);
 				throw error_handling::system_error{"Failed to add file descriptor to epoll instance", errno};
 			}
 		}
@@ -242,6 +246,7 @@ namespace prog::os_services::fd
 
 	private:
 		file_descriptor m_epoll_fd;
+		std::unordered_map<int, std::unique_ptr<epoll_entry_data>> m_listeners;
 	};
 }
 

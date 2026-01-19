@@ -80,8 +80,9 @@ namespace
 TESTCASE(prog_os_services_fd_epoll_fd_activity_no_valid_epoll_instance)
 {
 	my_epoll_entry_data_status status;
+	my_epoll_entry_data my_data{status};
 	prog::os_services::fd::epoll_fd_activity activity{
-		new my_epoll_entry_data{status},
+		my_data,
 		prog::os_services::fd::activity_status::read,
 		prog::os_services::fd::file_descriptor_ref{}
 	};
@@ -97,9 +98,9 @@ TESTCASE(prog_os_services_fd_epoll_fd_activity_no_valid_epoll_instance)
 	} catch (...)
 	{ }
 
-	EXPECT_EQ(activity.event_data_should_be_deleted(), false);
+	EXPECT_EQ(activity.item_should_be_removed(), false);
 	activity.stop_listening();
-	EXPECT_EQ(activity.event_data_should_be_deleted(), true);
+	EXPECT_EQ(activity.item_should_be_removed(), true);
 
 	EXPECT_EQ(activity.get_activity_status(), prog::os_services::fd::activity_status::read);
 }
