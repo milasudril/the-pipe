@@ -239,6 +239,13 @@ namespace prog::os_services::fd
 			}
 		}
 
+		template<class FileDescriptorTag>
+		auto remove(tagged_file_descriptor_ref<FileDescriptorTag> fd) noexcept
+		{
+			::epoll_ctl(m_epoll_fd.get().native_handle(), EPOLL_CTL_DEL, fd.native_handle(), nullptr);
+			return m_listeners.erase(fd.native_handle());
+		}
+
 		/**
 		 * \brief Waits for incoming events
 		 */
