@@ -11,6 +11,7 @@
 
 #include <sys/epoll.h>
 #include <unordered_map>
+#include <vector>
 
 namespace prog::os_services::fd
 {
@@ -179,12 +180,53 @@ namespace prog::os_services::fd
 		tagged_file_descriptor<FileDescriptorTag> m_file_descriptor;
 	};
 
+
 	/**
 	 * \brief Used to monitor activity on file descriptors
 	 */
 	class activity_monitor
 	{
 	public:
+		class config_transaction
+		{
+		public:
+			explicit config_transaction(activity_monitor& monitor):
+				m_monitor{monitor}
+			{}
+
+			~config_transaction()
+			{
+				for(auto item : m_added_fds)
+				{ m_monitor.get().remove(item); }
+			}
+
+			template<class FileDescriptorTag, activity_event_handler<FileDescriptorTag> EventHandler>
+			auto& add(
+				tagged_file_descriptor<FileDescriptorTag> fd_to_watch,
+				activity_status initial_listen_status,
+				EventHandler&& eh
+			)
+			{
+				auto const raw_fd = fd_to_watch.get().native_handle();
+				m_monitor.get().add(
+					std::move(fd_to_watch),
+					initial_listen_status,
+					std::forward<EventHandler>(eh)
+				);
+				m_added_fds.push_back(raw_fd);
+				return *this;
+			}
+
+			void commit()
+			{ m_added_fds.clear(); }
+
+		private:
+			std::reference_wrapper<activity_monitor> m_monitor;
+			std::vector<int> m_added_fds;
+		};
+
+		friend class config_transaction;
+
 		/**
 		 * \brief Constructs an activity_monitor
 		 */
@@ -240,11 +282,8 @@ namespace prog::os_services::fd
 		}
 
 		template<class FileDescriptorTag>
-		auto remove(tagged_file_descriptor_ref<FileDescriptorTag> fd) noexcept
-		{
-			::epoll_ctl(m_epoll_fd.get().native_handle(), EPOLL_CTL_DEL, fd.native_handle(), nullptr);
-			return m_listeners.erase(fd.native_handle());
-		}
+		size_t remove(tagged_file_descriptor_ref<FileDescriptorTag> fd) noexcept
+		{ return remove(fd.native_handle()); }
 
 		/**
 		 * \brief Waits for incoming events
@@ -252,6 +291,12 @@ namespace prog::os_services::fd
 		void wait_for_and_distpatch_events();
 
 	private:
+		size_t remove(int fd) noexcept
+		{
+			::epoll_ctl(m_epoll_fd.get().native_handle(), EPOLL_CTL_DEL, fd, nullptr);
+			return m_listeners.erase(fd);
+		}
+
 		file_descriptor m_epoll_fd;
 		std::unordered_map<int, std::unique_ptr<epoll_entry_data>> m_listeners;
 	};
