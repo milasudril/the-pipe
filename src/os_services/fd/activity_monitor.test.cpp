@@ -147,7 +147,8 @@ TESTCASE(prog_os_services_fd_epoll_entry_data_impl)
 	auto const testfd = ::dup(STDOUT_FILENO);
 	prog::os_services::fd::epoll_entry_data_impl entry_data{
 		my_fd_activity_event_handler{status},
-		prog::os_services::fd::file_descriptor{testfd}
+		prog::os_services::fd::file_descriptor{testfd},
+		prog::os_services::fd::event_handler_id{23}
 	};
 
 	EXPECT_EQ(entry_data.get_fd_native_handle(), testfd);
@@ -155,6 +156,7 @@ TESTCASE(prog_os_services_fd_epoll_entry_data_impl)
 	entry_data.handle_event(event);
 	EXPECT_EQ(status.last_activity_event, &event)
 	EXPECT_EQ(status.fd.native_handle(), testfd);
+	EXPECT_EQ(entry_data.id(), prog::os_services::fd::event_handler_id{23});
 }
 
 namespace

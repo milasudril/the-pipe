@@ -140,6 +140,33 @@ namespace prog::os_services::fd
 		mutable bool m_item_should_be_removed{false};
 	};
 
+	class event_handler_id
+	{
+	public:
+		constexpr event_handler_id() = default;
+
+		constexpr explicit event_handler_id(uint64_t value):
+			m_value{value}
+		{}
+
+		constexpr uint64_t value() const
+		{ return m_value; }
+
+		constexpr event_handler_id next()
+		{
+			auto ret = *this;
+			++m_value;
+			return ret;
+		}
+
+		constexpr bool operator==(event_handler_id const& ) const = default;
+
+		constexpr bool operator!=(event_handler_id const& ) const = default;
+
+	private:
+		uint64_t m_value{};
+	};
+
 	/**
 	 * \brief A generic implementation of epoll_entry_data
 	 * \tparam EventHandler The type of activity_event_handler to use
@@ -155,10 +182,12 @@ namespace prog::os_services::fd
 		 */
 		explicit epoll_entry_data_impl(
 			EventHandler&& eh,
-			tagged_file_descriptor<FileDescriptorTag> fd
+			tagged_file_descriptor<FileDescriptorTag> fd,
+			event_handler_id id
 		) noexcept:
 			m_event_handler{std::move(eh)},
-			m_file_descriptor{std::move(fd)}
+			m_file_descriptor{std::move(fd)},
+			m_id{id}
 		{}
 
 		int get_fd_native_handle() const noexcept override
@@ -167,9 +196,13 @@ namespace prog::os_services::fd
 		void handle_event(activity_event const& event) override
 		{ m_event_handler.handle_event(event, m_file_descriptor.get()); }
 
+		auto id() const
+		{ return m_id; }
+
 	private:
 		EventHandler m_event_handler;
 		tagged_file_descriptor<FileDescriptorTag> m_file_descriptor;
+		event_handler_id m_id;
 	};
 
 
@@ -252,7 +285,8 @@ namespace prog::os_services::fd
 					epoll_entry_data_impl<EventHandler, FileDescriptorTag>
 				>(
 					std::move(eh),
-					std::move(fd_to_watch)
+					std::move(fd_to_watch),
+					m_current_id.next()
 				)
 			);
 			if(!ip.second)
@@ -296,6 +330,7 @@ namespace prog::os_services::fd
 
 		file_descriptor m_epoll_fd;
 		std::unordered_map<int, std::unique_ptr<epoll_entry_data>> m_listeners;
+		event_handler_id m_current_id;
 	};
 }
 
