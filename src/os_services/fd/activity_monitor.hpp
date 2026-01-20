@@ -122,15 +122,7 @@ namespace prog::os_services::fd
 		}
 
 		void stop_listening() const noexcept override
-		{
-			::epoll_ctl(
-				m_epoll_fd.native_handle(),
-				EPOLL_CTL_DEL,
-				m_epoll_event_data.get().get_fd_native_handle(),
-				nullptr
-			);
-			m_item_should_be_removed = true;
-		}
+		{ m_item_should_be_removed = true; }
 
 		/**
 		 * \brief Check whether or not the event_data_should_be_deleted should be deleted
