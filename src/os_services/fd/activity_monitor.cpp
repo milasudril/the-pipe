@@ -18,7 +18,6 @@ void prog::os_services::fd::activity_monitor::wait_for_and_distpatch_events()
 	for(auto const& item : std::span{std::data(events), static_cast<size_t>(res)})
 	{
 		auto const data = static_cast<epoll_entry_data*>(item.data.ptr);
-		auto const fd = data->get_fd_native_handle();
 		if(
 			epoll_fd_activity{
 				*data,
@@ -27,7 +26,7 @@ void prog::os_services::fd::activity_monitor::wait_for_and_distpatch_events()
 			}.process().item_should_be_removed()
 		)
 		{
-			m_listeners.erase(fd);
+			m_listeners.erase(data->get_id());
 		}
 	}
 }

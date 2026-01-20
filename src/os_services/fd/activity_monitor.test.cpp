@@ -65,6 +65,9 @@ namespace
 		int get_fd_native_handle() const noexcept override
 		{ return 34; }
 
+		prog::os_services::fd::event_handler_id get_id() const noexcept override
+		{ return prog::os_services::fd::event_handler_id{765}; }
+
 		void handle_event(prog::os_services::fd::activity_event const& event) override
 		{
 			m_status.get().last_activity_event = &event;
@@ -156,7 +159,7 @@ TESTCASE(prog_os_services_fd_epoll_entry_data_impl)
 	entry_data.handle_event(event);
 	EXPECT_EQ(status.last_activity_event, &event)
 	EXPECT_EQ(status.fd.native_handle(), testfd);
-	EXPECT_EQ(entry_data.id(), prog::os_services::fd::event_handler_id{23});
+	EXPECT_EQ(entry_data.get_id(), prog::os_services::fd::event_handler_id{23});
 }
 
 namespace

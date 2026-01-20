@@ -50,6 +50,39 @@ namespace prog::os_services::fd
 		return activity_status::none;
 	}
 
+	class event_handler_id
+	{
+	public:
+		constexpr event_handler_id() = default;
+
+		constexpr explicit event_handler_id(uint64_t value):
+			m_value{value}
+		{}
+
+		constexpr uint64_t value() const
+		{ return m_value; }
+
+		constexpr event_handler_id next()
+		{
+			auto ret = *this;
+			++m_value;
+			return ret;
+		}
+
+		constexpr bool operator==(event_handler_id const& ) const = default;
+
+		constexpr bool operator!=(event_handler_id const& ) const = default;
+
+	private:
+		uint64_t m_value{};
+	};
+
+	struct event_handler_id_hash
+	{
+		static constexpr auto operator()(event_handler_id id) noexcept
+		{ return std::hash<uint64_t>{}(id.value()); }
+	};
+
 	/**
 	 * \brief Abstract base class used for data within an epoll event
 	 */
@@ -65,6 +98,8 @@ namespace prog::os_services::fd
 		 * \brief This function should process an activity_event
 		 */
 		virtual void handle_event(activity_event const& event) = 0;
+
+		virtual event_handler_id get_id() const noexcept = 0;
 
 		/**
 		 * \brief Add virtual destructor so objects can be destructed polymorphically
@@ -94,15 +129,6 @@ namespace prog::os_services::fd
 			m_epoll_fd{epoll_fd}
 		{}
 
-		/**
-		 * \brief Processes the associated event
-		 */
-		epoll_fd_activity process()
-		{
-			m_epoll_event_data.get().handle_event(*this);
-			return*this;
-		}
-
 		void update_listening_status(activity_status new_status) const override
 		{
 			::epoll_event event{
@@ -124,47 +150,29 @@ namespace prog::os_services::fd
 		void stop_listening() const noexcept override
 		{ m_item_should_be_removed = true; }
 
+		activity_status get_activity_status() const noexcept override
+		{ return m_status; }
+
 		/**
 		 * \brief Check whether or not the event_data_should_be_deleted should be deleted
 		 */
 		bool item_should_be_removed() const
 		{ return m_item_should_be_removed; }
 
-		activity_status get_activity_status() const noexcept override
-		{ return m_status; }
+		/**
+		 * \brief Processes the associated event
+		 */
+		epoll_fd_activity process()
+		{
+			m_epoll_event_data.get().handle_event(*this);
+			return*this;
+		}
 
 	private:
 		std::reference_wrapper<epoll_entry_data> m_epoll_event_data;
 		activity_status m_status;
 		file_descriptor_ref m_epoll_fd;
 		mutable bool m_item_should_be_removed{false};
-	};
-
-	class event_handler_id
-	{
-	public:
-		constexpr event_handler_id() = default;
-
-		constexpr explicit event_handler_id(uint64_t value):
-			m_value{value}
-		{}
-
-		constexpr uint64_t value() const
-		{ return m_value; }
-
-		constexpr event_handler_id next()
-		{
-			auto ret = *this;
-			++m_value;
-			return ret;
-		}
-
-		constexpr bool operator==(event_handler_id const& ) const = default;
-
-		constexpr bool operator!=(event_handler_id const& ) const = default;
-
-	private:
-		uint64_t m_value{};
 	};
 
 	/**
@@ -196,7 +204,7 @@ namespace prog::os_services::fd
 		void handle_event(activity_event const& event) override
 		{ m_event_handler.handle_event(event, m_file_descriptor.get()); }
 
-		auto id() const
+		event_handler_id get_id() const noexcept override
 		{ return m_id; }
 
 	private:
@@ -221,7 +229,7 @@ namespace prog::os_services::fd
 
 			~config_transaction()
 			{
-				for(auto item : m_added_fds)
+				for(auto item : m_added_ids)
 				{ m_monitor.get().remove(item); }
 			}
 
@@ -232,22 +240,21 @@ namespace prog::os_services::fd
 				EventHandler&& eh
 			)
 			{
-				auto const raw_fd = fd_to_watch.get().native_handle();
-				m_monitor.get().add(
+				auto const id = m_monitor.get().add(
 					std::move(fd_to_watch),
 					initial_listen_status,
 					std::forward<EventHandler>(eh)
 				);
-				m_added_fds.push_back(raw_fd);
+				m_added_ids.push_back(id);
 				return *this;
 			}
 
 			void commit()
-			{ m_added_fds.clear(); }
+			{ m_added_ids.clear(); }
 
 		private:
 			std::reference_wrapper<activity_monitor> m_monitor;
-			std::vector<int> m_added_fds;
+			std::vector<event_handler_id> m_added_ids;
 		};
 
 		friend class config_transaction;
@@ -272,21 +279,22 @@ namespace prog::os_services::fd
 		 * given by initial_listen_status
 		 */
 		template<class FileDescriptorTag, activity_event_handler<FileDescriptorTag> EventHandler>
-		void add(
+		event_handler_id add(
 			tagged_file_descriptor<FileDescriptorTag> fd_to_watch,
 			activity_status initial_listen_status,
 			EventHandler&& eh
 		)
 		{
+			auto const id = m_current_id.next();
 			auto const raw_fd = fd_to_watch.get().native_handle();
 			auto const ip = m_listeners.emplace(
-				raw_fd,
+				id,
 				std::make_unique<
 					epoll_entry_data_impl<EventHandler, FileDescriptorTag>
 				>(
 					std::move(eh),
 					std::move(fd_to_watch),
-					m_current_id.next()
+					id
 				)
 			);
 			if(!ip.second)
@@ -310,11 +318,16 @@ namespace prog::os_services::fd
 				m_listeners.erase(ip.first);
 				throw error_handling::system_error{"Failed to add file descriptor to epoll instance", errno};
 			}
+			return id;
 		}
-
-		template<class FileDescriptorTag>
-		size_t remove(tagged_file_descriptor_ref<FileDescriptorTag> fd) noexcept
-		{ return remove(fd.native_handle()); }
+		void remove(event_handler_id id) noexcept
+		{
+			auto i = m_listeners.find(id);
+			if(i == std::end(m_listeners))
+			{ return; }
+			::epoll_ctl(m_epoll_fd.get().native_handle(), EPOLL_CTL_DEL, i->second->get_fd_native_handle(), nullptr);
+			m_listeners.erase(i);
+		}
 
 		/**
 		 * \brief Waits for incoming events
@@ -322,14 +335,10 @@ namespace prog::os_services::fd
 		void wait_for_and_distpatch_events();
 
 	private:
-		size_t remove(int fd) noexcept
-		{
-			::epoll_ctl(m_epoll_fd.get().native_handle(), EPOLL_CTL_DEL, fd, nullptr);
-			return m_listeners.erase(fd);
-		}
+
 
 		file_descriptor m_epoll_fd;
-		std::unordered_map<int, std::unique_ptr<epoll_entry_data>> m_listeners;
+		std::unordered_map<event_handler_id, std::unique_ptr<epoll_entry_data>, event_handler_id_hash> m_listeners;
 		event_handler_id m_current_id;
 	};
 }
