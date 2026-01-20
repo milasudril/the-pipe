@@ -99,6 +99,9 @@ namespace prog::os_services::fd
 		 */
 		virtual void handle_event(activity_event const& event) = 0;
 
+		/**
+		 * \brief This function should return the id of the event handler
+		 */
 		virtual event_handler_id get_id() const noexcept = 0;
 
 		/**
@@ -279,7 +282,7 @@ namespace prog::os_services::fd
 		 * given by initial_listen_status
 		 */
 		template<class FileDescriptorTag, activity_event_handler<FileDescriptorTag> EventHandler>
-		event_handler_id add(
+		[[nodiscard]] event_handler_id add(
 			tagged_file_descriptor<FileDescriptorTag> fd_to_watch,
 			activity_status initial_listen_status,
 			EventHandler&& eh

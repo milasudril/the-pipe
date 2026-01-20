@@ -194,11 +194,13 @@ namespace
 		{
 			if(can_read(activity.get_activity_status()))
 			{
-				monitor.get().add(
+				auto id = monitor.get().add(
 					accept(fd),
 					prog::os_services::fd::activity_status::read,
 					my_client{}
 				);
+
+				EXPECT_EQ(id, prog::os_services::fd::event_handler_id{1});
 			}
 		}
 	};
@@ -236,10 +238,13 @@ TESTCASE(prog_os_services_fd_activity_monitor)
 	auto const address = prog::os_services::ipc::make_abstract_sockaddr_un(sockname);
 	std::jthread server_thread{[address, &server_created](){
 		prog::os_services::fd::activity_monitor monitor;
-		monitor.add(
-			prog::os_services::ipc::make_server_socket<SOCK_SEQPACKET>(address, 1024),
-			prog::os_services::fd::activity_status::read,
-			my_server_event_handler{monitor}
+		EXPECT_EQ(
+			monitor.add(
+				prog::os_services::ipc::make_server_socket<SOCK_SEQPACKET>(address, 1024),
+				prog::os_services::fd::activity_status::read,
+				my_server_event_handler{monitor}
+			),
+			prog::os_services::fd::event_handler_id{0}
 		);
 
 		server_created.raise();

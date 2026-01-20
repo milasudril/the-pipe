@@ -137,7 +137,7 @@ namespace prog::host
 			std::tuple_size_v<handshaking_protocol::server_socket_name>
 		);
 
-		activity_monitor.add(
+		std::ignore = activity_monitor.add(
 			os_services::ipc::make_server_socket<SOCK_STREAM>(
 				os_services::ipc::make_abstract_sockaddr_un(server_name),
 					1024
