@@ -49,6 +49,42 @@ namespace prog::utils
 	 * \brief The number of printable ASCII characters requires for 16 bytes
 	 */
 	constexpr size_t num_chars_16_bytes = byte_count_to_printable_ascii_string_length(16);
+
+	template<class T>
+	concept reference = std::is_reference_v<T>;
+
+	template<class T>
+	concept is_refwrapper = requires(T obj)
+	{
+		{obj.get()} -> reference;
+	};
+
+	template<class T>
+	concept is_dereferenceable = requires(T obj)
+	{
+		{*obj};
+	};
+
+	template<class T, size_t N>
+	consteval void detect_static_array(T (&)[N]){}
+
+	template<class T>
+	concept is_c_style_array = std::is_array_v<T> || requires(T obj, size_t x)
+	{
+		{detect_static_array(obj)};
+	};
+
+	template<class T>
+	inline constexpr decltype(auto) unwrap(T&& obj)
+	{
+		if constexpr(is_refwrapper<T>)
+		{ return obj.get(); }
+		else
+		if constexpr(is_dereferenceable<T> && !is_c_style_array<T>)
+		{ return *obj; }
+		else
+		{ return std::forward<T>(obj); }
+	}
 };
 
 #endif

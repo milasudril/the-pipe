@@ -2,6 +2,7 @@
 #define PROG_OS_SERVICES_FD_ACITIVITY_EVENT_HPP
 
 #include "src/os_services/fd/file_descriptor.hpp"
+#include "src/utils/utils.hpp"
 #include <concepts>
 
 namespace prog::os_services::fd
@@ -66,7 +67,7 @@ namespace prog::os_services::fd
 		/**
 		 * \brief Will be called when the state of the file descriptor needs to be checked
 		 */
-		{obj.handle_event(e, fd)} -> std::same_as<void>;
+		{utils::unwrap(obj).handle_event(e, fd)} -> std::same_as<void>;
 	};
 }
 

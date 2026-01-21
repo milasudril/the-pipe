@@ -191,6 +191,18 @@ namespace prog::os_services::fd
 		/**
 		 * \brief Constructs a epoll_entry_data_impl
 		 */
+		template<class T>
+		requires(std::is_same_v<std::remove_cvref_t<T>, EventHandler>)
+		explicit epoll_entry_data_impl(
+			T&& eh,
+			tagged_file_descriptor<FileDescriptorTag> fd,
+			event_handler_id id
+		) noexcept:
+			m_event_handler{std::forward<T>(eh)},
+			m_file_descriptor{std::move(fd)},
+			m_id{id}
+		{}
+
 		explicit epoll_entry_data_impl(
 			EventHandler&& eh,
 			tagged_file_descriptor<FileDescriptorTag> fd,
@@ -205,7 +217,7 @@ namespace prog::os_services::fd
 		{ return m_file_descriptor.get().native_handle(); }
 
 		void handle_event(activity_event const& event) override
-		{ m_event_handler.handle_event(event, m_file_descriptor.get()); }
+		{ utils::unwrap(m_event_handler).handle_event(event, m_file_descriptor.get()); }
 
 		event_handler_id get_id() const noexcept override
 		{ return m_id; }
@@ -215,7 +227,6 @@ namespace prog::os_services::fd
 		tagged_file_descriptor<FileDescriptorTag> m_file_descriptor;
 		event_handler_id m_id;
 	};
-
 
 	/**
 	 * \brief Used to monitor activity on file descriptors
@@ -293,9 +304,12 @@ namespace prog::os_services::fd
 			auto const ip = m_listeners.emplace(
 				id,
 				std::make_unique<
-					epoll_entry_data_impl<EventHandler, FileDescriptorTag>
+					epoll_entry_data_impl<
+						std::remove_cvref_t<EventHandler>,
+						FileDescriptorTag
+					>
 				>(
-					std::move(eh),
+					std::forward<EventHandler>(eh),
 					std::move(fd_to_watch),
 					id
 				)

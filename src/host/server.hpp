@@ -80,8 +80,10 @@ namespace prog::host
 				}
 			);
 
+
 			auto client_proc = std::make_unique<client_process>();
 			auto client_proc_ptr = client_proc.get();
+			auto handshake = std::make_shared<client_activity_handler>(*client_proc_ptr);
 			if(!emplace(process.first, std::move(client_proc)).second)
 			{ throw std::runtime_error{"Pid already exists in map"}; }
 
@@ -89,17 +91,17 @@ namespace prog::host
 				.add(
 					std::move(process.second),
 					os_services::fd::activity_status::read,
-					client_activity_handler{*client_proc_ptr}
+					handshake
 				)
 				.add(
 					server_to_client_handshake_pipe.take_write_end(),
 					os_services::fd::activity_status::write,
-					client_activity_handler{*client_proc_ptr}
+					handshake
 				)
 				.add(
 					client_to_server_handshake_pipe.take_read_end(),
 					os_services::fd::activity_status::read,
-					client_activity_handler{*client_proc_ptr}
+					handshake
 				)
 			.commit();
 
