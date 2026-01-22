@@ -74,8 +74,8 @@ namespace prog::host
 				std::span<char const*>{},
 				std::span<char const*>{},
 				os_services::proc_mgmt::io_redirection{
-					.sysin = server_to_client_handshake_pipe.read_end(),
-					.sysout = server_to_client_handshake_pipe.write_end(),
+					.sysin = server_to_client_handshake_pipe.take_read_end(),
+					.sysout = server_to_client_handshake_pipe.take_write_end(),
 					.syserr = {}
 				}
 			);

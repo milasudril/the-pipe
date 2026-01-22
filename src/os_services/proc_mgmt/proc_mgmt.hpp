@@ -115,9 +115,9 @@ namespace prog::os_services::proc_mgmt
 	 */
 	struct io_redirection
 	{
-		io::input_file_descriptor_ref sysin;   /**<\brief stdin*/
-		io::output_file_descriptor_ref sysout; /**<\brief stdout*/
-		io::output_file_descriptor_ref syserr; /**<\brief stderr*/
+		io::input_file_descriptor sysin;   /**<\brief stdin*/
+		io::output_file_descriptor sysout; /**<\brief stdout*/
+		io::output_file_descriptor syserr; /**<\brief stderr*/
 	};
 
 	/**

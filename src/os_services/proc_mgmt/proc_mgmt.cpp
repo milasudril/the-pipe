@@ -24,7 +24,7 @@ namespace
 {
 	int pidfd_open(pid_t pid, unsigned int flags) noexcept
 	{
-		return static_cast<int>(syscall(SYS_pidfd_open, pid, flags));
+		return static_cast<int>(::syscall(SYS_pidfd_open, pid, flags));
 	}
 
 	void do_exec(
@@ -37,24 +37,24 @@ namespace
 	{
 		if(io_redir.sysin != nullptr)
 		{
-			if(dup2(io_redir.sysin, STDIN_FILENO) == -1)
+			if(::dup2(io_redir.sysin.get(), STDIN_FILENO) == -1)
 			{ goto fail; }
 		}
 		if(io_redir.sysout != nullptr)
 		{
-			if(dup2(io_redir.sysout, STDOUT_FILENO) == -1)
+			if(::dup2(io_redir.sysout.get(), STDOUT_FILENO) == -1)
 			{ goto fail; }
 		}
 
 		if(io_redir.syserr != nullptr)
 		{
-			if(dup2(io_redir.syserr, STDERR_FILENO) == -1)
+			if(::dup2(io_redir.syserr.get(), STDERR_FILENO) == -1)
 			{ goto fail; }
 		}
 
-		close_range(STDERR_FILENO + 1, ~0u, CLOSE_RANGE_CLOEXEC);
+		::close_range(STDERR_FILENO + 1, ~0u, CLOSE_RANGE_CLOEXEC);
 		__gcov_dump();
-		execve(path, argv, env);
+		::execve(path, argv, env);
 
 	fail:
 		auto errval = errno;
@@ -99,7 +99,7 @@ prog::os_services::proc_mgmt::spawn(
 	auto const argv_out = build_argv(path, argv);
 	auto const env_out = build_env(env);
 
-	auto const fork_res = fork();
+	auto const fork_res = ::fork();
 	switch(fork_res)
 	{
 		case -1:

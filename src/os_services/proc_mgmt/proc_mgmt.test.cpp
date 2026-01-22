@@ -62,7 +62,7 @@ TESTCASE(prog_proc_mgmt_spawn_run_with_args)
 		std::span<char const*>{},
 		prog::os_services::proc_mgmt::io_redirection{
 			.sysin = {},
-			.sysout = stdout_pipe.write_end(),
+			.sysout = stdout_pipe.take_write_end(),
 			.syserr = {}
 		}
 	);
@@ -86,7 +86,7 @@ TESTCASE(prog_proc_mgmt_spawn_run_with_env)
 		env,
 		prog::os_services::proc_mgmt::io_redirection{
 			.sysin = {},
-			.sysout = stdout_pipe.write_end(),
+			.sysout = stdout_pipe.take_write_end(),
 			.syserr = {}
 		}
 	);
@@ -109,8 +109,8 @@ TESTCASE(prog_proc_mgmt_spawn_run_pass_through)
 		std::span<char const*>{},
 		std::span<char const*>{},
 		prog::os_services::proc_mgmt::io_redirection{
-			.sysin = stdin_pipe.read_end(),
-			.sysout = stdout_pipe.write_end(),
+			.sysin = stdin_pipe.take_read_end(),
+			.sysout = stdout_pipe.take_write_end(),
 			.syserr = {}
 		}
 	);
@@ -141,7 +141,7 @@ TESTCASE(prog_proc_mgmt_spawn_run_redirect_stderr)
 		prog::os_services::proc_mgmt::io_redirection{
 			.sysin = {},
 			.sysout = {},
-			.syserr = stderr_pipe.write_end()
+			.syserr = stderr_pipe.take_write_end()
 		}
 	);
 
