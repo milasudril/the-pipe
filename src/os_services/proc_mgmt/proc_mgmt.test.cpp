@@ -96,7 +96,8 @@ TESTCASE(prog_proc_mgmt_spawn_run_with_env)
 	EXPECT_EQ(read_result.bytes_transferred(), 15);
 	EXPECT_EQ((std::string_view{std::data(buffer), 15}), "FOO=bar\nX=kaka\n");
 
-	auto const proc_result = wait(proc.second.get());	EXPECT_EQ(std::get<prog::os_services::proc_mgmt::process_exited>(proc_result).return_value, 0);
+	auto const proc_result = wait(proc.second.get());
+	EXPECT_EQ(std::get<prog::os_services::proc_mgmt::process_exited>(proc_result).return_value, 0);
 }
 
 TESTCASE(prog_proc_mgmt_spawn_run_pass_through)
@@ -125,7 +126,8 @@ TESTCASE(prog_proc_mgmt_spawn_run_pass_through)
 	EXPECT_EQ(read_result.bytes_transferred(), 12);
 	stdin_pipe.close_write_end();
 
-	auto const proc_result = wait(proc.second.get());	EXPECT_EQ(std::get<prog::os_services::proc_mgmt::process_exited>(proc_result).return_value, 0);
+	auto const proc_result = wait(proc.second.get());
+	EXPECT_EQ(std::get<prog::os_services::proc_mgmt::process_exited>(proc_result).return_value, 0);
 }
 
 TESTCASE(prog_proc_mgmt_spawn_run_redirect_stderr)
