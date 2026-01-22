@@ -60,6 +60,27 @@ namespace
 		auto errval = errno;
 		prog::os_services::io::write_while_eintr(errstream, &errval, sizeof(errval));
 	}
+
+	std::vector<char*> build_argv(char const* path, std::span<char const*> argv)
+	{
+		std::vector<char*> argv_out;
+		argv_out.reserve(2 + std::size(argv));
+		argv_out.push_back(const_cast<char*>(path));
+			for(auto item : argv)
+		{ argv_out.push_back(const_cast<char*>(item)); }
+		argv_out.push_back(nullptr);
+		return argv_out;
+	}
+
+	std::vector<char*> build_env(std::span<char const*> env)
+	{
+		std::vector<char*> env_out;
+		env_out.reserve(1 + std::size(env));
+		for(auto item : env)
+		{ env_out.push_back(const_cast<char*>(item)); }
+		env_out.push_back(nullptr);
+		return env_out;
+	}
 };
 
 std::pair<pid_t, prog::os_services::proc_mgmt::pidfd>
@@ -75,15 +96,8 @@ prog::os_services::proc_mgmt::spawn(
 	auto parent_ready_fd = ipc::make_eventfd();
 
 	// Before fork, prepare stuff to be passed to exec
-	std::vector<char*> argv_out{const_cast<char*>(path)};
-	for(auto item : argv)
-	{ argv_out.push_back(const_cast<char*>(item)); }
-	argv_out.push_back(nullptr);
-
-	std::vector<char*> env_out;
-	for(auto item : env)
-	{ env_out.push_back(const_cast<char*>(item)); }
-	env_out.push_back(nullptr);
+	auto const argv_out = build_argv(path, argv);
+	auto const env_out = build_env(env);
 
 	auto const fork_res = fork();
 	switch(fork_res)
