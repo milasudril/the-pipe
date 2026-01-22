@@ -5,15 +5,15 @@
 
 #include <testfwk/testfwk.hpp>
 
-TESTCASE(prog_ipc_pipe_create_and_do_stuff)
+TESTCASE(Pipe_ipc_pipe_create_and_do_stuff)
 {
-	prog::os_services::ipc::pipe the_pipe;
+	Pipe::os_services::ipc::pipe the_pipe;
 	std::string_view msg{"Hello, World"};
-	auto write_result = prog::os_services::io::write(the_pipe.write_end(), std::as_bytes(std::span{msg}));
+	auto write_result = Pipe::os_services::io::write(the_pipe.write_end(), std::as_bytes(std::span{msg}));
 	EXPECT_EQ(write_result.bytes_transferred(), 12);
 
 	std::array<char, 12> msg_read{};
-	auto read_result = prog::os_services::io::read(the_pipe.read_end(), std::as_writable_bytes(std::span{msg_read}));
+	auto read_result = Pipe::os_services::io::read(the_pipe.read_end(), std::as_writable_bytes(std::span{msg_read}));
 	EXPECT_EQ(read_result.bytes_transferred(), 12);
 	EXPECT_EQ(msg, std::string_view{msg_read});
 

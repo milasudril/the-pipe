@@ -1,7 +1,7 @@
 //@	{"dependencies_extra":[{"ref": "./activity_monitor.o", "rel": "implementation"}]}
 
-#ifndef PROG_OS_SERVICES_FD_ACTIVITY_MONITOR_HPP
-#define PROG_OS_SERVICES_FD_ACTIVITY_MONITOR_HPP
+#ifndef PIPE_OS_SERVICES_FD_ACTIVITY_MONITOR_HPP
+#define PIPE_OS_SERVICES_FD_ACTIVITY_MONITOR_HPP
 
 #include "./file_descriptor.hpp"
 #include "./activity_event.hpp"
@@ -13,7 +13,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace prog::os_services::fd
+namespace Pipe::os_services::fd
 {
 	/**
 	 * \brief Converts an activity_status to epoll event flags

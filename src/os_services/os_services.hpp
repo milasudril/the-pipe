@@ -1,10 +1,10 @@
-#ifndef PROG_OS_SERVICES_HPP
-#define PROG_OS_SERVICES_HPP
+#ifndef PIPE_OS_SERVICES_HPP
+#define PIPE_OS_SERVICES_HPP
 
 /**
  * \brief Wrapper functions for common OS services
  */
-namespace prog::os_services
+namespace Pipe::os_services
 {
 }
 

@@ -1,6 +1,6 @@
 #include <filesystem>
 
-namespace prog::host
+namespace Pipe::host
 {
 	class client_process
 	{

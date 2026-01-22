@@ -1,1 +1,1 @@
-# PROG -- Process Graph
+# PIPE The Pipe InterProcess communication Engine

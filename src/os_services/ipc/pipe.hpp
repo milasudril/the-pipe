@@ -1,5 +1,5 @@
-#ifndef PROG_OS_SERVICES_IPC_PIPE_HPP
-#define PROG_OS_SERVICES_IPC_PIPE_HPP
+#ifndef PIPE_OS_SERVICES_IPC_PIPE_HPP
+#define PIPE_OS_SERVICES_IPC_PIPE_HPP
 
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/error_handling/system_error.hpp"
@@ -7,7 +7,7 @@
 #include <cstdlib>
 #include <fcntl.h>
 
-namespace prog::os_services::ipc
+namespace Pipe::os_services::ipc
 {
 	/**
 	 * \brief A pipe is a unidirectional communication channel, with a read end and a write end

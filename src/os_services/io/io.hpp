@@ -1,5 +1,5 @@
-#ifndef PROG_OS_SERVICES_IO_HPP
-#define PROG_OS_SERVICES_IO_HPP
+#ifndef PIPE_OS_SERVICES_IO_HPP
+#define PIPE_OS_SERVICES_IO_HPP
 
 #include "src/os_services/fd/file_descriptor.hpp"
 #include "src/os_services/error_handling/system_error.hpp"
@@ -12,7 +12,7 @@
 /**
  * \brief Contains basic I/O support functions
  */
-namespace prog::os_services::io
+namespace Pipe::os_services::io
 {
 	/**
 	 * \brief A class holding the result of an I/O operation

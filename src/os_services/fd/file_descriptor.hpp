@@ -1,11 +1,11 @@
-#ifndef PROG_OS_SERVICE_FD_FILE_DESCRIPTOR_HPP
-#define PROG_OS_SERVICE_FD_FILE_DESCRIPTOR_HPP
+#ifndef PIPE_OS_SERVICE_FD_FILE_DESCRIPTOR_HPP
+#define PIPE_OS_SERVICE_FD_FILE_DESCRIPTOR_HPP
 
 #include <unistd.h>
 #include <memory>
 #include <cassert>
 
-namespace prog::os_services::fd
+namespace Pipe::os_services::fd
 {
 	/**
 	 * \brief Struct to specialize to enable conversions from a \ref tagged_file_descriptor_ref "tagged_file_descriptor_ref<Tag>"
@@ -17,7 +17,7 @@ namespace prog::os_services::fd
 	 * //bar and foo should have been declared earlier
 	 *
 	 * template<>
-	 * struct prog::os_services::fd::enabled_fd_conversions<foo>
+	 * struct Pipe::os_services::fd::enabled_fd_conversions<foo>
 	 * {
 	 * 	static consteval void supports(bar){}
 	 * };

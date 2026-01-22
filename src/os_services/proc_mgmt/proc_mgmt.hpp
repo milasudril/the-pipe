@@ -1,7 +1,7 @@
 //@	{"dependencies_extra":[{"ref":"./proc_mgmt.o", "rel":"implementation"}]}
 
-#ifndef PROG_OS_SERVICES_PROC_MGMT_HPP
-#define PROG_OS_SERVICES_PROC_MGMT_HPP
+#ifndef PIPE_OS_SERVICES_PROC_MGMT_HPP
+#define PIPE_OS_SERVICES_PROC_MGMT_HPP
 
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
@@ -14,7 +14,7 @@
 /**
  * \brief Process management
  */
-namespace prog::os_services::proc_mgmt
+namespace Pipe::os_services::proc_mgmt
 {
 	/**
 	 * \brief Tag type used to identify a file descriptor referring to a process
@@ -85,7 +85,7 @@ namespace prog::os_services::proc_mgmt
 }
 
 template<>
-struct prog::os_services::fd::file_descriptor_deleter<prog::os_services::proc_mgmt::pidfd_tag>
+struct Pipe::os_services::fd::file_descriptor_deleter<Pipe::os_services::proc_mgmt::pidfd_tag>
 {
 	using pointer = proc_mgmt::pidfd_ref;
 
@@ -102,7 +102,7 @@ struct prog::os_services::fd::file_descriptor_deleter<prog::os_services::proc_mg
 	}
 };
 
-namespace prog::os_services::proc_mgmt
+namespace Pipe::os_services::proc_mgmt
 {
 
 	/**

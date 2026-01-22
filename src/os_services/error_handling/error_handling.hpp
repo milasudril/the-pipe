@@ -1,5 +1,5 @@
-#ifndef PROG_OS_SERVICES_ERROR_HANDLING_HPP
-#define PROG_OS_SERVICES_ERROR_HANDLING_HPP
+#ifndef PIPE_OS_SERVICES_ERROR_HANDLING_HPP
+#define PIPE_OS_SERVICES_ERROR_HANDLING_HPP
 
 #include <cerrno>
 #include <type_traits>
@@ -7,7 +7,7 @@
 /**
  * \brief Error handling utilities
  */
-namespace prog::os_services::error_handling
+namespace Pipe::os_services::error_handling
 {
 	/**
 	 * \brief Repeatedly calls func, until it returns a value different from -1, or errno is no

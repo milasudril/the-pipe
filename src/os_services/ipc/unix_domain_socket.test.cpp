@@ -9,10 +9,10 @@
 #include <testfwk/testfwk.hpp>
 #include <thread>
 
-TESTCASE(prog_ipc_unix_domain_socket_make_abstract_sockaddr_un)
+TESTCASE(Pipe_ipc_unix_domain_socket_make_abstract_sockaddr_un)
 {
-	auto const address = prog::utils::random_printable_ascii_string(prog::utils::num_chars_16_bytes);
-	auto const res = prog::os_services::ipc::make_abstract_sockaddr_un(address);
+	auto const address = Pipe::utils::random_printable_ascii_string(Pipe::utils::num_chars_16_bytes);
+	auto const res = Pipe::os_services::ipc::make_abstract_sockaddr_un(address);
 	EXPECT_EQ(res.sun_family, AF_UNIX);
 	EXPECT_EQ(res.sun_path + 1, std::string_view{address});
 	EXPECT_EQ(res.sun_path[0], '\0');
@@ -46,13 +46,13 @@ namespace
 	};
 }
 
-TESTCASE(prog_ipc_unix_domain_socket_create_sockets_and_connect)
+TESTCASE(Pipe_ipc_unix_domain_socket_create_sockets_and_connect)
 {
 	event server_created;
-	auto const sockname = prog::utils::random_printable_ascii_string(prog::utils::num_chars_16_bytes);
-	auto const address = prog::os_services::ipc::make_abstract_sockaddr_un(sockname);
+	auto const sockname = Pipe::utils::random_printable_ascii_string(Pipe::utils::num_chars_16_bytes);
+	auto const address = Pipe::os_services::ipc::make_abstract_sockaddr_un(sockname);
 	std::jthread server_thread{[address, &server_created](){
-		auto const server_socket = prog::os_services::ipc::make_server_socket<SOCK_SEQPACKET>(address, 1024);
+		auto const server_socket = Pipe::os_services::ipc::make_server_socket<SOCK_SEQPACKET>(address, 1024);
 		server_created.raise();
 
 		auto const connection = accept(server_socket.get());
@@ -61,13 +61,13 @@ TESTCASE(prog_ipc_unix_domain_socket_create_sockets_and_connect)
 		printf("%d %d %d\n", creds.gid, creds.pid, creds.uid);
 
 		std::array<char, 32> buffer{};
-		auto const read_result = prog::os_services::io::read(
+		auto const read_result = Pipe::os_services::io::read(
 			connection.get(),
 			std::as_writable_bytes(std::span{buffer})
 		);
 		EXPECT_EQ(read_result.bytes_transferred(), 12);
 		EXPECT_EQ((std::string_view{std::data(buffer), 12}), "Hello, World");
-		auto const no_read_results = prog::os_services::io::read(
+		auto const no_read_results = Pipe::os_services::io::read(
 			connection.get(),
 			std::as_writable_bytes(std::span{buffer})
 		);
@@ -75,14 +75,14 @@ TESTCASE(prog_ipc_unix_domain_socket_create_sockets_and_connect)
 	}};
 	server_created.wait();
 
-	auto const connected_socket = prog::os_services::ipc::make_connection<SOCK_SEQPACKET>(address);
+	auto const connected_socket = Pipe::os_services::ipc::make_connection<SOCK_SEQPACKET>(address);
 	auto const creds = get_peer_credentials(connected_socket.get());
 	printf("%d %d %d\n", creds.gid, creds.pid, creds.uid);
-	auto const write_result = prog::os_services::io::write(
+	auto const write_result = Pipe::os_services::io::write(
 		connected_socket.get(),
 		std::as_bytes(std::span{std::string_view{"Hello, World"}})
 	);
 	EXPECT_EQ(write_result.bytes_transferred(), 12);
 
-	shutdown(connected_socket.get(), prog::os_services::ipc::connection_shutdown_ops::write);
+	shutdown(connected_socket.get(), Pipe::os_services::ipc::connection_shutdown_ops::write);
 }

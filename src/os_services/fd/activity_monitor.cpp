@@ -2,7 +2,7 @@
 
 #include "./activity_monitor.hpp"
 
-void prog::os_services::fd::activity_monitor::wait_for_and_distpatch_events()
+void Pipe::os_services::fd::activity_monitor::wait_for_and_distpatch_events()
 {
 	std::array<::epoll_event, 1024> events{};
 	auto const res = error_handling::do_while_eintr(

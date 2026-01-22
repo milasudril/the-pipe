@@ -13,7 +13,7 @@
 #include <random>
 #include <unordered_map>
 
-namespace prog::host
+namespace Pipe::host
 {
 	class client_activity_handler
 	{

@@ -1,12 +1,12 @@
-#ifndef PROG_OS_SERVICES_ERROR_HANDLING_SYSTEM_ERROR_HPP
-#define PROG_OS_SERVICES_ERROR_HANDLING_SYSTEM_ERROR_HPP
+#ifndef PIPE_OS_SERVICES_ERROR_HANDLING_SYSTEM_ERROR_HPP
+#define PIPE_OS_SERVICES_ERROR_HANDLING_SYSTEM_ERROR_HPP
 
 #include <cstring>
 #include <stdexcept>
 #include <format>
 #include <utility>
 
-namespace prog::os_services::error_handling
+namespace Pipe::os_services::error_handling
 {
 	/**
 	 *\brief Exception to be thrown when a syscalls fails in a semi-fatal way

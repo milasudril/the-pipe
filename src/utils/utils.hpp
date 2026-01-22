@@ -1,7 +1,7 @@
 //@	{"dependencies_extra":[{"ref": "./utils.o", "rel": "implementation"}]}
 
-#ifndef PROG_UTILS_HPP
-#define PROG_UTILS_HPP
+#ifndef PIPE_UTILS_HPP
+#define PIPE_UTILS_HPP
 
 #include <string>
 #include <cmath>
@@ -10,7 +10,7 @@
 /**
  * \brief Contains various utility functions
  */
-namespace prog::utils
+namespace Pipe::utils
 {
 	/**
 	 * \brief Generates an array of random bytes

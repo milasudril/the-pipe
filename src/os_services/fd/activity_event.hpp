@@ -1,11 +1,11 @@
-#ifndef PROG_OS_SERVICES_FD_ACITIVITY_EVENT_HPP
-#define PROG_OS_SERVICES_FD_ACITIVITY_EVENT_HPP
+#ifndef PIPE_OS_SERVICES_FD_ACITIVITY_EVENT_HPP
+#define PIPE_OS_SERVICES_FD_ACITIVITY_EVENT_HPP
 
 #include "src/os_services/fd/file_descriptor.hpp"
 #include "src/utils/utils.hpp"
 #include <concepts>
 
-namespace prog::os_services::fd
+namespace Pipe::os_services::fd
 {
 	/**
 	 * \brief Describes the type of activity that is currently possible on a file descriptor

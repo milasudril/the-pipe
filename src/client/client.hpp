@@ -1,12 +1,12 @@
-#ifndef PROG_CLIENT_HPP
-#define PROG_CLIENT_HPP
+#ifndef PIPE_CLIENT_HPP
+#define PIPE_CLIENT_HPP
 
 #include "src/os_services/io/io.hpp"
 
 /**
  * \brief Contains the API published by the client
  */
-namespace prog::client
+namespace Pipe::client
 {
 	/**
 	 * \brief Represents the state of a client

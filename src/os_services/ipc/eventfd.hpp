@@ -1,5 +1,5 @@
-#ifndef PROG_OS_SERVICES_IPC_EVENTFD_HPP
-#define PROG_OS_SERVICES_IPC_EVENTFD_HPP
+#ifndef PIPE_OS_SERVICES_IPC_EVENTFD_HPP
+#define PIPE_OS_SERVICES_IPC_EVENTFD_HPP
 
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/error_handling/system_error.hpp"
@@ -8,7 +8,7 @@
 #include <fcntl.h>
 #include <sys/eventfd.h>
 
-namespace prog::os_services::ipc
+namespace Pipe::os_services::ipc
 {
 	/**
 	 * \brief A tag type used to identify an event file descriptor
@@ -39,7 +39,7 @@ namespace prog::os_services::ipc
 }
 
 template<>
-struct prog::os_services::fd::enabled_fd_conversions<prog::os_services::ipc::eventfd_tag>
+struct Pipe::os_services::fd::enabled_fd_conversions<Pipe::os_services::ipc::eventfd_tag>
 {
 	static consteval void supports(io::input_file_descriptor_tag){}
 	static consteval void supports(io::output_file_descriptor_tag){}

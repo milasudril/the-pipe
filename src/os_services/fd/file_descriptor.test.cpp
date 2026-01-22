@@ -17,61 +17,61 @@ namespace
 }
 
 template<>
-struct prog::os_services::fd::enabled_fd_conversions<convert_from>
+struct Pipe::os_services::fd::enabled_fd_conversions<convert_from>
 {
 	static consteval void supports(convert_to){}
 };
 
 // Static checks
-static_assert(std::is_same_v<prog::os_services::fd::tagged_file_descriptor_ref<int>::tag_type, int>);
-static_assert(std::equality_comparable<prog::os_services::fd::tagged_file_descriptor_ref<int>>);
-static_assert(std::equality_comparable_with<prog::os_services::fd::tagged_file_descriptor_ref<int>, nullptr_t>);
-static_assert(std::is_convertible_v<prog::os_services::fd::tagged_file_descriptor_ref<int>, bool>);
+static_assert(std::is_same_v<Pipe::os_services::fd::tagged_file_descriptor_ref<int>::tag_type, int>);
+static_assert(std::equality_comparable<Pipe::os_services::fd::tagged_file_descriptor_ref<int>>);
+static_assert(std::equality_comparable_with<Pipe::os_services::fd::tagged_file_descriptor_ref<int>, nullptr_t>);
+static_assert(std::is_convertible_v<Pipe::os_services::fd::tagged_file_descriptor_ref<int>, bool>);
 static_assert(
 	std::is_convertible_v<
-		prog::os_services::fd::tagged_file_descriptor_ref<convert_from>,
-		prog::os_services::fd::tagged_file_descriptor_ref<convert_to>
+		Pipe::os_services::fd::tagged_file_descriptor_ref<convert_from>,
+		Pipe::os_services::fd::tagged_file_descriptor_ref<convert_to>
 	>
 );
 static_assert(
 	!std::is_convertible_v<
-		prog::os_services::fd::tagged_file_descriptor_ref<convert_from>,
-		prog::os_services::fd::tagged_file_descriptor_ref<int>
+		Pipe::os_services::fd::tagged_file_descriptor_ref<convert_from>,
+		Pipe::os_services::fd::tagged_file_descriptor_ref<int>
 	>
 );
 
-TESTCASE(prog_fd_tagged_file_descriptor_ref_create_id)
+TESTCASE(Pipe_fd_tagged_file_descriptor_ref_create_id)
 {
-	prog::os_services::fd::tagged_file_descriptor_ref<int> fd{34};
+	Pipe::os_services::fd::tagged_file_descriptor_ref<int> fd{34};
 	EXPECT_EQ(fd.native_handle(), 34);
 	EXPECT_EQ(fd.is_valid(), true);
 }
 
-TESTCASE(prog_fd_tagged_file_descriptor_ref_create_default)
+TESTCASE(Pipe_fd_tagged_file_descriptor_ref_create_default)
 {
-	prog::os_services::fd::tagged_file_descriptor_ref<int> fd;
+	Pipe::os_services::fd::tagged_file_descriptor_ref<int> fd;
 	EXPECT_EQ(fd.native_handle(), -1);
 	EXPECT_EQ(fd.is_valid(), false);
 }
 
-TESTCASE(prog_fd_tagged_file_descriptor_ref_create_from_nullptr)
+TESTCASE(Pipe_fd_tagged_file_descriptor_ref_create_from_nullptr)
 {
-	prog::os_services::fd::tagged_file_descriptor_ref<int> fd{nullptr};
+	Pipe::os_services::fd::tagged_file_descriptor_ref<int> fd{nullptr};
 	EXPECT_EQ(fd.native_handle(), -1);
 	EXPECT_EQ(fd.is_valid(), false);
 }
 
-TESTCASE(prog_fd_tagged_file_descriptor_ref_convert)
+TESTCASE(Pipe_fd_tagged_file_descriptor_ref_convert)
 {
-	prog::os_services::fd::tagged_file_descriptor_ref<convert_from> from{213};
-	prog::os_services::fd::tagged_file_descriptor_ref<convert_to> to = from;
+	Pipe::os_services::fd::tagged_file_descriptor_ref<convert_from> from{213};
+	Pipe::os_services::fd::tagged_file_descriptor_ref<convert_to> to = from;
 	EXPECT_EQ(from.native_handle(), 213);
 	EXPECT_EQ(to.native_handle(), 213);
 }
 
-TESTCASE(prog_fd_tagged_file_descriptor_create)
+TESTCASE(Pipe_fd_tagged_file_descriptor_create)
 {
-	prog::os_services::fd::tagged_file_descriptor<int> fd{open("/dev/null", O_RDONLY)};
+	Pipe::os_services::fd::tagged_file_descriptor<int> fd{open("/dev/null", O_RDONLY)};
 	EXPECT_NE(fd, nullptr);
 	fd.reset();
 	EXPECT_EQ(fd, nullptr);
@@ -83,7 +83,7 @@ namespace
 }
 
 template<>
-struct prog::os_services::fd::file_descriptor_deleter<foo>
+struct Pipe::os_services::fd::file_descriptor_deleter<foo>
 {
 	using pointer = tagged_file_descriptor_ref<foo>;
 	std::move_only_function<void(int)> close_stub;
@@ -94,9 +94,9 @@ struct prog::os_services::fd::file_descriptor_deleter<foo>
 	}
 };
 
-TESTCASE(prog_fd_tagged_file_descriptor_create_specialized_delter)
+TESTCASE(Pipe_fd_tagged_file_descriptor_create_specialized_delter)
 {
-	prog::os_services::fd::tagged_file_descriptor<foo> fd{124};
+	Pipe::os_services::fd::tagged_file_descriptor<foo> fd{124};
 	size_t delete_callcount = 0;
 	fd.get_deleter().close_stub = [
 		expected_fd = fd.get().native_handle(),

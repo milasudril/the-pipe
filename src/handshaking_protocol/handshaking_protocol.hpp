@@ -32,8 +32,8 @@ The procedure is as follows
    step(1), the server closes the connection, otherwise, the handshake procedure has been
    completed.
  */
-namespace prog::handshaking_protocol
+namespace Pipe::handshaking_protocol
 {
-	using server_socket_name = std::array<char, prog::utils::num_chars_16_bytes>;
+	using server_socket_name = std::array<char, Pipe::utils::num_chars_16_bytes>;
 	using handshake_key = std::array<std::byte, 16>;
 }

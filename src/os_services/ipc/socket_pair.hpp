@@ -1,12 +1,12 @@
-#ifndef PROG_OS_SERVICES_IPC_SOCKET_PAIR_HPP
-#define PROG_OS_SERVICES_IPC_SOCKET_PAIR_HPP
+#ifndef PIPE_OS_SERVICES_IPC_SOCKET_PAIR_HPP
+#define PIPE_OS_SERVICES_IPC_SOCKET_PAIR_HPP
 
 #include "./unix_domain_socket.hpp"
 #include "src/os_services/error_handling/system_error.hpp"
 
 #include <cstdlib>
 
-namespace prog::os_services::ipc
+namespace Pipe::os_services::ipc
 {
 	template<auto SocketType>
 	class socket_pair

@@ -1,5 +1,5 @@
-#ifndef PROG_IPC_UNIX_DOMAIN_SOCKET_HPP
-#define PROG_IPC_UNIX_DOMAIN_SOCKET_HPP
+#ifndef PIPE_IPC_UNIX_DOMAIN_SOCKET_HPP
+#define PIPE_IPC_UNIX_DOMAIN_SOCKET_HPP
 
 #include "./socket.hpp"
 #include "src/os_services/error_handling/system_error.hpp"
@@ -7,7 +7,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-namespace prog::os_services::ipc
+namespace Pipe::os_services::ipc
 {
 	/**
 	 * \brief Defines the domain type for sockaddr_un

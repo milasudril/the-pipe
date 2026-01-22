@@ -1,12 +1,12 @@
-#ifndef PROG_OS_SERVICES_IPC_SOCKET_HPP
-#define PROG_OS_SERVICES_IPC_SOCKET_HPP
+#ifndef PIPE_OS_SERVICES_IPC_SOCKET_HPP
+#define PIPE_OS_SERVICES_IPC_SOCKET_HPP
 
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/error_handling/system_error.hpp"
 
 #include <sys/socket.h>
 
-namespace prog::os_services::ipc
+namespace Pipe::os_services::ipc
 {
 	/**
 	 * \brief Trait for deriving the domain number, given AddressType
@@ -196,7 +196,7 @@ namespace prog::os_services::ipc
 }
 
 template<auto SocketType, class AddressType>
-struct prog::os_services::fd::enabled_fd_conversions<prog::os_services::ipc::connected_socket_tag<SocketType, AddressType>>
+struct Pipe::os_services::fd::enabled_fd_conversions<Pipe::os_services::ipc::connected_socket_tag<SocketType, AddressType>>
 {
 	static consteval void supports(io::input_file_descriptor_tag){};
 	static consteval void supports(io::output_file_descriptor_tag){};
