@@ -136,17 +136,19 @@ namespace Pipe::utils
 			auto const index_end = split_points[k] == first? split_points[k + 1] - 1 : split_points[k] - 1;
 			if(index_end == boundaries.stop_at - 1)
 			{
-				func(inclusive_integral_range{index_start, index_end}, args...);
+				if(index_start <= index_end)
+				{ func(inclusive_integral_range{index_start, index_end}, args...); }
 				return;
 			}
-			func(inclusive_integral_range{index_start, index_end}, args...);
+			if(index_start <= index_end)
+			{ func(inclusive_integral_range{index_start, index_end}, args...); }
 			first = index_end + 1;
 		}
 
-		if(boundaries.start_at != split_points.front())
+		if(boundaries.start_at != split_points.front() && first + 1 <= split_points.back() - 1)
 		{ func(inclusive_integral_range{first + 1, split_points.back() - 1}, args...); }
 
-		if(boundaries.stop_at != split_points.back())
+		if(boundaries.stop_at != split_points.back() && split_points.back() + 1 <= boundaries.stop_at)
 		{ func(inclusive_integral_range{split_points.back() + 1, boundaries.stop_at}, args...); }
 	}
 };

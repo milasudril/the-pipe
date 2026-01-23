@@ -112,3 +112,46 @@ TESTCASE(Pipe_utils_for_each_disjoint_segment_boundary_points_included)
 		expected_results
 	);
 }
+
+TESTCASE(Pipe_utils_for_each_disjoint_segment_consecutive_boundary_points_not_included)
+{
+	std::array const vals{1u, 2u, 5u, 6u};
+	std::array const expected_results{
+		Pipe::utils::inclusive_integral_range{0u, 0u},
+		Pipe::utils::inclusive_integral_range{3u, 4u},
+		Pipe::utils::inclusive_integral_range{7u, 0xffff'ffffu},
+	};
+	for_each_disjoint_segment(
+		Pipe::utils::inclusive_integral_range{
+			.start_at = 0u,
+			.stop_at = 0xffff'ffffu
+		},
+		std::span{std::begin(vals), std::end(vals)},
+		[k = 0](auto range, auto const& expected_results) mutable {
+			EXPECT_EQ(range, expected_results[k]);
+			++k;
+		},
+		expected_results
+	);
+}
+
+TESTCASE(Pipe_utils_for_each_disjoint_segment_consecutive_boundary_points_included)
+{
+	std::array const vals{0u, 1u, 3u, 4u, 0xffff'fffeu, 0xffff'ffffu};
+	std::array const expected_results{
+		Pipe::utils::inclusive_integral_range{2u, 2u},
+		Pipe::utils::inclusive_integral_range{5u, 0xffff'fffdu}
+	};
+	for_each_disjoint_segment(
+		Pipe::utils::inclusive_integral_range{
+			.start_at = 0u,
+			.stop_at = 0xffff'ffffu
+		},
+		std::span{std::begin(vals), std::end(vals)},
+		[k = 0](auto range, auto const& expected_results) mutable {
+			EXPECT_EQ(range, expected_results[k]);
+			++k;
+		},
+		expected_results
+	);
+}
