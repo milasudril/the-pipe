@@ -6,6 +6,9 @@
 #include <string>
 #include <cmath>
 #include <vector>
+#include <concepts>
+#include <span>
+#include <format>
 
 /**
  * \brief Contains various utility functions
@@ -74,16 +77,77 @@ namespace Pipe::utils
 		{detect_static_array(obj)};
 	};
 
+	/**
+	 * \brief A utility function to access the object behind ref
+	 */
 	template<class T>
-	inline constexpr decltype(auto) unwrap(T&& obj)
+	inline constexpr decltype(auto) unwrap(T&& ref)
 	{
 		if constexpr(is_refwrapper<T>)
-		{ return obj.get(); }
+		{ return ref.get(); }
 		else
 		if constexpr(is_dereferenceable<T> && !is_c_style_array<T>)
-		{ return *obj; }
+		{ return *ref; }
 		else
-		{ return std::forward<T>(obj); }
+		{ return std::forward<T>(ref); }
+	}
+
+	template<std::unsigned_integral T>
+	struct inclusive_integral_range
+	{
+		T start_at;
+		T stop_at;
+
+		constexpr bool operator==(inclusive_integral_range const&) const = default;
+		constexpr bool operator!=(inclusive_integral_range const&) const = default;
+	};
+
+	template<std::unsigned_integral T>
+	inline std::string to_string(inclusive_integral_range<T> range)
+	{
+		return std::format("[{}, {}]", range.start_at, range.stop_at);
+	}
+
+	/**
+	 * \brief Splits the range given by boundaries, at the values given by split_points
+	 *
+	 * \param boundaries The inclusive start and end points
+	 * \param split_points The points to split the range at. The span must represent a strictly
+	 *                     monotonic and increasing sequence.
+	 * \param func A callable object to call on each detected range
+	 * \param args Additional arguments that should be passed to func
+	 */
+	template<std::unsigned_integral SplitPoint, class Callable, class ... Args>
+	constexpr void for_each_disjoint_segment(
+		inclusive_integral_range<SplitPoint> boundaries,
+		std::span<SplitPoint const> split_points,
+		Callable func,
+		Args... args
+	)
+	{
+		if(split_points.empty())
+		{ return; }
+
+		auto first = boundaries.start_at;
+
+		for(size_t k = 0; k != std::size(split_points) - 1; ++k)
+		{
+			auto const index_start = split_points[k] == first? split_points[k] + 1 : first + (k != 0);
+			auto const index_end = split_points[k] == first? split_points[k + 1] - 1 : split_points[k] - 1;
+			if(index_end == boundaries.stop_at - 1)
+			{
+				func(inclusive_integral_range{index_start, index_end}, args...);
+				return;
+			}
+			func(inclusive_integral_range{index_start, index_end}, args...);
+			first = index_end + 1;
+		}
+
+		if(boundaries.start_at != split_points.front())
+		{ func(inclusive_integral_range{first + 1, split_points.back() - 1}, args...); }
+
+		if(boundaries.stop_at != split_points.back())
+		{ func(inclusive_integral_range{split_points.back() + 1, boundaries.stop_at}, args...); }
 	}
 };
 
