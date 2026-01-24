@@ -93,6 +93,55 @@ namespace Pipe::utils
 		{ return std::forward<T>(ref); }
 	}
 
+
+	template<class T>
+	class flat_set
+	{
+	public:
+		class span:std::span<T const>
+		{
+		public:
+			constexpr span() = default;
+
+			using std::span<T const>::begin;
+			using std::span<T const>::end;
+			using std::span<T const>::operator[];
+			using std::span<T const>::empty;
+			using std::span<T const>::size;
+			using std::span<T const>::front;
+			using std::span<T const>::back;
+			using iterator = std::span<T const>::iterator;
+
+			constexpr span trim(iterator begin, iterator end) const
+			{
+				return span{begin, end};
+			}
+
+		private:
+			constexpr explicit span(T const* begin, T const* end):std::span<T const>{begin, end}{}
+			constexpr explicit span(iterator begin, iterator end):std::span<T const>{begin, end}{}
+
+			friend class flat_set;
+		};
+
+		template<class Iter>
+		explicit flat_set(Iter begin, Iter end):
+			m_values{begin, end}
+		{ std::ranges::sort(m_values); }
+
+		operator span() const
+		{ return span{std::data(m_values), std::data(m_values) + std::size(m_values)}; }
+
+	private:
+		std::vector<T> m_values;
+	};
+
+	template<class Iter>
+	flat_set(Iter, Iter) -> flat_set<typename std::iterator_traits<Iter>::value_type>;
+
+	template<class T>
+	using immutable_flat_set = flat_set<T>::span;
+
 	template<std::unsigned_integral T>
 	struct inclusive_integral_range
 	{
@@ -110,7 +159,7 @@ namespace Pipe::utils
 	}
 
 	template<class T>
-	constexpr std::span<T const> trim(inclusive_integral_range<T> boundaries, std::span<T const> vals)
+	constexpr auto trim(inclusive_integral_range<T> boundaries, immutable_flat_set<T> vals)
 	{
 		auto const start_at = std::ranges::find_if(
 			vals,
@@ -128,9 +177,9 @@ namespace Pipe::utils
 		);
 
 		if(start_at == std::end(vals) || stop_at == std::begin(vals))
-		{ return std::span<T const>{}; }
+		{ return immutable_flat_set<T>{}; }
 
-		return std::span{start_at, stop_at};
+		return vals.trim(start_at, stop_at);
 	}
 
 	/**
@@ -145,7 +194,7 @@ namespace Pipe::utils
 	template<std::unsigned_integral SplitPoint, class Callable, class ... Args>
 	constexpr void for_each_disjoint_segment(
 		inclusive_integral_range<SplitPoint> boundaries,
-		std::span<SplitPoint const> split_points,
+		immutable_flat_set<SplitPoint> split_points,
 		Callable func,
 		Args... args
 	)

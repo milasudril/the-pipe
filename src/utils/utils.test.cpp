@@ -32,7 +32,7 @@ TESTCASE(Pipe_utils_for_each_disjoint_segment_boundary_points_not_included)
 			.start_at = 0u,
 			.stop_at = 0xffff'ffffu
 		},
-		std::span{std::begin(vals), std::end(vals)},
+		Pipe::utils::flat_set{std::begin(vals), std::end(vals)},
 		[k = 0](auto range, auto const& expected_results) mutable {
 			EXPECT_EQ(range, expected_results[k]);
 			++k;
@@ -56,7 +56,7 @@ TESTCASE(Pipe_utils_for_each_disjoint_segment_boundary_start_at_included)
 			.start_at = 0u,
 			.stop_at = 0xffff'ffffu
 		},
-		std::span{std::begin(vals), std::end(vals)},
+		Pipe::utils::flat_set{std::begin(vals), std::end(vals)},
 		[k = 0](auto range, auto const& expected_results) mutable {
 			EXPECT_EQ(range, expected_results[k]);
 			++k;
@@ -80,7 +80,7 @@ TESTCASE(Pipe_utils_for_each_disjoint_segment_boundary_stop_at_included)
 			.start_at = 0u,
 			.stop_at = 0xffff'ffffu
 		},
-		std::span{std::begin(vals), std::end(vals)},
+		Pipe::utils::flat_set{std::begin(vals), std::end(vals)},
 		[k = 0](auto range, auto const& expected_results) mutable {
 			EXPECT_EQ(range, expected_results[k]);
 			++k;
@@ -104,7 +104,7 @@ TESTCASE(Pipe_utils_for_each_disjoint_segment_boundary_points_included)
 			.start_at = 0u,
 			.stop_at = 0xffff'ffffu
 		},
-		std::span{std::begin(vals), std::end(vals)},
+		Pipe::utils::flat_set{std::begin(vals), std::end(vals)},
 		[k = 0](auto range, auto const& expected_results) mutable {
 			EXPECT_EQ(range, expected_results[k]);
 			++k;
@@ -126,7 +126,7 @@ TESTCASE(Pipe_utils_for_each_disjoint_segment_consecutive_boundary_points_not_in
 			.start_at = 0u,
 			.stop_at = 0xffff'ffffu
 		},
-		std::span{std::begin(vals), std::end(vals)},
+		Pipe::utils::flat_set{std::begin(vals), std::end(vals)},
 		[k = 0](auto range, auto const& expected_results) mutable {
 			EXPECT_EQ(range, expected_results[k]);
 			++k;
@@ -147,7 +147,7 @@ TESTCASE(Pipe_utils_for_each_disjoint_segment_consecutive_boundary_points_includ
 			.start_at = 0u,
 			.stop_at = 0xffff'ffffu
 		},
-		std::span{std::begin(vals), std::end(vals)},
+		Pipe::utils::flat_set{std::begin(vals), std::end(vals)},
 		[k = 0](auto range, auto const& expected_results) mutable {
 			EXPECT_EQ(range, expected_results[k]);
 			++k;
@@ -168,7 +168,7 @@ TESTCASE(Pipe_utils_for_each_disjoint_segment_vals_outside_range)
 			.start_at = 3u,
 			.stop_at = 16u
 		},
-		std::span{std::begin(vals), std::end(vals)},
+		Pipe::utils::flat_set{std::begin(vals), std::end(vals)},
 		[k = 0](auto range, auto const& expected_results) mutable {
 			EXPECT_EQ(range, expected_results[k]);
 			++k;
