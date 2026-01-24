@@ -224,28 +224,28 @@ namespace Pipe::utils
 			return;
 		}
 
-		auto first = boundaries.start_at;
-
-		for(size_t k = 0; k != std::size(split_points) - 1; ++k)
+		auto i = std::begin(split_points);
+		auto index_start = boundaries.start_at;
+		if(*i == boundaries.start_at)
 		{
-			auto const index_start = split_points[k] == first? split_points[k] + 1 : first + (k != 0);
-			auto const index_end = split_points[k] == first? split_points[k + 1] - 1 : split_points[k] - 1;
-			if(index_end == boundaries.stop_at - 1)
-			{
-				if(index_start <= index_end)
-				{ func(inclusive_integral_range{index_start, index_end}, args...); }
-				return;
-			}
-			if(index_start <= index_end)
-			{ func(inclusive_integral_range{index_start, index_end}, args...); }
-			first = index_end + 1;
+			++index_start;
+			++i;
 		}
 
-		if(boundaries.start_at != split_points.front() && first + 1 <= split_points.back() - 1)
-		{ func(inclusive_integral_range{first + 1, split_points.back() - 1}, args...); }
+		while(i != std::end(split_points))
+		{
+			auto index_stop = *i;
+			if(index_start != index_stop)
+			{ func(inclusive_integral_range{index_start, index_stop - 1}, args...); }
+			index_start = index_stop + 1;
+			++i;
+		}
 
-		if(boundaries.stop_at != split_points.back() && split_points.back() + 1 <= boundaries.stop_at)
-		{ func(inclusive_integral_range{split_points.back() + 1, boundaries.stop_at}, args...); }
+		{
+			auto index_stop = boundaries.stop_at;
+			if(index_start != index_stop && boundaries.stop_at != split_points.back())
+			{ func(inclusive_integral_range{index_start, index_stop}, args...);}
+		}
 	}
 };
 
