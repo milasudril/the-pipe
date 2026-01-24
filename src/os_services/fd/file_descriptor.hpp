@@ -153,14 +153,20 @@ namespace Pipe::os_services::fd
 	>;
 
 	/**
+	 * \brief A tag type for an arbitrary file descriptor
+	 */
+	struct generic_fd_tag
+	{};
+
+	/**
 	 * \brief A reference to an arbitrary file descriptor
 	 */
-	using file_descriptor_ref = tagged_file_descriptor_ref<void>;
+	using file_descriptor_ref = tagged_file_descriptor_ref<generic_fd_tag>;
 
 	/**
 	 * \brief An owner of an arbitrary file descriptor
 	 */
-	using file_descriptor = tagged_file_descriptor<void>;
+	using file_descriptor = tagged_file_descriptor<generic_fd_tag>;
 }
 
 #endif

@@ -1,8 +1,13 @@
 //@	{"target": {"name": "proc_mgmt.test"}}
 
 #include "./proc_mgmt.hpp"
+#include "src/os_services/fd/file_descriptor.hpp"
+#include "src/os_services/io/io.hpp"
 #include "src/os_services/ipc/pipe.hpp"
+#include "src/os_services/ipc/socket_pair.hpp"
 
+#include <cstdlib>
+#include <ranges>
 #include <testfwk/testfwk.hpp>
 #include <thread>
 
@@ -169,4 +174,51 @@ TESTCASE(Pipe_proc_mgmt_spawn_run_kill)
 
 	kill(proc.second.get(), SIGTERM);
 	auto const proc_result = wait(proc.second.get());	EXPECT_EQ(std::get<Pipe::os_services::proc_mgmt::process_killed>(proc_result).signo, SIGTERM);
+}
+
+TESTCASE(Pipe_proc_mgmt_spawn_run_with_extra_fd)
+{
+	Pipe::os_services::ipc::socket_pair<SOCK_STREAM> sockets;
+	std::array<char const*, 2> args{	"/proc/self/fd"};
+	auto const fd_to_look_for = sockets.socket_b().native_handle();
+	std::array fds_to_forward{Pipe::os_services::fd::file_descriptor{sockets.take_socket_b().release()}};
+	Pipe::os_services::ipc::pipe sysout;
+	auto const proc = Pipe::os_services::proc_mgmt::spawn(
+		"/usr/bin/ls",
+		args,
+		std::span<char const*>{},
+		Pipe::os_services::proc_mgmt::io_redirection{
+			.sysin = {},
+			.sysout = sysout.take_write_end(),
+			.syserr = {}
+		},
+		fds_to_forward
+	);
+
+	std::array<char, 4096> buffer{};
+	auto read_result = read(sysout.read_end(), std::as_writable_bytes(std::span{buffer}));
+	EXPECT_EQ(read_result.operation_would_have_blocked(), false);
+	std::vector<int> open_fds;
+	for(auto item : std::ranges::split_view{buffer, '\n'})
+	{
+		int output_value{-1};
+		auto const res = std::from_chars(std::begin(item), std::end(item), output_value);
+		if(res.ptr != std::end(item))
+		{ break; }
+		EXPECT_EQ(res.ptr, std::end(item));
+		EXPECT_EQ(res.ec, std::errc{});
+		open_fds.push_back(output_value);
+	}
+
+	auto proc_result = wait(proc.second.get());
+	EXPECT_EQ(std::get<Pipe::os_services::proc_mgmt::process_exited>(proc_result).return_value, 0);
+
+	static constexpr size_t num_std_fds = 3;
+	static constexpr size_t self_fds = 1;
+	static constexpr size_t num_extra_fds = 1;
+	EXPECT_EQ(std::size(open_fds), num_std_fds + self_fds + num_extra_fds);
+	EXPECT_NE(std::ranges::find(open_fds, STDIN_FILENO), std::end(open_fds));
+	EXPECT_NE(std::ranges::find(open_fds, STDOUT_FILENO), std::end(open_fds));
+	EXPECT_NE(std::ranges::find(open_fds, STDERR_FILENO), std::end(open_fds));
+	EXPECT_NE(std::ranges::find(open_fds, fd_to_look_for), std::end(open_fds));
 }

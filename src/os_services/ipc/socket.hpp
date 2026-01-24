@@ -79,7 +79,18 @@ namespace Pipe::os_services::ipc
 	template<auto SocketType, class AddressType>
 	struct connected_socket_tag
 	{};
+}
 
+template<auto SocketType, class AddressType>
+struct Pipe::os_services::fd::enabled_fd_conversions<Pipe::os_services::ipc::connected_socket_tag<SocketType, AddressType>>
+{
+	static consteval void supports(io::input_file_descriptor_tag){};
+	static consteval void supports(io::output_file_descriptor_tag){};
+	static consteval void supports(generic_fd_tag){};
+};
+
+namespace Pipe::os_services::ipc
+{
 	/**
 	 * \brief A reference to a connected socket
 	 */
@@ -194,12 +205,5 @@ namespace Pipe::os_services::ipc
 	void shutdown(connected_socket_ref<SocketType, AddressType> socket, connection_shutdown_ops ops_to_disable)
 	{ ::shutdown(socket.native_handle(), static_cast<int>(ops_to_disable)); }
 }
-
-template<auto SocketType, class AddressType>
-struct Pipe::os_services::fd::enabled_fd_conversions<Pipe::os_services::ipc::connected_socket_tag<SocketType, AddressType>>
-{
-	static consteval void supports(io::input_file_descriptor_tag){};
-	static consteval void supports(io::output_file_descriptor_tag){};
-};
 
 #endif
