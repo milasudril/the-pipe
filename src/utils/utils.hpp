@@ -3,6 +3,7 @@
 #ifndef PIPE_UTILS_HPP
 #define PIPE_UTILS_HPP
 
+#include <algorithm>
 #include <string>
 #include <cmath>
 #include <vector>
@@ -108,6 +109,30 @@ namespace Pipe::utils
 		return std::format("[{}, {}]", range.start_at, range.stop_at);
 	}
 
+	template<class T>
+	constexpr std::span<T const> trim(inclusive_integral_range<T> boundaries, std::span<T const> vals)
+	{
+		auto const start_at = std::ranges::find_if(
+			vals,
+			[start_at = boundaries.start_at](auto const& val) {
+				return val >= start_at;
+			}
+		);
+
+		auto const stop_at = std::find_if(
+			start_at,
+			std::end(vals),
+			[stop_at = boundaries.stop_at](auto const& val) {
+				return val > stop_at;
+			}
+		);
+
+		if(start_at == std::end(vals) || stop_at == std::begin(vals))
+		{ return std::span<T const>{}; }
+
+		return std::span{start_at, stop_at};
+	}
+
 	/**
 	 * \brief Splits the range given by boundaries, at the values given by split_points
 	 *
@@ -125,6 +150,8 @@ namespace Pipe::utils
 		Args... args
 	)
 	{
+		split_points = trim(boundaries, split_points);
+
 		if(split_points.empty())
 		{ return; }
 

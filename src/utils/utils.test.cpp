@@ -155,3 +155,24 @@ TESTCASE(Pipe_utils_for_each_disjoint_segment_consecutive_boundary_points_includ
 		expected_results
 	);
 }
+
+TESTCASE(Pipe_utils_for_each_disjoint_segment_vals_outside_range)
+{
+	std::array const vals{0u, 1u, 2u, 3u, 6u, 0xffff'fffeu, 0xffff'ffffu};
+	std::array const expected_results{
+		Pipe::utils::inclusive_integral_range{4u, 5u},
+		Pipe::utils::inclusive_integral_range{7u, 16u}
+	};
+	for_each_disjoint_segment(
+		Pipe::utils::inclusive_integral_range{
+			.start_at = 3u,
+			.stop_at = 16u
+		},
+		std::span{std::begin(vals), std::end(vals)},
+		[k = 0](auto range, auto const& expected_results) mutable {
+			EXPECT_EQ(range, expected_results[k]);
+			++k;
+		},
+		expected_results
+	);
+}
