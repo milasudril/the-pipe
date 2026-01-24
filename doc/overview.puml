@@ -1,0 +1,32 @@
+@startuml
+left to right direction
+component host_application {
+	component client{
+		portin log_in
+		port ctl_host
+		portout decoded_log_msg
+	}
+
+	queue log_messages{
+		portin log_messages_in
+		portout log_messages_out
+	}
+
+	component ui {
+		portin log
+		portin user_events
+	}
+}
+
+component client_application {
+	port ctl_client
+	portout log_out
+	portin data_in
+	portout data_out
+}
+
+log_out -up-> log_in: <<pipe>>
+ctl_client <-up-> ctl_host: <<unix socket>>
+decoded_log_msg -> log_messages_in
+log_messages_out -right-> log
+@enduml
