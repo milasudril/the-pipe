@@ -1,5 +1,7 @@
 //@	{"target":{"name": "main.o"}}
 
+#include "src/log/log.hpp"
+
 #include <cstdio>
 
 int main(int argc, char**)
