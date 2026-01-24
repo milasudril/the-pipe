@@ -127,7 +127,7 @@ namespace Pipe::utils
 		template<class Iter>
 		explicit flat_set(Iter begin, Iter end):
 			m_values{begin, end}
-		{ std::ranges::sort(m_values); }
+		{ sort_and_remove_duplicates(); }
 
 		template<class Iter, class ValueConverter>
 		explicit flat_set(Iter begin, Iter end, ValueConverter conv)
@@ -138,14 +138,19 @@ namespace Pipe::utils
 				std::back_inserter(m_values),
 				std::forward<ValueConverter>(conv)
 			);
-			std::ranges::sort(m_values);
+			sort_and_remove_duplicates();
 		}
-
 
 		operator span() const
 		{ return span{std::data(m_values), std::data(m_values) + std::size(m_values)}; }
 
 	private:
+		void sort_and_remove_duplicates()
+		{
+			std::ranges::sort(m_values);
+			auto const res = std::ranges::unique(m_values);
+			m_values.erase(res.end(), std::end(m_values));
+		}
 		std::vector<T> m_values;
 	};
 
