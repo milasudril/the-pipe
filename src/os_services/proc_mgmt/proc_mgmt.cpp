@@ -99,16 +99,24 @@ Pipe::os_services::proc_mgmt::spawn(
 	char const* path,
 	std::span<char const*> argv,
 	std::span<char const*> env,
-	io_redirection const& io_redir
+	io_redirection const& io_redir,
+	std::span<fd::file_descriptor> fds_to_forward
 )
 {
 	ipc::pipe exec_err_pipe;
 	auto const exec_err_pipe_read_end = exec_err_pipe.close_read_end_on_exec();
 	auto parent_ready_fd = ipc::make_eventfd();
 
-	// Before fork, prepare stuff to be passed to exec
+	// Before fork, prepare stuff to be passed to do_exec
 	auto const argv_out = build_argv(path, argv);
 	auto const env_out = build_env(env);
+	utils::flat_set fds_to_keep{
+		std::begin(fds_to_forward),
+		std::end(fds_to_forward),
+		[](auto const& val) {
+			return static_cast<unsigned int>(val.get().native_handle());
+		}
+	};
 
 	auto const fork_res = ::fork();
 	switch(fork_res)
@@ -128,7 +136,7 @@ Pipe::os_services::proc_mgmt::spawn(
 				std::data(argv_out),
 				std::data(env_out),
 				io_redir,
-				utils::immutable_flat_set<unsigned int>{},
+				fds_to_keep,
 				exec_err_pipe.write_end()
 			);
 			exec_err_pipe.close_write_end();

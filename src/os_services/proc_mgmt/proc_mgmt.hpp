@@ -132,24 +132,28 @@ namespace Pipe::os_services::proc_mgmt
 	 * \param env A list of environment variable strings, on the form key=value
 	 *
 	 * \param io_redir An io_redirection object used to configure redirection of the standard streams.
+	 *
+	 * \param fds_to_forward A list of file descriptors to forward to the child process
 	 */
 	std::pair<pid_t, pidfd> spawn(
 		char const* path,
-		std::span<char const*> argv,
-		std::span<char const*> env,
-		io_redirection const& io_redir
+		std::span<char const*> argv = std::span<char const*>{},
+		std::span<char const*> env = std::span<char const*>{},
+		io_redirection const& io_redir = io_redirection{},
+		std::span<fd::file_descriptor> fds_to_forward = std::span<fd::file_descriptor>{}
 	);
 
 	class process
 	{
 	public:
 		explicit process(
-			char const* path,
-			std::span<char const*> argv,
-			std::span<char const*> env,
-			io_redirection const& io_redir
+		char const* path,
+		std::span<char const*> argv = std::span<char const*>{},
+		std::span<char const*> env = std::span<char const*>{},
+		io_redirection const& io_redir = io_redirection{},
+		std::span<fd::file_descriptor> fds_to_forward = std::span<fd::file_descriptor>{}
 		):
-			m_handle{spawn(path, argv, env, io_redir)}
+			m_handle{spawn(path, argv, env, io_redir, fds_to_forward)}
 		{}
 
 		auto file_descriptor() const

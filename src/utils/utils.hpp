@@ -129,6 +129,19 @@ namespace Pipe::utils
 			m_values{begin, end}
 		{ std::ranges::sort(m_values); }
 
+		template<class Iter, class ValueConverter>
+		explicit flat_set(Iter begin, Iter end, ValueConverter conv)
+		{
+			std::transform(
+				begin,
+				end,
+				std::back_inserter(m_values),
+				std::forward<ValueConverter>(conv)
+			);
+			std::ranges::sort(m_values);
+		}
+
+
 		operator span() const
 		{ return span{std::data(m_values), std::data(m_values) + std::size(m_values)}; }
 
@@ -138,6 +151,10 @@ namespace Pipe::utils
 
 	template<class Iter>
 	flat_set(Iter, Iter) -> flat_set<typename std::iterator_traits<Iter>::value_type>;
+
+	template<class Iter, class ValueConverter>
+	flat_set(Iter begin, Iter end, ValueConverter conv) ->
+		flat_set<std::invoke_result_t<ValueConverter, typename std::iterator_traits<Iter>::value_type>>;
 
 	template<class T>
 	using immutable_flat_set = flat_set<T>::span;
