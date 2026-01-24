@@ -15,7 +15,17 @@ namespace Pipe::os_services::ipc
 	 */
 	struct eventfd_tag
 	{};
+}
 
+template<>
+struct Pipe::os_services::fd::enabled_fd_conversions<Pipe::os_services::ipc::eventfd_tag>
+{
+	static consteval void supports(io::input_file_descriptor_tag){}
+	static consteval void supports(io::output_file_descriptor_tag){}
+};
+
+namespace Pipe::os_services::ipc
+{
 	/**
 	 * \brief A reference to an event file descriptor
 	 */
@@ -37,12 +47,5 @@ namespace Pipe::os_services::ipc
 		return ret;
 	}
 }
-
-template<>
-struct Pipe::os_services::fd::enabled_fd_conversions<Pipe::os_services::ipc::eventfd_tag>
-{
-	static consteval void supports(io::input_file_descriptor_tag){}
-	static consteval void supports(io::output_file_descriptor_tag){}
-};
 
 #endif
