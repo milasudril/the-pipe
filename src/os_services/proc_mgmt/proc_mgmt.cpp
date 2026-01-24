@@ -5,6 +5,7 @@
 #include "src/os_services/ipc/pipe.hpp"
 #include "src/os_services/ipc/eventfd.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
+#include "src/utils/utils.hpp"
 
 #include <cstdint>
 #include <linux/close_range.h>
@@ -32,6 +33,7 @@ namespace
 		char* const* argv,
 		char* const* env,
 		Pipe::os_services::proc_mgmt::io_redirection const& io_redir,
+		Pipe::utils::immutable_flat_set<unsigned int> fds_to_keep,
 		Pipe::os_services::io::output_file_descriptor_ref errstream
 	) noexcept
 	{
@@ -52,7 +54,16 @@ namespace
 			{ goto fail; }
 		}
 
-		::close_range(STDERR_FILENO + 1, ~0u, CLOSE_RANGE_CLOEXEC);
+		for_each_disjoint_segment(
+			Pipe::utils::inclusive_integral_range{
+				.start_at = static_cast<unsigned int>(STDERR_FILENO + 1),
+				.stop_at = ~0u
+			},
+			fds_to_keep,
+			[](auto const range){
+				::close_range(range.start_at, range.stop_at, CLOSE_RANGE_CLOEXEC);
+			}
+		);
 		__gcov_dump();
 		::execve(path, argv, env);
 
@@ -112,7 +123,14 @@ Pipe::os_services::proc_mgmt::spawn(
 			io::read_while_eintr(parent_ready_fd.get().native_handle(), &val, sizeof(val));
 			parent_ready_fd.reset();
 			::close(exec_err_pipe_read_end);
-			do_exec(path, std::data(argv_out), std::data(env_out), io_redir, exec_err_pipe.write_end());
+			do_exec(
+				path,
+				std::data(argv_out),
+				std::data(env_out),
+				io_redir,
+				utils::immutable_flat_set<unsigned int>{},
+				exec_err_pipe.write_end()
+			);
 			exec_err_pipe.close_write_end();
 			__gcov_dump();
 			_exit(127);

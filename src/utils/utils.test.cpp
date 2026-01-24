@@ -176,3 +176,22 @@ TESTCASE(Pipe_utils_for_each_disjoint_segment_vals_outside_range)
 		expected_results
 	);
 }
+
+TESTCASE(Pipe_utils_for_each_disjoint_segment_empty_set_returns_full_range)
+{
+	std::array const expected_results{
+		Pipe::utils::inclusive_integral_range{3u, 16u}
+	};
+	for_each_disjoint_segment(
+		Pipe::utils::inclusive_integral_range{
+			.start_at = 3u,
+			.stop_at = 16u
+		},
+		Pipe::utils::immutable_flat_set<unsigned int>{},
+		[k = 0](auto range, auto const& expected_results) mutable {
+			EXPECT_EQ(range, expected_results[k]);
+			++k;
+		},
+		expected_results
+	);
+}

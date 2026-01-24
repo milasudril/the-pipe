@@ -202,7 +202,10 @@ namespace Pipe::utils
 		split_points = trim(boundaries, split_points);
 
 		if(split_points.empty())
-		{ return; }
+		{
+			func(boundaries, args...);
+			return;
+		}
 
 		auto first = boundaries.start_at;
 
