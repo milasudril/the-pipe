@@ -6,6 +6,19 @@
 
 namespace Pipe::json_log_writer
 {
+	jopp::object to_jopp_object(log::item const& item)
+	{
+		jopp::object ret;
+		ret.insert(
+			"when",
+			std::chrono::duration<double>(item.when.time_since_epoch()).count()
+		);
+		ret.insert("message", item.message);
+		ret.insert("severity", to_string(item.severity));
+
+		return ret;
+	}
+
 	class writer
 	{
 	public:

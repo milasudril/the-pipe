@@ -7,6 +7,7 @@
 #include <format>
 #include <functional>
 #include <string_view>
+#include <stdexcept>
 
 /**
  * \brief Logging facilities
@@ -17,6 +18,23 @@ namespace Pipe::log
 	 * \brief The severity of a log message
 	 */
 	enum class severity{info, warning, error};
+
+	constexpr char const* to_string(enum severity value)
+	{
+		switch(value)
+		{
+			case severity::info:
+				return "info";
+
+			case severity::warning:
+				return "warning";
+
+			case severity::error:
+				return "error";
+		}
+
+		throw std::range_error{""};
+	}
 
 	/**
 	 * \brief The type of clock to be used for log items
