@@ -1,3 +1,5 @@
+//@	{"dependencies_extra":[{"ref":"./log.o", "rel":"implementation"}]}
+
 #ifndef PIPE_LOG_HPP
 #define PIPE_LOG_HPP
 
@@ -85,7 +87,7 @@ namespace Pipe::log
 		type_erased_timestamp_generator(std::reference_wrapper<T> object):
 			m_object{&object.get()},
 			m_now{[](void* timestamp_generator) {
-				static_cast<T*>(timestamp_generator)->now();
+				return static_cast<T*>(timestamp_generator)->now();
 			}}
 		{}
 
