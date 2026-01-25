@@ -14,7 +14,7 @@
 namespace Pipe::log
 {
 	/**
-	 * \brief The severity of o a log message
+	 * \brief The severity of a log message
 	 */
 	enum class severity{info, warning, error};
 
