@@ -31,6 +31,9 @@ namespace Pipe::log
 		clock::time_point when;
 		enum severity severity;
 		std::string message;
+
+		bool operator==(item const&) const = default;
+		bool operator!=(item const&) const = default;
 	};
 
 	/**
@@ -134,6 +137,31 @@ namespace Pipe::log
 	 * \return The old log configuration
 	 */
 	[[nodiscard]] configuration configure(configuration const& log_cfg) noexcept;
+
+	/**
+	 * \brief Guards a local log configuration
+	 */
+	class context
+	{
+	public:
+		context(context const& log_cfg) = delete;
+		context(context&& log_cfg) = delete;
+		context& operator=(context const& log_cfg) = delete;
+		context& operator=(context&& log_cfg) = delete;
+
+		/**
+		 * \brief Constructs a context, by saving the current config and replacing it with log_cfg
+		 */
+		[[nodiscard]] explicit context(configuration const& log_cfg) noexcept:
+			m_old_cfg{configure(log_cfg)}
+		{}
+
+		~context() noexcept
+		{ std::ignore = configure(m_old_cfg); }
+
+	private:
+		configuration m_old_cfg;
+	};
 };
 
 #endif
