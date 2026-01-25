@@ -40,10 +40,12 @@ TESTCASE(Pipe_log_configure_and_write_message)
 {
 	my_timestamp_generator generator;
 	my_writer writer;
-	configure(Pipe::log::configuration{
-		.writer = std::ref(writer),
-		.timestamp_generator = std::ref(generator)
-	});
+	std::ignore = configure(
+		Pipe::log::configuration{
+			.writer = std::ref(writer),
+			.timestamp_generator = std::ref(generator)
+		}
+	);
 
 	write_message(Pipe::log::severity::info, "This is an info message {}", 1);
 	write_message(Pipe::log::severity::warning, "This is a warning message {}", 2);

@@ -130,8 +130,10 @@ namespace Pipe::log
 
 	/**
 	 * \brief Configures the global log
+	 * \param log_cfg The new log configuration
+	 * \return The old log configuration
 	 */
-	void configure(configuration const& log_cfg) noexcept;
+	[[nodiscard]] configuration configure(configuration const& log_cfg) noexcept;
 };
 
 #endif

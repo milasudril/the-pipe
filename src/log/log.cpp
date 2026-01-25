@@ -3,6 +3,7 @@
 #include "./log.hpp"
 
 #include <mutex>
+#include <utility>
 
 namespace
 {
@@ -10,10 +11,10 @@ namespace
 	constinit std::mutex log_mutex;
 };
 
-void Pipe::log::configure(configuration const& cfg) noexcept
+Pipe::log::configuration Pipe::log::configure(configuration const& cfg) noexcept
 {
 	std::lock_guard lock{log_mutex};
-	log_cfg = cfg;
+	return std::exchange(log_cfg, cfg);
 }
 
 void Pipe::log::write_message(enum severity severity, std::string&& message)
