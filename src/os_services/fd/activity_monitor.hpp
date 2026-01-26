@@ -352,8 +352,6 @@ namespace Pipe::os_services::fd
 		void wait_for_and_distpatch_events();
 
 	private:
-
-
 		file_descriptor m_epoll_fd;
 		std::unordered_map<event_handler_id, std::unique_ptr<epoll_entry_data>, event_handler_id_hash> m_listeners;
 		event_handler_id m_current_id;
