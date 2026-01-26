@@ -26,6 +26,19 @@ namespace Pipe::json_log_writer
 		return ret;
 	}
 
+	/**
+	 * \todo Actually belongs in a json_log_reader module
+	 */
+	inline log::item make_log_item(jopp::object const& obj)
+	{
+		return log::item{
+			.when = log::clock::time_point{}
+				+ duration_cast<log::clock::duration>(std::chrono::duration<double>{obj.get_field_as<double>("when")}),
+			.severity = log::make_severity(obj.get_field_as<std::string>("severity")),
+			.message = obj.get_field_as<std::string>("message")
+		};
+	}
+
 	class writer
 	{
 	public:

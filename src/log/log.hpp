@@ -36,6 +36,21 @@ namespace Pipe::log
 		throw std::range_error{""};
 	}
 
+	constexpr severity make_severity(std::string_view str)
+	{
+		if(str == "info")
+		{ return severity::info; }
+		else
+		if(str == "warning")
+		{ return severity::warning; }
+		else
+		if(str == "error")
+		{ return severity::error; }
+
+		// Maybe better to use some other error handling
+		throw std::runtime_error{"Unknown severity"};
+	}
+
 	/**
 	 * \brief The type of clock to be used for log items
 	 */
