@@ -35,7 +35,11 @@ namespace Pipe::json_log_writer
 			output_is_closed
 		};
 
-		explicit writer(size_t buffer_size = 65536):
+		explicit writer(
+			size_t buffer_size = 65536,
+			os_services::io::output_file_descriptor_ref initial_fd = os_services::io::output_file_descriptor_ref{STDERR_FILENO}
+		):
+			m_initial_fd{initial_fd},
 			m_buffer_size{buffer_size},
 			m_output_buffer{std::make_unique<char[]>(buffer_size)},
 			m_output_write_ptr{m_output_buffer.get()},
@@ -43,7 +47,11 @@ namespace Pipe::json_log_writer
 		{}
 
 		void write(log::item const& item)
-		{ m_objects_to_write.push(to_jopp_object(item)); }
+		{
+			m_objects_to_write.push(to_jopp_object(item));
+			if(m_initial_fd != nullptr)
+			{ std::ignore = pump_data(m_initial_fd); }
+		}
 
 		void handle_event(
 			os_services::fd::activity_event const& event,
@@ -52,6 +60,7 @@ namespace Pipe::json_log_writer
 		{
 			if(can_write(event.get_activity_status()))
 			{
+				m_initial_fd = nullptr;
 				if(pump_data(fd) == flush_result::output_is_closed)
 				{ event.stop_listening(); }
 			}
@@ -63,13 +72,13 @@ namespace Pipe::json_log_writer
 
 	private:
 		std::queue<std::unique_ptr<jopp::object>> m_objects_to_write;
+		os_services::io::output_file_descriptor_ref m_initial_fd;
 		struct current_state
 		{
 			jopp::serializer serializer;
 			os_services::io::output_file_descriptor_ref fd;
 		};
 		std::optional<current_state> m_current_state;
-
 		size_t m_buffer_size;
 		std::unique_ptr<char[]> m_output_buffer;
 		char* m_output_write_ptr;

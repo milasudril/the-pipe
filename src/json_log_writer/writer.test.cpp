@@ -22,7 +22,7 @@ TESTCASE(Pipe_json_log_writer_write_message)
 		.message = "Hello, world"
 	});
 
-	Pipe::os_services::io::output_file_descriptor_ref fd{STDOUT_FILENO};
+	Pipe::os_services::io::output_file_descriptor_ref fd{STDERR_FILENO};
 	auto const result = writer.pump_data(fd);
 	EXPECT_EQ(result, Pipe::json_log_writer::writer::flush_result::keep_going);
 
