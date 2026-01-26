@@ -46,7 +46,7 @@ namespace Pipe::json_log_writer
 		{ m_objects_to_write.push(to_jopp_object(item)); }
 
 		void handle_event(
-			os_services::fd::activity_event& event,
+			os_services::fd::activity_event const& event,
 			os_services::io::output_file_descriptor_ref fd
 		)
 		{

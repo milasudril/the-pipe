@@ -6,6 +6,13 @@
 
 #include <testfwk/testfwk.hpp>
 
+static_assert(
+	Pipe::os_services::fd::activity_event_handler<
+		Pipe::json_log_writer::writer,
+		Pipe::os_services::io::output_file_descriptor_tag
+	>
+);
+
 TESTCASE(Pipe_json_log_writer_write_message)
 {
 	Pipe::json_log_writer::writer writer{};
