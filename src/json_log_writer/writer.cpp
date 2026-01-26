@@ -5,23 +5,23 @@
 [[nodiscard]] Pipe::json_log_writer::writer::flush_result
 Pipe::json_log_writer::writer::pump_data(os_services::io::output_file_descriptor_ref fd)
 {
-	if(!m_current_serializer.has_value())
+	if(!m_current_state.has_value())
 	{
 		if(m_objects_to_write.empty())
 		{ return flush_result::keep_going; }
 
-		m_current_serializer = jopp::serializer{*m_objects_to_write.front()};
+		m_current_state = {jopp::serializer{*m_objects_to_write.front()}, fd};
 	}
 
 	while(!m_objects_to_write.empty())
 	{
 		auto const end_ptr = m_output_buffer.get() + m_buffer_size;
-		auto const res = m_current_serializer->serialize(std::span{m_output_write_ptr, end_ptr});
+		auto const res = m_current_state->serializer.serialize(std::span{m_output_write_ptr, end_ptr});
 		m_output_write_ptr = res.ptr;
 		switch(res.ec)
 		{
 			case jopp::serializer_error_code::buffer_is_full:
-				switch(flush(fd))
+				switch(flush())
 				{
 					case flush_result::keep_going:
 						m_output_write_ptr = m_output_buffer.get();
@@ -34,9 +34,11 @@ Pipe::json_log_writer::writer::pump_data(os_services::io::output_file_descriptor
 				break;
 
 			case jopp::serializer_error_code::completed:
-				m_current_serializer.reset();
+			{
+				auto const flush_result = flush();
+				m_current_state.reset();
 				m_objects_to_write.pop();
-				switch(flush(fd))
+				switch(flush_result)
 				{
 					case flush_result::keep_going:
 						m_output_write_ptr = m_output_buffer.get();
@@ -47,6 +49,7 @@ Pipe::json_log_writer::writer::pump_data(os_services::io::output_file_descriptor
 						return flush_result::output_is_closed;
 				}
 				break;
+			}
 			case jopp::serializer_error_code::illegal_char_in_string:
 				throw std::runtime_error{"Invalid jopp object"};
 		};
@@ -55,8 +58,15 @@ Pipe::json_log_writer::writer::pump_data(os_services::io::output_file_descriptor
 }
 
 [[nodiscard]]
-Pipe::json_log_writer::writer::flush_result Pipe::json_log_writer::writer::flush(os_services::io::output_file_descriptor_ref fd)
+Pipe::json_log_writer::writer::flush_result Pipe::json_log_writer::writer::flush()
 {
+	if(!m_current_state.has_value())
+	{ abort(); }
+
+	auto const fd = m_current_state->fd;
+	if(!fd.is_valid())
+	{ abort(); }
+
 	auto read_ptr = m_output_read_ptr;
 	auto const write_ptr = m_output_write_ptr;
 	while(read_ptr != write_ptr)

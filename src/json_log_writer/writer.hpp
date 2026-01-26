@@ -59,11 +59,16 @@ namespace Pipe::json_log_writer
 
 		[[nodiscard]] flush_result pump_data(os_services::io::output_file_descriptor_ref fd);
 
-		[[nodiscard]] flush_result flush(os_services::io::output_file_descriptor_ref fd);
+		[[nodiscard]] flush_result flush();
 
 	private:
 		std::queue<std::unique_ptr<jopp::object>> m_objects_to_write;
-		std::optional<jopp::serializer> m_current_serializer;
+		struct current_state
+		{
+			jopp::serializer serializer;
+			os_services::io::output_file_descriptor_ref fd;
+		};
+		std::optional<current_state> m_current_state;
 
 		size_t m_buffer_size;
 		std::unique_ptr<char[]> m_output_buffer;
