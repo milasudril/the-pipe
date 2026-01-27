@@ -1,6 +1,8 @@
 //@	{"target": {"name": "writer.o"}}
 
 #include "./writer.hpp"
+#include "./item_converter.hpp"
+
 #include <jopp/serializer.hpp>
 
 void Pipe::json_log::writer::write(log::item const& item)

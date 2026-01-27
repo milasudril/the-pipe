@@ -1,6 +1,7 @@
 //@	{"target":{"name":"writer.test"}}
 
 #include "./writer.hpp"
+#include "./item_converter.hpp"
 #include "src/log/log.hpp"
 #include "src/os_services/io/io.hpp"
 
