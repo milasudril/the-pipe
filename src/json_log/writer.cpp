@@ -3,7 +3,7 @@
 #include "./writer.hpp"
 #include <jopp/serializer.hpp>
 
-void Pipe::json_log_writer::writer::write(log::item const& item)
+void Pipe::json_log::writer::write(log::item const& item)
 {
 	auto const object = to_jopp_object(item);
 	jopp::serializer serializer{object};

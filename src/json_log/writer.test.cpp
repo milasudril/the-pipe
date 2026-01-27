@@ -9,11 +9,11 @@
 #include <jopp/parser.hpp>
 #include <unistd.h>
 
-TESTCASE(Pipe_json_log_writer_direct_write_small_buffer)
+TESTCASE(Pipe_json_log_direct_write_small_buffer)
 {
 	Pipe::os_services::fd::file_descriptor fd{memfd_create("", 0)};
 
-	Pipe::json_log_writer::writer writer{
+	Pipe::json_log::writer writer{
 		5,
 		Pipe::os_services::io::output_file_descriptor_ref{fd.get().native_handle()}
 	};
@@ -49,7 +49,7 @@ TESTCASE(Pipe_json_log_writer_direct_write_small_buffer)
 		remaining = std::span{parse_result.ptr, std::end(remaining)};
 		auto const root_value = root.get_if<jopp::object>();
 		REQUIRE_NE(root_value, nullptr);
-		auto const item = Pipe::json_log_writer::make_log_item(*root_value);
+		auto const item = Pipe::json_log::make_log_item(*root_value);
 
 		EXPECT_EQ(
 			item,
@@ -70,7 +70,7 @@ TESTCASE(Pipe_json_log_writer_direct_write_small_buffer)
 		remaining = std::span{parse_result.ptr, std::end(remaining)};
 		auto const root_value = root.get_if<jopp::object>();
 		REQUIRE_NE(root_value, nullptr);
-		auto const item = Pipe::json_log_writer::make_log_item(*root_value);
+		auto const item = Pipe::json_log::make_log_item(*root_value);
 
 		EXPECT_EQ(
 			item,

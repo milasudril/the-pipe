@@ -1,14 +1,14 @@
 //@	{"dependencies_extra": [{"ref": "./writer.o", "rel":"implementation"}]}
 
-#ifndef PIPE_JSON_LOG_WRITER_WRITER_HPP
-#define PIPE_JSON_LOG_WRITER_WRITER_HPP
+#ifndef PIPE_JSON_LOG_WRITER_HPP
+#define PIPE_JSON_LOG_WRITER_HPP
 
 #include "src/log/log.hpp"
 #include "src/os_services/io/io.hpp"
 
 #include <jopp/types.hpp>
 
-namespace Pipe::json_log_writer
+namespace Pipe::json_log
 {
 	inline jopp::object to_jopp_object(log::item const& item)
 	{

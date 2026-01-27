@@ -1,6 +1,6 @@
 //@	{"target":{"name": "main.o"}}
 
-#include "src/json_log_writer/writer.hpp"
+#include "src/json_log/writer.hpp"
 #include "src/log/log.hpp"
 
 #include <cstdio>
@@ -8,7 +8,7 @@
 int main(int argc, char**)
 {
 	std::chrono::system_clock std_system_clock;
-	Pipe::json_log_writer::writer log_writer;
+	Pipe::json_log::writer log_writer;
 
 	Pipe::log::context log_ctxt{
 		Pipe::log::configuration{
