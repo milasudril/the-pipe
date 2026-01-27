@@ -19,6 +19,9 @@ namespace Pipe::log
 	 */
 	enum class severity{info, warning, error};
 
+	/**
+	 * \brief Converts the severity value to a string
+	 */
 	constexpr char const* to_string(enum severity value)
 	{
 		switch(value)
@@ -36,6 +39,9 @@ namespace Pipe::log
 		throw std::range_error{""};
 	}
 
+	/**
+	 * \brief Converts str to a severity value
+	 */
 	constexpr severity make_severity(std::string_view str)
 	{
 		if(str == "info")
@@ -84,6 +90,9 @@ namespace Pipe::log
 	void write_message(item&& item_to_write, T& writer)
 	{ writer.write(std::move(item_to_write)); }
 
+	/**
+	 * \brief A polymorphic wrapper around the writer concept, that captures objects by reference
+	 */
 	class type_erased_writer
 	{
 	public:
@@ -114,6 +123,10 @@ namespace Pipe::log
 		{ x.now() } -> std::same_as<clock::time_point>;
 	};
 
+	/**
+	 * \brief A polymorphic wrapper around the timestamp_generator concept, that captures objects by
+	 * reference
+	 */
 	class type_erased_timestamp_generator
 	{
 	public:
