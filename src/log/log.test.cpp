@@ -84,3 +84,17 @@ TESTCASE(Pipe_log_configure_and_write_message)
 	write_message(Pipe::log::severity::info, "This is an info message {}", 1);
 	EXPECT_EQ(writer.written_items, written_items);
 }
+
+TESTCASE(Pipe_log_severity_to_string)
+{
+	EXPECT_EQ(to_string(Pipe::log::severity::info), std::string_view{"info"});
+	EXPECT_EQ(to_string(Pipe::log::severity::warning), std::string_view{"warning"});
+	EXPECT_EQ(to_string(Pipe::log::severity::error), std::string_view{"error"});
+}
+
+TESTCASE(Pipe_log_severity_from_string)
+{
+	EXPECT_EQ(Pipe::log::make_severity("info"), Pipe::log::severity::info);
+	EXPECT_EQ(Pipe::log::make_severity("warning"), Pipe::log::severity::warning);
+	EXPECT_EQ(Pipe::log::make_severity("error"), Pipe::log::severity::error);
+}
