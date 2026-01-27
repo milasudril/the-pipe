@@ -4,25 +4,21 @@
 #define PIPE_JSON_LOG_WRITER_WRITER_HPP
 
 #include "src/log/log.hpp"
-#include "src/os_services/fd/activity_event.hpp"
 #include "src/os_services/io/io.hpp"
 
-#include <jopp/serializer.hpp>
-#include <queue>
-#include <tuple>
-#include <optional>
+#include <jopp/types.hpp>
 
 namespace Pipe::json_log_writer
 {
-	inline std::unique_ptr<jopp::object> to_jopp_object(log::item const& item)
+	inline jopp::object to_jopp_object(log::item const& item)
 	{
-		auto ret = std::make_unique<jopp::object>();
-		ret->insert(
+		jopp::object ret;
+		ret.insert(
 			"when",
 			std::chrono::duration<double>(item.when.time_since_epoch()).count()
 		);
-		ret->insert("message", item.message);
-		ret->insert("severity", to_string(item.severity));
+		ret.insert("message", item.message);
+		ret.insert("severity", to_string(item.severity));
 		return ret;
 	}
 
@@ -42,60 +38,21 @@ namespace Pipe::json_log_writer
 	class writer
 	{
 	public:
-		enum class flush_result{
-			keep_going,
-			output_is_blocked,
-			output_is_closed
-		};
-
 		explicit writer(
 			size_t buffer_size = 65536,
-			os_services::io::output_file_descriptor_ref initial_fd = os_services::io::output_file_descriptor_ref{STDERR_FILENO}
+			os_services::io::output_file_descriptor_ref output_fd = os_services::io::output_file_descriptor_ref{STDERR_FILENO}
 		):
-			m_initial_fd{initial_fd},
+			m_output_fd{output_fd},
 			m_buffer_size{buffer_size},
-			m_output_buffer{std::make_unique<char[]>(buffer_size)},
-			m_output_write_ptr{m_output_buffer.get()},
-			m_output_read_ptr{m_output_buffer.get()}
+			m_output_buffer{std::make_unique<char[]>(buffer_size)}
 		{}
 
-		void write(log::item const& item)
-		{
-			m_objects_to_write.push(to_jopp_object(item));
-			if(m_initial_fd != nullptr)
-			{ std::ignore = pump_data(m_initial_fd); }
-		}
-
-		void handle_event(
-			os_services::fd::activity_event const& event,
-			os_services::io::output_file_descriptor_ref fd
-		)
-		{
-			if(can_write(event.get_activity_status()))
-			{
-				m_initial_fd = nullptr;
-				if(pump_data(fd) == flush_result::output_is_closed)
-				{ event.stop_listening(); }
-			}
-		}
-
-		[[nodiscard]] flush_result pump_data(os_services::io::output_file_descriptor_ref fd);
-
-		[[nodiscard]] flush_result flush();
+		void write(log::item const& item);
 
 	private:
-		std::queue<std::unique_ptr<jopp::object>> m_objects_to_write;
-		os_services::io::output_file_descriptor_ref m_initial_fd;
-		struct current_state
-		{
-			jopp::serializer serializer;
-			os_services::io::output_file_descriptor_ref fd;
-		};
-		std::optional<current_state> m_current_state;
+		os_services::io::output_file_descriptor_ref m_output_fd;
 		size_t m_buffer_size;
 		std::unique_ptr<char[]> m_output_buffer;
-		char* m_output_write_ptr;
-		char* m_output_read_ptr;
 	};
 }
 
