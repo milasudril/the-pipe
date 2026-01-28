@@ -5,107 +5,102 @@
 #include "src/os_services/ipc/pipe.hpp"
 #include "src/os_services/ipc/socket.hpp"
 #include "src/os_services/ipc/unix_domain_socket.hpp"
+#include "src/os_services/ipc/socket_pair.hpp"
 #include "src/os_services/fd/activity_monitor.hpp"
-#include "src/handshaking_protocol/handshaking_protocol.hpp"
 #include "src/os_services/proc_mgmt/proc_mgmt.hpp"
+#include "src/client_ctl/startup_config.hpp"
 #include "src/utils/utils.hpp"
 
+#include <ctime>
 #include <random>
 #include <unordered_map>
+#include <jopp/serializer.hpp>
 
 namespace Pipe::host
 {
-	class client_activity_handler
+	class log_reader
 	{
 	public:
-		client_activity_handler(std::reference_wrapper<client_process> client_proc):
-			m_client_proc{client_proc}
-		{}
-
-		void handle_event(
-			os_services::fd::activity_event const&,
-			os_services::io::output_file_descriptor_ref
-		)
-		{
-		}
-
-		void handle_event(
-			os_services::fd::activity_event const&,
-			os_services::io::input_file_descriptor_ref
-		)
-		{
-		}
-
 		void handle_event(
 			os_services::fd::activity_event const& event,
-			os_services::proc_mgmt::pidfd_ref pid
+			os_services::io::input_file_descriptor_ref
 		)
 		{
 			if(can_read(event.get_activity_status()))
 			{
-				wait(pid);
-				event.stop_listening();
+				// TODO: Decode log entries and dispatch to listener
 			}
 		}
-
-	private:
-		std::reference_wrapper<client_process> m_client_proc;
 	};
 
-	class client_process_repository:std::unordered_map<pid_t, std::unique_ptr<client_process>>
+	class client_process_repository:std::unordered_map<pid_t, std::shared_ptr<client_process>>
 	{
 	public:
-		using base = std::unordered_map<pid_t, std::unique_ptr<client_process>>;
+		using base = std::unordered_map<pid_t, std::shared_ptr<client_process>>;
 		using base::find;
 		using base::contains;
 		using base::begin;
 		using base::end;
 		using base::size;
 
-		client_process& load(
+		void handle_event(
+			os_services::fd::activity_event const& event,
+			os_services::proc_mgmt::pidfd_ref
+		)
+		{
+			if(can_read(event.get_activity_status()))
+			{
+				// TODO: Decode log entries and dispatch to listener
+			}
+		}
+
+		void load(
 			std::filesystem::path const& client_binary,
 			os_services::fd::activity_monitor& activity_monitor
 		)
 		{
-			os_services::ipc::pipe server_to_client_handshake_pipe;
-			os_services::ipc::pipe client_to_server_handshake_pipe;
+			os_services::ipc::pipe logpipe;
+			os_services::ipc::socket_pair<SOCK_STREAM> ctl_sockets;
+			auto const startup_config = to_string(
+				client_ctl::to_jopp_object(
+					client_ctl::startup_config{
+						client_ctl::host_info{
+							.address = ctl_sockets.take_socket_a().release()
+						}
+					}
+				)
+			);
+			std::array args_cstr{startup_config.c_str()};
+
 			auto process = os_services::proc_mgmt::spawn(
 				client_binary.c_str(),
-				std::span<char const*>{},
+				std::span{std::data(args_cstr), 1},
 				std::span<char const*>{},
 				os_services::proc_mgmt::io_redirection{
-					.sysin = server_to_client_handshake_pipe.take_read_end(),
-					.sysout = server_to_client_handshake_pipe.take_write_end(),
-					.syserr = {}
+					.sysin = {},
+					.sysout = {},
+					.syserr = logpipe.take_write_end()
 				}
 			);
 
-
-			auto client_proc = std::make_unique<client_process>();
-			auto client_proc_ptr = client_proc.get();
-			auto handshake = std::make_shared<client_activity_handler>(*client_proc_ptr);
-			if(!emplace(process.first, std::move(client_proc)).second)
-			{ throw std::runtime_error{"Pid already exists in map"}; }
-
+			auto client_proc = std::make_shared<client_process>();
 			activity_monitor.make_config_transaction()
+				.add(
+					logpipe.take_read_end(),
+					os_services::fd::activity_status::read,
+					log_reader{}
+				)
+				.add(
+					ctl_sockets.take_socket_b(),
+					os_services::fd::activity_status::write,
+					client_proc
+				)
 				.add(
 					std::move(process.second),
 					os_services::fd::activity_status::read,
-					handshake
-				)
-				.add(
-					server_to_client_handshake_pipe.take_write_end(),
-					os_services::fd::activity_status::write,
-					handshake
-				)
-				.add(
-					client_to_server_handshake_pipe.take_read_end(),
-					os_services::fd::activity_status::read,
-					handshake
+					std::ref(*this)
 				)
 			.commit();
-
-			return *client_proc_ptr;
 		}
 	};
 
@@ -132,20 +127,4 @@ namespace Pipe::host
 		std::unordered_map<uint64_t, os_services::ipc::connected_socket<SOCK_STREAM, sockaddr_un>> m_clients;
 		uint64_t m_client_id{0};
 	};
-
-	void make_server(os_services::fd::activity_monitor& activity_monitor)
-	{
-		auto server_name = utils::random_printable_ascii_string(
-			std::tuple_size_v<handshaking_protocol::server_socket_name>
-		);
-
-		std::ignore = activity_monitor.add(
-			os_services::ipc::make_server_socket<SOCK_STREAM>(
-				os_services::ipc::make_abstract_sockaddr_un(server_name),
-					1024
-			),
-			os_services::fd::activity_status::read,
-			server_activity_handler{server_name}
-		);
-	}
 }

@@ -2,6 +2,7 @@
 
 #include "src/json_log/writer.hpp"
 #include "src/log/log.hpp"
+#include "src/client_ctl/startup_config.hpp"
 
 #include <cstdio>
 
