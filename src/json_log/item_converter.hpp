@@ -4,6 +4,7 @@
 #include "src/log/log.hpp"
 
 #include <jopp/types.hpp>
+#include <expected>
 
 namespace Pipe::json_log
 {
@@ -19,16 +20,25 @@ namespace Pipe::json_log
 		return ret;
 	}
 
-	/**
-	 * \todo Actually belongs in a json_log_reader module
-	 */
-	inline log::item make_log_item(jopp::object const& obj)
+	inline std::expected<log::item, char const*> make_log_item(jopp::object const& obj)
 	{
+		auto const when = obj.try_get_field_as<double>("when");
+		if(when == nullptr)
+		{ return std::unexpected{"Failed to extract mandatory field `when` from received log item"}; }
+
+		auto const severity = obj.try_get_field_as<std::string>("severity");
+		if(severity == nullptr)
+		{ return std::unexpected{"Failed to extract mandatory field `severity` from received log item"}; }
+
+		auto const message = obj.try_get_field_as<std::string>("message");
+		if(message == nullptr)
+		{ return std::unexpected{"Failed to extract mandatory field `severity` from received log item"}; }
+
 		return log::item{
 			.when = log::clock::time_point{}
-				+ duration_cast<log::clock::duration>(std::chrono::duration<double>{obj.get_field_as<double>("when")}),
-			.severity = log::make_severity(obj.get_field_as<std::string>("severity")),
-			.message = obj.get_field_as<std::string>("message")
+				+ duration_cast<log::clock::duration>(std::chrono::duration<double>{*when}),
+			.severity = log::make_severity_with_fallback(*severity, log::severity::info),
+			.message = std::move(*message)
 		};
 	}
 }

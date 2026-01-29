@@ -58,6 +58,23 @@ namespace Pipe::log
 	}
 
 	/**
+	 * \brief Converts str to a severity value, with a fallback
+	 */
+	constexpr severity make_severity_with_fallback(std::string_view str, severity fallback)
+	{
+		if(str == "info")
+		{ return severity::info; }
+		else
+		if(str == "warning")
+		{ return severity::warning; }
+		else
+		if(str == "error")
+		{ return severity::error; }
+
+		return fallback;
+	}
+
+	/**
 	 * \brief The type of clock to be used for log items
 	 */
 	using clock = std::chrono::system_clock;
