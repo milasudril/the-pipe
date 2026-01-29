@@ -1,3 +1,4 @@
 -iquote.
 -std=c++23
 -mavx2
+-Wno-invalid-constexpr
