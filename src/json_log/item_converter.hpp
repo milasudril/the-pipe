@@ -8,6 +8,9 @@
 
 namespace Pipe::json_log
 {
+	/**
+	 * \brief Converts item into a jopp::object
+	 */
 	inline jopp::object to_jopp_object(log::item const& item)
 	{
 		jopp::object ret;
@@ -20,6 +23,11 @@ namespace Pipe::json_log
 		return ret;
 	}
 
+	/**
+	 * \brief Converts a jopp::object into an item
+	 * \note If conversion fails, a message wrapped in an std::unexpected is returned
+	 * \note If the severity conveyed by obj is unknown, it is mapped to log::item::severity::info
+	 */
 	inline std::expected<log::item, char const*> make_log_item(jopp::object const& obj)
 	{
 		auto const when = obj.try_get_field_as<double>("when");
