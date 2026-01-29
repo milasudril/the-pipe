@@ -10,7 +10,7 @@ TESTCASE(Pipe_json_log_item_converter_to_jopp_object)
 	auto obj = Pipe::json_log::to_jopp_object(
 		Pipe::log::item{
 			.when = Pipe::log::clock::time_point{} + std::chrono::seconds{1},
-			.severity = Pipe::log::severity::info,
+			.severity = Pipe::log::item::severity::info,
 			.message = "This is a test"
 		}
 	);
@@ -31,7 +31,7 @@ TESTCASE(Pipe_json_log_item_converter_make_log_item_good)
 	REQUIRE_EQ(item.has_value(), true);
 	EXPECT_EQ(item->when, Pipe::log::clock::time_point{} + std::chrono::seconds{1})
 	EXPECT_EQ(item->message, "This is a test");
-	EXPECT_EQ(item->severity, Pipe::log::severity::info);
+	EXPECT_EQ(item->severity, Pipe::log::item::severity::info);
 }
 
 
@@ -72,7 +72,7 @@ TESTCASE(Pipe_json_log_item_converter_make_log_item_unknown_severity)
 
 	auto const item = Pipe::json_log::make_log_item(obj);
 	REQUIRE_EQ(item.has_value(), true);
-	EXPECT_EQ(item->severity, Pipe::log::severity::info);
+	EXPECT_EQ(item->severity, Pipe::log::item::severity::info);
 }
 
 TESTCASE(Pipe_json_log_item_converter_make_log_item_missing_message)

@@ -15,66 +15,6 @@
 namespace Pipe::log
 {
 	/**
-	 * \brief The severity of a log message
-	 */
-	enum class severity{info, warning, error};
-
-	/**
-	 * \brief Converts the severity value to a string
-	 */
-	constexpr char const* to_string(enum severity value)
-	{
-		switch(value)
-		{
-			case severity::info:
-				return "info";
-
-			case severity::warning:
-				return "warning";
-
-			case severity::error:
-				return "error";
-		}
-
-		throw std::range_error{""};
-	}
-
-	/**
-	 * \brief Converts str to a severity value
-	 */
-	constexpr severity make_severity(std::string_view str)
-	{
-		if(str == "info")
-		{ return severity::info; }
-		else
-		if(str == "warning")
-		{ return severity::warning; }
-		else
-		if(str == "error")
-		{ return severity::error; }
-
-		// Maybe better to use some other error handling
-		throw std::runtime_error{"Unknown severity"};
-	}
-
-	/**
-	 * \brief Converts str to a severity value, with a fallback
-	 */
-	constexpr severity make_severity_with_fallback(std::string_view str, severity fallback)
-	{
-		if(str == "info")
-		{ return severity::info; }
-		else
-		if(str == "warning")
-		{ return severity::warning; }
-		else
-		if(str == "error")
-		{ return severity::error; }
-
-		return fallback;
-	}
-
-	/**
 	 * \brief The type of clock to be used for log items
 	 */
 	using clock = std::chrono::system_clock;
@@ -84,6 +24,11 @@ namespace Pipe::log
 	 */
 	struct item
 	{
+		/**
+		 * \brief The severity of a log message
+		 */
+		enum class severity{info, warning, error};
+
 		clock::time_point when;
 		enum severity severity;
 		std::string message;
@@ -91,6 +36,64 @@ namespace Pipe::log
 		bool operator==(item const&) const = default;
 		bool operator!=(item const&) const = default;
 	};
+
+		/**
+	 * \brief Converts the severity value to a string
+	 */
+	constexpr char const* to_string(enum item::severity value)
+	{
+		switch(value)
+		{
+			case item::severity::info:
+				return "info";
+
+			case item::severity::warning:
+				return "warning";
+
+			case item::severity::error:
+				return "error";
+		}
+
+		throw std::range_error{""};
+	}
+
+	/**
+	 * \brief Converts str to a severity value
+	 */
+	constexpr enum item::severity make_severity(std::string_view str)
+	{
+		if(str == "info")
+		{ return item::severity::info; }
+		else
+		if(str == "warning")
+		{ return item::severity::warning; }
+		else
+		if(str == "error")
+		{ return item::severity::error; }
+
+		// Maybe better to use some other error handling
+		throw std::runtime_error{"Unknown severity"};
+	}
+
+	/**
+	 * \brief Converts str to a severity value, with a fallback
+	 */
+	constexpr enum item::severity make_severity_with_fallback(
+		std::string_view str,
+		enum item::severity fallback
+	)
+	{
+		if(str == "info")
+		{ return item::severity::info; }
+		else
+		if(str == "warning")
+		{ return item::severity::warning; }
+		else
+		if(str == "error")
+		{ return item::severity::error; }
+
+		return fallback;
+	}
 
 	/**
 	 * \brief Describes the requirement of a writer
@@ -171,13 +174,13 @@ namespace Pipe::log
 	/**
 	 * \brief Writes a pre-formatted log message using the current writer
 	 */
-	void write_message(enum severity severity, std::string&& message);
+	void write_message(enum item::severity severity, std::string&& message);
 
 	/**
 	 * \brief Formats a log message and writes it using the current writer
 	 */
 	template<class ... Args>
-	void write_message(enum severity severity, std::format_string<Args...> fmt, Args... args) noexcept
+	void write_message(enum item::severity severity, std::format_string<Args...> fmt, Args... args) noexcept
 	{
 		try
 		{ write_message(severity, std::format(fmt, std::forward<Args>(args)...)); }

@@ -37,7 +37,7 @@ namespace Pipe::json_log
 		return log::item{
 			.when = log::clock::time_point{}
 				+ duration_cast<log::clock::duration>(std::chrono::duration<double>{*when}),
-			.severity = log::make_severity_with_fallback(*severity, log::severity::info),
+			.severity = log::make_severity_with_fallback(*severity, log::item::severity::info),
 			.message = std::move(*message)
 		};
 	}

@@ -20,13 +20,13 @@ TESTCASE(Pipe_json_log_direct_write_small_buffer)
 	};
 	writer.write(Pipe::log::item{
 		.when = std::chrono::system_clock::time_point{} + std::chrono::seconds{1},
-		.severity = Pipe::log::severity::info,
+		.severity = Pipe::log::item::severity::info,
 		.message = "First message"
 	});
 
 	writer.write(Pipe::log::item{
 		.when = std::chrono::system_clock::time_point{} + std::chrono::seconds{2},
-		.severity = Pipe::log::severity::warning,
+		.severity = Pipe::log::item::severity::warning,
 		.message = "Second message"
 	});
 
@@ -56,7 +56,7 @@ TESTCASE(Pipe_json_log_direct_write_small_buffer)
 			item,
 			(Pipe::log::item{
 				.when = std::chrono::system_clock::time_point{} + std::chrono::seconds{1},
-				.severity = Pipe::log::severity::info,
+				.severity = Pipe::log::item::severity::info,
 				.message = "First message"
 			})
 		);
@@ -77,7 +77,7 @@ TESTCASE(Pipe_json_log_direct_write_small_buffer)
 			item,
 			(Pipe::log::item{
 				.when = std::chrono::system_clock::time_point{} + std::chrono::seconds{2},
-				.severity = Pipe::log::severity::warning,
+				.severity = Pipe::log::item::severity::warning,
 				.message = "Second message"
 			})
 		);

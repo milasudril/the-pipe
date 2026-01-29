@@ -17,7 +17,7 @@ Pipe::log::configuration Pipe::log::configure(configuration const& cfg) noexcept
 	return std::exchange(log_cfg, cfg);
 }
 
-void Pipe::log::write_message(enum severity severity, std::string&& message)
+void Pipe::log::write_message(enum item::severity severity, std::string&& message)
 {
 	std::lock_guard lock{log_mutex};
 	write_message(

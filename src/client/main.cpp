@@ -21,7 +21,7 @@ int main(int argc, char**)
 	if(argc != 2)
 	{
 		write_message(
-			Pipe::log::severity::error,
+			Pipe::log::item::severity::error,
 			"Wrong number of command line arguments. Got {} expected 2",
 			argc
 		);
