@@ -112,22 +112,16 @@ namespace Pipe::client_ctl
 	/**
 	 * \brief Specifies which input file to use for different input ports
 	 */
-	using file_input_port_map = std::map<std::filesystem::path, std::vector<port_name>>;
+	using input_port_file_map = std::map<port_name, std::filesystem::path>;
 
 	/**
-	 * \brief Converts a file_input_port_map to a jopp::object
+	 * \brief Converts a input_port_file_map to a jopp::object
 	 */
-	inline jopp::object to_jopp_object(file_input_port_map const& object)
+	inline jopp::object to_jopp_object(input_port_file_map const& object)
 	{
 		jopp::object ret;
 		for(auto const& item: object)
-		{
-			jopp::array ports;
-			for(auto const& port: item.second)
-			{ ports.push_back(port); }
-
-			ret.insert(item.first.string(), std::move(ports));
-		}
+		{ ret.insert(std::string{item.first}, item.second.string()); }
 		return ret;
 	}
 
@@ -158,7 +152,7 @@ namespace Pipe::client_ctl
 	 */
 	struct local_config
 	{
-		file_input_port_map inputs;
+		input_port_file_map inputs;
 		output_port_file_map outputs;
 	};
 
