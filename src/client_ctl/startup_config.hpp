@@ -13,25 +13,47 @@
 
 namespace Pipe::client_ctl
 {
+	/**
+	 * \brief Type trait used to serialize/deserialize a host_address
+	 */
 	template<class T>
 	struct host_address_type_info
 	{};
 
+	/**
+	 * \brief The type of socket to use for the client_ctl protocol
+	 */
 	using socket_fd_ref = os_services::ipc::connected_socket_ref<SOCK_STREAM, sockaddr_un>;
 
+	/**
+	 * \brief Specialization of host_address_type_info for socket_fd_ref
+	 */
 	template<>
 	struct host_address_type_info<socket_fd_ref>
 	{
+		/**
+		 * \brief If host address type is set to socket_fd, a file descriptor referring to a socket
+		 *        will be provided by host_address
+		 */
 		static constexpr const char* name = "socket_fd";
 	};
 
+	/**
+	 * \brief Convers a socket_fd_ref to jopp::number
+	 */
 	inline jopp::number to_jopp_value(socket_fd_ref value)
 	{
 		return static_cast<jopp::number>(value.native_handle());
 	}
 
+	/**
+	 * \brief The possible ways of specifying a host_address
+	 */
 	using host_address = std::variant<socket_fd_ref>;
 
+	/**
+	 * \brief Converts a host_address to a jopp::object
+	 */
 	inline jopp::object to_jopp_object(host_address address)
 	{
 		return std::visit(
@@ -45,21 +67,36 @@ namespace Pipe::client_ctl
 		);
 	}
 
+	/**
+	 * \brief Type trait used to serialize/deserialize an operational_mode
+	 */
 	template<class T>
 	struct operational_mode_info
 	{};
 
+	/**
+	 * \brief Specifies information about the host to connect to
+	 */
 	struct host_info
 	{
 		host_address address;
 	};
 
+	/**
+	 * \brief Specialization of operational_mode_info for host_info
+	 */
 	template<>
 	struct operational_mode_info<host_info>
 	{
+		/**
+		 * \brief If operational_mode is connected_to_host, the client should run connected to a host
+		 */
 		static constexpr const char* name = "connected_to_host";
 	};
 
+	/**
+	 * \brief Converts a host_info to a jopp::object
+	 */
 	inline jopp::object to_jopp_object(host_info const& object)
 	{
 		jopp::object ret;
@@ -67,19 +104,42 @@ namespace Pipe::client_ctl
 		return ret;
 	}
 
-	using file_input_port_map = std::map<std::string, std::filesystem::path>;
+	/**
+	 * \brief The type used to identify a port
+	 */
+	using port_name = std::string;
 
+	/**
+	 * \brief Specifies which input file to use for different input ports
+	 */
+	using file_input_port_map = std::map<std::filesystem::path, std::vector<port_name>>;
+
+	/**
+	 * \brief Converts a file_input_port_map to a jopp::object
+	 */
 	inline jopp::object to_jopp_object(file_input_port_map const& object)
 	{
 		jopp::object ret;
 		for(auto const& item: object)
-		{ ret.insert(std::string{item.first}, item.second.string()); }
+		{
+			jopp::array ports;
+			for(auto const& port: item.second)
+			{ ports.push_back(port); }
+
+			ret.insert(item.first.string(), std::move(ports));
+		}
 		return ret;
 	}
 
-	using file_output_port_map = std::map<std::string, std::vector<std::filesystem::path>>;
+	/**
+	 * \brief Specifies which output files to use for a specific port
+	 */
+	using output_port_file_map = std::map<port_name, std::vector<std::filesystem::path>>;
 
-	inline jopp::object to_jopp_object(file_output_port_map const& object)
+	/**
+	 * \brief Converts a output_port_file_map to a jopp::object
+	 */
+	inline jopp::object to_jopp_object(output_port_file_map const& object)
 	{
 		jopp::object ret;
 		for(auto const& item: object)
@@ -93,18 +153,30 @@ namespace Pipe::client_ctl
 		return ret;
 	}
 
+	/**
+	 * \brief Describes a configuration to use when the client is running in standalone mode
+	 */
 	struct local_config
 	{
 		file_input_port_map inputs;
-		file_output_port_map outputs;
+		output_port_file_map outputs;
 	};
 
+	/**
+	 * \brief Specialization of operational_mode_info for local_config
+	 */
 	template<>
 	struct operational_mode_info<local_config>
 	{
+		/**
+		 * \brief If operational_mode is standalone, the client should run without a host
+		 */
 		static constexpr const char* name = "standalone";
 	};
 
+	/**
+	 * \brief Converts a local_config to a jopp::obejct
+	 */
 	inline jopp::object to_jopp_object(local_config const& cfg)
 	{
 		jopp::object ret;
@@ -113,8 +185,14 @@ namespace Pipe::client_ctl
 		return ret;
 	}
 
+	/**
+	 * \brief The possible startup configurations
+	 */
 	using startup_config = std::variant<host_info, local_config>;
 
+	/**
+	 * \brief Converts a startup_config
+	 */
 	inline jopp::object to_jopp_object(startup_config const& cfg)
 	{
 		return std::visit(
