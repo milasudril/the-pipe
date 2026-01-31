@@ -283,10 +283,10 @@ TESTCASE(Pipe_client_ctl_startup_config_jopp_object_to_output_port_file_map)
 	EXPECT_EQ(port_2[2], "Asphalt_Wet_Cracked_Roughness.exr");
 }
 
-TESTCASE(Pipe_client_ctl_startup_config_local_config_to_jopp_object)
+TESTCASE(Pipe_client_ctl_startup_config_standalone_config_to_jopp_object)
 {
 	auto const result = to_jopp_object(
-		Pipe::client_ctl::local_config{
+		Pipe::client_ctl::standalone_config{
 			.inputs = Pipe::client_ctl::input_port_file_map{
 				{"port_1", "Brick_Victorian_Red_Normal.exr"},
 			},
@@ -317,7 +317,7 @@ TESTCASE(Pipe_client_ctl_startup_config_local_config_to_jopp_object)
 	}
 }
 
-TESTCASE(Pipe_client_ctl_startup_config_jopp_object_to_local_config)
+TESTCASE(Pipe_client_ctl_startup_config_jopp_object_to_standalone_config)
 {
 	jopp::object obj;
 	{
@@ -343,7 +343,7 @@ TESTCASE(Pipe_client_ctl_startup_config_jopp_object_to_local_config)
 		obj.insert("outputs", std::move(outputs));
 	}
 
-	auto const result = Pipe::client_ctl::make_local_config(obj);
+	auto const result = Pipe::client_ctl::make_standalone_config(obj);
 
 	{
 		auto const& inputs = result.inputs;
@@ -365,11 +365,11 @@ TESTCASE(Pipe_client_ctl_startup_config_jopp_object_to_local_config)
 	}
 }
 
-TESTCASE(Pipe_client_ctl_startup_config_startup_config_local_config_to_jopp_object)
+TESTCASE(Pipe_client_ctl_startup_config_startup_config_standalone_config_to_jopp_object)
 {
 	auto const result = to_jopp_object(
 		Pipe::client_ctl::startup_config{
-			Pipe::client_ctl::local_config{
+			Pipe::client_ctl::standalone_config{
 				.inputs = Pipe::client_ctl::input_port_file_map{
 					{"port_1", "Brick_Victorian_Red_Normal.exr"},
 				},
@@ -469,11 +469,11 @@ TESTCASE(Pipe_client_ctl_startup_config_jopp_object_to_startup_config_standalone
 	obj.insert("operational_mode", "standalone");
 
 
-	jopp::object local_config;
+	jopp::object standalone_config;
 	{
 		jopp::object inputs;
 		inputs.insert("port_1", "Brick_Victorian_Red_Normal.exr");
-		local_config.insert("inputs", std::move(inputs));
+		standalone_config.insert("inputs", std::move(inputs));
 	}
 
 	{
@@ -490,12 +490,12 @@ TESTCASE(Pipe_client_ctl_startup_config_jopp_object_to_startup_config_standalone
 			port.push_back("Asphalt_Wet_Cracked_Roughness.exr");
 			outputs.insert("port_2", std::move(port));
 		}
-		local_config.insert("outputs", std::move(outputs));
+		standalone_config.insert("outputs", std::move(outputs));
 	}
-	obj.insert("parameters", std::move(local_config));
+	obj.insert("parameters", std::move(standalone_config));
 
 	auto const result = Pipe::client_ctl::make_startup_config(obj);
-	auto const params = std::get<Pipe::client_ctl::local_config>(result);
+	auto const params = std::get<Pipe::client_ctl::standalone_config>(result);
 
 	{
 		auto const& inputs = params.inputs;

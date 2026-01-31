@@ -223,17 +223,17 @@ namespace Pipe::client_ctl
 	/**
 	 * \brief Describes a configuration to use when the client is running in standalone mode
 	 */
-	struct local_config
+	struct standalone_config
 	{
 		input_port_file_map inputs;
 		output_port_file_map outputs;
 	};
 
 	/**
-	 * \brief Specialization of operational_mode_info for local_config
+	 * \brief Specialization of operational_mode_info for standalone_config
 	 */
 	template<>
-	struct operational_mode_info<local_config>
+	struct operational_mode_info<standalone_config>
 	{
 		/**
 		 * \brief If operational_mode is standalone, the client should run without a host
@@ -242,9 +242,9 @@ namespace Pipe::client_ctl
 	};
 
 	/**
-	 * \brief Converts a local_config to a jopp::obejct
+	 * \brief Converts a standalone_config to a jopp::obejct
 	 */
-	inline jopp::object to_jopp_object(local_config const& cfg)
+	inline jopp::object to_jopp_object(standalone_config const& cfg)
 	{
 		jopp::object ret;
 		ret.insert("inputs", to_jopp_object(cfg.inputs));
@@ -253,11 +253,11 @@ namespace Pipe::client_ctl
 	}
 
 	/**
-	 * \brief Converts a jopp::object to a local_config
+	 * \brief Converts a jopp::object to a standalone_config
 	 */
-	inline local_config make_local_config(jopp::object const& obj)
+	inline standalone_config make_standalone_config(jopp::object const& obj)
 	{
-		return local_config{
+		return standalone_config{
 			.inputs = make_input_port_file_map(obj.get_field_as<jopp::object>("inputs")),
 			.outputs = make_output_port_file_map(obj.get_field_as<jopp::object>("outputs"))
 		};
@@ -266,7 +266,7 @@ namespace Pipe::client_ctl
 	/**
 	 * \brief The possible startup configurations
 	 */
-	using startup_config = std::variant<host_info, local_config>;
+	using startup_config = std::variant<host_info, standalone_config>;
 
 	/**
 	 * \brief Converts a startup_config
@@ -294,7 +294,7 @@ namespace Pipe::client_ctl
 		{ return make_host_info(object.get_field_as<jopp::object>("parameters")); }
 		else
 		if(operational_mode == "standalone")
-		{ return make_local_config(object.get_field_as<jopp::object>("parameters")); }
+		{ return make_standalone_config(object.get_field_as<jopp::object>("parameters")); }
 
 		throw std::runtime_error{"The given operational mode is not supported"};
 	}
