@@ -2,6 +2,7 @@
 #define PIPE_CLIENT_CTL_STARTUP_CONFIG_HPP
 
 #include "src/json_log/item_converter.hpp"
+#include "src/os_services/error_handling/system_error.hpp"
 #include "src/os_services/ipc/socket.hpp"
 #include "src/os_services/ipc/unix_domain_socket.hpp"
 
@@ -10,6 +11,7 @@
 #include <map>
 #include <vector>
 #include <filesystem>
+#include <sys/stat.h>
 
 namespace Pipe::client_ctl
 {
@@ -39,11 +41,33 @@ namespace Pipe::client_ctl
 	};
 
 	/**
-	 * \brief Convers a socket_fd_ref to jopp::number
+	 * \brief Converts a socket_fd_ref to jopp::number
 	 */
 	inline jopp::number to_jopp_value(socket_fd_ref value)
 	{
 		return static_cast<jopp::number>(value.native_handle());
+	}
+
+	/**
+	 * \brief Converts a jopp::number to a socket_fd_ref
+	 */
+	inline socket_fd_ref make_socket_fd_ref(jopp::number value)
+	{
+		if(value < 0.0 || value > 2147483647.0)
+		{ throw std::runtime_error{"Invalid socket_fd"};}
+
+		auto const fd_val = static_cast<int>(value);
+		if(static_cast<double>(fd_val) != value)
+		{ throw std::runtime_error{"Invalid socket_fd"};}
+
+		struct stat statbuf{};
+		if(fstat(fd_val, &statbuf) == -1)
+		{ throw os_services::error_handling::system_error{"Invalid socket_fd", errno}; }
+
+		if(!S_ISSOCK(statbuf.st_mode))
+		{ throw std::runtime_error{"socket_fd is not a socket"}; }
+
+		return socket_fd_ref{fd_val};
 	}
 
 	/**
@@ -65,6 +89,18 @@ namespace Pipe::client_ctl
 			},
 			address
 		);
+	}
+
+	/**
+	 * \brief Converts a jopp::object to a host_address
+	 */
+	inline host_address make_host_address(jopp::object const& obj)
+	{
+		auto const& type = obj.get_field_as<jopp::string>("type");
+		if(type == host_address_type_info<socket_fd_ref>::name)
+		{ return make_socket_fd_ref(obj.get_field_as<jopp::number>("value")); }
+
+		throw std::runtime_error{"The given host address type is not supported"};
 	}
 
 	/**
@@ -105,6 +141,16 @@ namespace Pipe::client_ctl
 	}
 
 	/**
+	 * \brief Converts a jopp::object to a host_info
+	 */
+	inline host_info make_host_info(jopp::object const& object)
+	{
+		return host_info{
+			.address = make_host_address(object.get_field_as<jopp::object>("address"))
+		};
+	}
+
+	/**
 	 * \brief The type used to identify a port
 	 */
 	using port_name = std::string;
@@ -121,7 +167,18 @@ namespace Pipe::client_ctl
 	{
 		jopp::object ret;
 		for(auto const& item: object)
-		{ ret.insert(std::string{item.first}, item.second.string()); }
+		{ ret.insert(jopp::string{item.first}, item.second.string()); }
+		return ret;
+	}
+
+	/**
+	 * \brief Converts a jopp::object to a input_port_file_map
+	 */
+	inline input_port_file_map make_input_port_file_map(jopp::object const& object)
+	{
+		input_port_file_map ret;
+		for(auto const& item:object)
+		{ ret.insert(std::pair{item.first, item.second.get<jopp::string>()}); }
 		return ret;
 	}
 
@@ -142,7 +199,23 @@ namespace Pipe::client_ctl
 			for(auto const& path: item.second)
 			{ paths.push_back(path.string()); }
 
-			ret.insert(std::string{item.first}, std::move(paths));
+			ret.insert(jopp::string{item.first}, std::move(paths));
+		}
+		return ret;
+	}
+
+	/**
+	 * \brief Converts a jopp::object to a output_port_file_map
+	 */
+	inline output_port_file_map make_output_port_file_map(jopp::object const& object)
+	{
+		output_port_file_map ret;
+		for(auto const& item: object)
+		{
+			std::vector<std::filesystem::path> paths;
+			for(auto const& item : item.second.get<jopp::array>())
+			{ paths.push_back(item.get<jopp::string>()); }
+			ret.insert(std::pair{item.first, std::move(paths)});
 		}
 		return ret;
 	}
@@ -180,6 +253,17 @@ namespace Pipe::client_ctl
 	}
 
 	/**
+	 * \brief Converts a jopp::object to a local_config
+	 */
+	inline local_config make_local_config(jopp::object const& obj)
+	{
+		return local_config{
+			.inputs = make_input_port_file_map(obj.get_field_as<jopp::object>("inputs")),
+			.outputs = make_output_port_file_map(obj.get_field_as<jopp::object>("outputs"))
+		};
+	}
+
+	/**
 	 * \brief The possible startup configurations
 	 */
 	using startup_config = std::variant<host_info, local_config>;
@@ -198,6 +282,21 @@ namespace Pipe::client_ctl
 			},
 			cfg
 		);
+	}
+
+	/**
+	 * \brief Converts a jopp::object to a startup_config
+	 */
+	inline startup_config make_startup_config(jopp::object const& object)
+	{
+		auto const& operational_mode = object.get_field_as<jopp::string>("operational_mode");
+		if(operational_mode == "connected_to_host")
+		{ return make_host_info(object.get_field_as<jopp::object>("parameters")); }
+		else
+		if(operational_mode == "standalone")
+		{ return make_local_config(object.get_field_as<jopp::object>("parameters")); }
+
+		throw std::runtime_error{"The given operational mode is not supported"};
 	}
 }
 
