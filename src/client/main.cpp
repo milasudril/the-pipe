@@ -39,5 +39,7 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
+	write_message(Pipe::log::item::severity::info, "Process exited normally");
+
 	return 0;
 }
