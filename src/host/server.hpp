@@ -65,12 +65,13 @@ namespace Pipe::host
 				client_ctl::to_jopp_object(
 					client_ctl::startup_config{
 						client_ctl::host_info{
-							.address = ctl_sockets.take_socket_a().release()
+							.address = ctl_sockets.socket_b()
 						}
 					}
 				)
 			);
 			std::array args_cstr{startup_config.c_str()};
+			std::array fds_to_keep{Pipe::os_services::fd::file_descriptor{ctl_sockets.take_socket_b().release()}};
 
 			auto process = os_services::proc_mgmt::spawn(
 				client_binary.c_str(),
@@ -80,7 +81,8 @@ namespace Pipe::host
 					.sysin = {},
 					.sysout = {},
 					.syserr = logpipe.take_write_end()
-				}
+				},
+				std::span{fds_to_keep}
 			);
 
 			auto client_proc = std::make_shared<client_process>();
@@ -91,7 +93,7 @@ namespace Pipe::host
 					log_reader{}
 				)
 				.add(
-					ctl_sockets.take_socket_b(),
+					ctl_sockets.take_socket_a(),
 					os_services::fd::activity_status::write,
 					client_proc
 				)
