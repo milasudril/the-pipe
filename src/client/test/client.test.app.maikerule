@@ -1,0 +1,7 @@
+{
+	"target":{
+		"name": "client.test",
+		"dependencies": [{"ref": "src/client/test/client", "origin":"generated"}]
+	},
+	"dependencies":[{"ref":"./testsuite.o", "rel":"implementation"}]
+}

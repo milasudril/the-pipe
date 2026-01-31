@@ -1,136 +1,146 @@
 {
-    "maikeconfig": {
-        "dir_compiler": {
-            "config": {},
-            "recipe": "make_directory.py",
-            "use_get_tags": 0
+  "maikeconfig": {
+    "dir_compiler": {
+      "config": {},
+      "recipe": "make_directory.py",
+      "use_get_tags": 0
+    },
+    "source_file_info_loaders": {
+      "app": {
+        "compiler": {
+          "config": {
+            "cflags": [
+              "-no-pie"
+            ]
+          },
+          "recipe": "cxx_linker.py",
+          "use_get_tags": 0
         },
-        "source_file_info_loaders": {
-            "app": {
-                "compiler": {
-                    "config": {
-											"cflags":["-no-pie"]
-                    },
-                    "recipe": "cxx_linker.py",
-                    "use_get_tags": 0
-                },
-                "config": {},
-                "loader": "maikerule"
-            },
-            "lib": {
-                "compiler": {
-                    "config": {},
-                    "recipe": "make_lib.py",
-                    "use_get_tags": 0
-                },
-                "config": {},
-                "loader": "lib"
-            },
-            "cxx": {
-                "compiler": {
-                    "config": {
-                        "cflags": [
-                            "-DGEOSIMD_MAX_BUILTIN_VECTOR_BYTE_SIZE=32",
-                            "-Wall",
-                            "-march=native",
-                            "-Wextra",
-                            "-Werror",
-                            "-Wconversion",
-                            "-Wno-psabi",
-                            "-Wsuggest-override",
-														"-Wno-error=deprecated-declarations",
-                            "-I.",
-                            "-fconcepts-diagnostics-depth=3",
-                            "-fno-pie",
-                            "-fno-pic"
-                        ],
-                        "iquote": [
-                            "."
-                        ],
-                        "std_revision": {
-							"min":"c++23"
-                        }
-                    },
-                    "recipe": "cxx_compiler.py",
-                    "use_get_tags": 0
-                },
-                "config": {},
-                "loader": "cxx_src_loader"
-            },
-            "cxx_test": {
-                "compiler": {
-                    "config": {
-						"actions":["link", "run"],
-                        "cflags": [
-                            "-DGEOSIMD_MAX_BUILTIN_VECTOR_BYTE_SIZE=32",
-                            "-I.",
-                            "-march=native",
-                            "-Wall",
-                            "-Wextra",
-                            "-Wconversion",
-                            "-Wsuggest-override",
-                            "-Wno-psabi",
-                            "-Werror",
-                            "-fconcepts-diagnostics-depth=3",
-                            "-Wno-error=deprecated-declarations",
-                            "-fno-pie",
-                            "-no-pie",
-                            "-fno-pic"
-                        ],
-                        "iquote": [
-                            "."
-                        ],
-                        "std_revision": {
-							"min":"c++23"
-                        }
-                    },
-                    "recipe": "cxx_compiler.py",
-                    "use_get_tags": 0
-                },
-                "config": {},
-                "loader": "cxx_src_loader"
-            },
-            "extension": {
-                "compiler": {
-                    "config": {},
-                    "recipe": "",
-                    "use_get_tags": 0
-                },
-                "config": {},
-                "loader": "extension"
-            },
-            "generic_example": {
-                "compiler": {
-                    "config": {},
-                    "recipe": "",
-                    "use_get_tags": 0
-                },
-                "config": {
-                    "filename_ext_replacement_mode": "append",
-                    "target_filename_ext": ""
-                },
-                "loader": "generic"
+        "config": {},
+        "loader": "maikerule"
+      },
+      "lib": {
+        "compiler": {
+          "config": {},
+          "recipe": "make_lib.py",
+          "use_get_tags": 0
+        },
+        "config": {},
+        "loader": "lib"
+      },
+      "cxx": {
+        "compiler": {
+          "config": {
+            "cflags": [
+              "-DGEOSIMD_MAX_BUILTIN_VECTOR_BYTE_SIZE=32",
+              "-Wall",
+              "-march=native",
+              "-Wextra",
+              "-Werror",
+              "-Wconversion",
+              "-Wno-psabi",
+              "-Wsuggest-override",
+              "-Wno-error=deprecated-declarations",
+              "-I.",
+              "-fconcepts-diagnostics-depth=3",
+              "-fno-pie",
+              "-fno-pic"
+            ],
+            "iquote": [
+              "."
+            ],
+            "std_revision": {
+              "min": "c++23"
             }
+          },
+          "recipe": "cxx_compiler.py",
+          "use_get_tags": 0
         },
-        "source_tree_loader": {
-            "file_info_loaders": {
-                ".app.maikerule": "app",
-				".lib.maikerule": "lib",
-                ".cpp": "cxx",
-                ".hpp": "cxx",
-                ".py": "extension",
-                ".test.cpp": "cxx_test"
-            },
-            "input_filter": [
-                "^\\.",
-                "^__"
+        "config": {},
+        "loader": "cxx_src_loader"
+      },
+      "cxx_test": {
+        "compiler": {
+          "config": {
+            "actions": [
+              "link",
+              "run"
             ],
-            "fullpath_input_filter": [
-                "^\\.",
-                "^__",
-                "pcg-cpp"
+            "cflags": [
+              "-DGEOSIMD_MAX_BUILTIN_VECTOR_BYTE_SIZE=32",
+              "-I.",
+              "-march=native",
+              "-Wall",
+              "-Wextra",
+              "-Wconversion",
+              "-Wsuggest-override",
+              "-Wno-psabi",
+              "-Werror",
+              "-fconcepts-diagnostics-depth=3",
+              "-Wno-error=deprecated-declarations",
+              "-fno-pie",
+              "-no-pie",
+              "-fno-pic"
             ],
-            "recursive": 1
-        }
+            "iquote": [
+              "."
+            ],
+            "std_revision": {
+              "min": "c++23"
+            }
+          },
+          "recipe": "cxx_compiler.py",
+          "use_get_tags": 0
+        },
+        "config": {},
+        "loader": "cxx_src_loader"
+      },
+      "launcher": {
+        "compiler": {
+          "config": {
+            "compilation_cmd": {
+              "executable": "scripts/launcher",
+              "args":["$source_file", "$target"]
+            }
+          },
+          "recipe": "generic.py",
+          "use_get_tags": 0
+        },
+        "config": {},
+        "loader": "extension"
+      },
+      "generic_example": {
+        "compiler": {
+          "config": {},
+          "recipe": "",
+          "use_get_tags": 0
+        },
+        "config": {
+          "filename_ext_replacement_mode": "append",
+          "target_filename_ext": ""
+        },
+        "loader": "generic"
+      }
+    },
+    "source_tree_loader": {
+      "file_info_loaders": {
+        ".app.maikerule": "app",
+        ".lib.maikerule": "lib",
+        ".cpp": "cxx",
+        ".hpp": "cxx",
+        ".launcher.py": "launcher",
+        ".test.cpp": "cxx_test"
+      },
+      "input_filter": [
+        "^\\.",
+        "^__"
+      ],
+      "fullpath_input_filter": [
+        "^\\.",
+        "^__",
+        "pcg-cpp"
+      ],
+      "recursive": 1
     }
+  }
 }

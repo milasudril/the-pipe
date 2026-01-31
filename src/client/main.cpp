@@ -29,20 +29,9 @@ int main(int argc, char** argv)
 			};
 		}
 
-		jopp::container output_object;
-		jopp::parser parser{output_object};
-		auto const result = parser.parse(std::string_view{argv[1]});
-		if(result.ec != jopp::parser_error_code::completed)
-		{
-			throw std::runtime_error{
-				std::format(
-					"Failed to parse command line argument: {}",
-					to_string(result.ec)
-				)
-			};
-		};
-
-		auto const startup_config = Pipe::client_ctl::make_startup_config(output_object.get<jopp::object>());
+		auto const startup_config = Pipe::client_ctl::make_startup_config(
+			jopp::parse(std::string_view{argv[1]}).get<jopp::object>()
+		);
 	}
 	catch(std::exception const& err)
 	{
