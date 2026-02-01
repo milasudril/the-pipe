@@ -1,7 +1,6 @@
 #ifndef PIPE_CLIENT_CTL_STARTUP_CONFIG_HPP
 #define PIPE_CLIENT_CTL_STARTUP_CONFIG_HPP
 
-#include "src/json_log/item_converter.hpp"
 #include "src/os_services/error_handling/system_error.hpp"
 #include "src/os_services/ipc/socket.hpp"
 #include "src/os_services/ipc/unix_domain_socket.hpp"
