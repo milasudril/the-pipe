@@ -4,6 +4,7 @@
 #define PIPE_LOG_HPP
 
 #include <chrono>
+#include <cinttypes>
 #include <format>
 #include <functional>
 #include <string_view>

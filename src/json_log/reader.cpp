@@ -1,8 +1,8 @@
 //@	{"target": {"name": "reader.o"}}
 
 #include "./reader.hpp"
+#include "./item_converter.hpp"
 
-#include "src/log/log.hpp"
 #include <jopp/parser.hpp>
 
 void Pipe::json_log::reader::handle_event(
@@ -24,8 +24,9 @@ void Pipe::json_log::reader::handle_event(
 
 		if(read_result.bytes_transferred() == 0)
 		{
-			if(m_state != nullptr)
-			{ log::write_message(log::item::severity::error, "Log entry truncated"); }
+			if(m_state->container.empty())
+			{ m_item_receiver->on_parse_error(jopp::parser_error_code::more_data_needed); }
+
 			event.stop_listening();
 			return;
 		}
@@ -39,15 +40,29 @@ void Pipe::json_log::reader::handle_event(
 			switch(parse_result.ec)
 			{
 				case jopp::parser_error_code::completed:
-					// TODO: Emit log item
+				{
+					auto log_item = m_state->container.get_if<jopp::object>();
+					if(log_item == nullptr)
+					{
+						m_state = std::make_unique<state>();
+						return;
+					}
+
+					auto result = make_log_item(std::move(*log_item));
+					if(result.has_value())
+					{ m_item_receiver->consume(std::move(*result)); }
+					else
+					{ m_item_receiver->on_invalid_log_item(result.error()); }
+
 					m_state = std::make_unique<state>();
 					break;
+				}
 
 				case jopp::parser_error_code::more_data_needed:
 					return;
 
 				default:
-					// TODO: notify handler that stream is broken
+					m_item_receiver->on_parse_error(parse_result.ec);
 					event.stop_listening();
 					return;
 			}

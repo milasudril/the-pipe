@@ -13,12 +13,61 @@
 
 namespace Pipe::json_log
 {
+	/**
+	 * \brief Concept for an entity that can receive log items
+	 */
+	template<class T>
+	concept item_receiver = requires(
+		T& obj,
+		log::item&& item,
+		jopp::parser_error_code ec,
+		char const* msg
+	)
+	{
+		{ obj.consume(std::move(item)) } -> std::same_as<void>;
+		{ obj.on_parse_error(ec) } -> std::same_as<void>;
+		{ obj.on_invalid_log_item(msg) } -> std::same_as<void>;
+	};
+
+	class type_erased_item_receiver
+	{
+	public:
+		virtual ~type_erased_item_receiver() = default;
+		virtual void consume(log::item&& item) = 0;
+		virtual void on_parse_error(jopp::parser_error_code ec) = 0;
+		virtual void on_invalid_log_item(char const* message) = 0;
+	};
+
+	template<item_receiver ItemReceiver>
+	class item_receiver_impl:public type_erased_item_receiver
+	{
+	public:
+		explicit item_receiver_impl(ItemReceiver&& object):
+			m_object{std::move(object)}
+		{}
+
+		void consume(log::item&& item) override
+		{ m_object->consume(item); }
+
+		void on_parse_error(jopp::parser_error_code ec) override
+		{ m_object->on_parse_error(ec); }
+
+		void on_invalid_log_item(char const* message) override
+		{ m_object->on_invalid_log_item(message); }
+
+	private:
+		ItemReceiver m_object;
+	};
+
 	class reader
 	{
 	public:
-		explicit reader(size_t buffer_size):
+		template<item_receiver ItemReceiver>
+		explicit reader(size_t buffer_size, ItemReceiver receiver):
 			m_buffer_size{buffer_size},
-			m_input_buffer{std::make_unique<char[]>(buffer_size)}
+			m_input_buffer{std::make_unique<char[]>(buffer_size)},
+			m_item_receiver{std::forward<ItemReceiver>(receiver)},
+			m_state{std::make_unique<state>()}
 		{}
 
 		void handle_event(
@@ -29,6 +78,7 @@ namespace Pipe::json_log
 	private:
 		size_t m_buffer_size;
 		std::unique_ptr<char[]> m_input_buffer;
+		std::unique_ptr<type_erased_item_receiver>  m_item_receiver;
 
 		struct state
 		{
