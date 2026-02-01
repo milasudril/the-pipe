@@ -6,6 +6,7 @@
 #include "src/log/log.hpp"
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/fd/activity_event.hpp"
+#include "src/utils/utils.hpp"
 
 #include <jopp/types.hpp>
 #include <jopp/parser.hpp>
@@ -18,15 +19,15 @@ namespace Pipe::json_log
 	 */
 	template<class T>
 	concept item_receiver = requires(
-		T& obj,
+		T obj,
 		log::item&& item,
 		jopp::parser_error_code ec,
 		char const* msg
 	)
 	{
-		{ obj.consume(std::move(item)) } -> std::same_as<void>;
-		{ obj.on_parse_error(ec) } -> std::same_as<void>;
-		{ obj.on_invalid_log_item(msg) } -> std::same_as<void>;
+		{ utils::unwrap(obj).consume(std::move(item)) } -> std::same_as<void>;
+		{ utils::unwrap(obj).on_parse_error(ec) } -> std::same_as<void>;
+		{ utils::unwrap(obj).on_invalid_log_item(msg) } -> std::same_as<void>;
 	};
 
 	class type_erased_item_receiver
@@ -47,13 +48,13 @@ namespace Pipe::json_log
 		{}
 
 		void consume(log::item&& item) override
-		{ m_object->consume(item); }
+		{ utils::unwrap(m_object).consume(std::move(item)); }
 
 		void on_parse_error(jopp::parser_error_code ec) override
-		{ m_object->on_parse_error(ec); }
+		{ utils::unwrap(m_object).on_parse_error(ec); }
 
 		void on_invalid_log_item(char const* message) override
-		{ m_object->on_invalid_log_item(message); }
+		{ utils::unwrap(m_object).on_invalid_log_item(message); }
 
 	private:
 		ItemReceiver m_object;
@@ -66,7 +67,7 @@ namespace Pipe::json_log
 		explicit reader(size_t buffer_size, ItemReceiver receiver):
 			m_buffer_size{buffer_size},
 			m_input_buffer{std::make_unique<char[]>(buffer_size)},
-			m_item_receiver{std::forward<ItemReceiver>(receiver)},
+			m_item_receiver{new item_receiver_impl(std::forward<ItemReceiver>(receiver))},
 			m_state{std::make_unique<state>()}
 		{}
 
