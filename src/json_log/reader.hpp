@@ -20,23 +20,24 @@ namespace Pipe::json_log
 	template<class T>
 	concept item_receiver = requires(
 		T obj,
+		char const* who,
 		log::item&& item,
 		jopp::parser_error_code ec,
 		char const* msg
 	)
 	{
-		{ utils::unwrap(obj).consume(std::move(item)) } -> std::same_as<void>;
-		{ utils::unwrap(obj).on_parse_error(ec) } -> std::same_as<void>;
-		{ utils::unwrap(obj).on_invalid_log_item(msg) } -> std::same_as<void>;
+		{ utils::unwrap(obj).consume(who, std::move(item)) } -> std::same_as<void>;
+		{ utils::unwrap(obj).on_parse_error(who, ec) } -> std::same_as<void>;
+		{ utils::unwrap(obj).on_invalid_log_item(who, msg) } -> std::same_as<void>;
 	};
 
 	class type_erased_item_receiver
 	{
 	public:
 		virtual ~type_erased_item_receiver() = default;
-		virtual void consume(log::item&& item) = 0;
-		virtual void on_parse_error(jopp::parser_error_code ec) = 0;
-		virtual void on_invalid_log_item(char const* message) = 0;
+		virtual void consume(char const* who, log::item&& item) = 0;
+		virtual void on_parse_error(char const* who, jopp::parser_error_code ec) = 0;
+		virtual void on_invalid_log_item(char const* who, char const* message) = 0;
 	};
 
 	template<item_receiver ItemReceiver>
@@ -47,14 +48,14 @@ namespace Pipe::json_log
 			m_object{std::move(object)}
 		{}
 
-		void consume(log::item&& item) override
-		{ utils::unwrap(m_object).consume(std::move(item)); }
+		void consume(char const* who, log::item&& item) override
+		{ utils::unwrap(m_object).consume(who, std::move(item)); }
 
-		void on_parse_error(jopp::parser_error_code ec) override
-		{ utils::unwrap(m_object).on_parse_error(ec); }
+		void on_parse_error(char const* who, jopp::parser_error_code ec) override
+		{ utils::unwrap(m_object).on_parse_error(who, ec); }
 
-		void on_invalid_log_item(char const* message) override
-		{ utils::unwrap(m_object).on_invalid_log_item(message); }
+		void on_invalid_log_item(char const* who, char const* message) override
+		{ utils::unwrap(m_object).on_invalid_log_item(who, message); }
 
 	private:
 		ItemReceiver m_object;
@@ -64,10 +65,11 @@ namespace Pipe::json_log
 	{
 	public:
 		template<item_receiver ItemReceiver>
-		explicit reader(size_t buffer_size, ItemReceiver receiver):
+		explicit reader(std::string&& who, ItemReceiver receiver, size_t buffer_size = 65536):
 			m_buffer_size{buffer_size},
 			m_input_buffer{std::make_unique<char[]>(buffer_size)},
 			m_item_receiver{new item_receiver_impl(std::forward<ItemReceiver>(receiver))},
+			m_who{std::move(who)},
 			m_state{std::make_unique<state>()}
 		{}
 
@@ -80,6 +82,7 @@ namespace Pipe::json_log
 		size_t m_buffer_size;
 		std::unique_ptr<char[]> m_input_buffer;
 		std::unique_ptr<type_erased_item_receiver>  m_item_receiver;
+		std::string m_who;
 
 		struct state
 		{

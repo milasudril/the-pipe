@@ -18,16 +18,16 @@ namespace
 		jopp::parser_error_code parser_error = jopp::parser_error_code::completed;
 		std::vector<std::string> errmesg{};
 
-		void consume(Pipe::log::item&& item)
+		void consume(char const*, Pipe::log::item&& item)
 		{
 			recv_item = std::move(item);
 			parser_error = jopp::parser_error_code::completed;
 		}
 
-		void on_parse_error(jopp::parser_error_code ec)
+		void on_parse_error(char const*, jopp::parser_error_code ec)
 		{ parser_error = ec; }
 
-		void on_invalid_log_item(char const* msg)
+		void on_invalid_log_item(char const*, char const* msg)
 		{ errmesg.push_back(msg);}
 	};
 
@@ -65,7 +65,7 @@ namespace
 TESTCASE(Pipe_json_log_reader_cannot_read)
 {
 	my_receiver receiver;
-	Pipe::json_log::reader reader{16, std::ref(receiver)};
+	Pipe::json_log::reader reader{"foo", std::ref(receiver), 16};
 	Pipe::os_services::ipc::pipe logpipe;
 
 	auto listening_status = Pipe::os_services::fd::activity_status::read;
@@ -94,7 +94,7 @@ TESTCASE(Pipe_json_log_reader_cannot_read)
 TESTCASE(Pipe_json_log_reader_read_full_read_partial_block_close_try_agian)
 {
 	my_receiver receiver;
-	Pipe::json_log::reader reader{65536, std::ref(receiver)};
+	Pipe::json_log::reader reader{"foo", std::ref(receiver)};
 	Pipe::os_services::ipc::pipe logpipe;
 
 	auto str = to_string(
@@ -174,7 +174,7 @@ TESTCASE(Pipe_json_log_reader_read_full_read_partial_block_close_try_agian)
 TESTCASE(Pipe_json_log_reader_read_full_read_partial_block_try_agian_close)
 {
 	my_receiver receiver;
-	Pipe::json_log::reader reader{65536, std::ref(receiver)};
+	Pipe::json_log::reader reader{"foo", std::ref(receiver)};
 	Pipe::os_services::ipc::pipe logpipe;
 
 	auto str = to_string(
@@ -283,7 +283,7 @@ TESTCASE(Pipe_json_log_reader_read_full_read_partial_block_try_agian_close)
 TESTCASE(Pipe_json_log_reader_read_first_item_not_an_object)
 {
 	my_receiver receiver;
-	Pipe::json_log::reader reader{65536, std::ref(receiver)};
+	Pipe::json_log::reader reader{"foo", std::ref(receiver)};
 	Pipe::os_services::ipc::pipe logpipe;
 
 	std::string str{"[\"Some array\"]"};
@@ -333,7 +333,7 @@ TESTCASE(Pipe_json_log_reader_read_first_item_not_an_object)
 TESTCASE(Pipe_json_log_reader_read_first_item_not_valid)
 {
 	my_receiver receiver;
-	Pipe::json_log::reader reader{65536, std::ref(receiver)};
+	Pipe::json_log::reader reader{"foo", std::ref(receiver)};
 	Pipe::os_services::ipc::pipe logpipe;
 
 	std::string str{"{\"Some array\":[]}"};
@@ -386,7 +386,7 @@ TESTCASE(Pipe_json_log_reader_read_first_item_not_valid)
 TESTCASE(Pipe_json_log_reader_read_jammed_parser)
 {
 	my_receiver receiver;
-	Pipe::json_log::reader reader{65536, std::ref(receiver)};
+	Pipe::json_log::reader reader{"foo", std::ref(receiver)};
 	Pipe::os_services::ipc::pipe logpipe;
 
 	std::string str{"This is definitely not valid JSON"};

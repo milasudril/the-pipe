@@ -13,7 +13,8 @@ namespace
 	parser_state parse_buffer(
 		std::span<char const> input_span,
 		std::unique_ptr<State>& state,
-		Receiver& item_receiver
+		Receiver& item_receiver,
+		char const* who
 	)
 	{
 		while(true)
@@ -29,16 +30,16 @@ namespace
 					auto log_item = state->container.template get_if<jopp::object>();
 					if(log_item == nullptr)
 					{
-						item_receiver.on_invalid_log_item("A log item must be an object");
+						item_receiver.on_invalid_log_item(who, "A log item must be an object");
 						state = std::make_unique<State>();
 						break;
 					}
 
 					auto result = Pipe::json_log::make_log_item(std::move(*log_item));
 					if(result.has_value())
-					{ item_receiver.consume(std::move(*result)); }
+					{ item_receiver.consume(who, std::move(*result)); }
 					else
-					{ item_receiver.on_invalid_log_item(result.error()); }
+					{ item_receiver.on_invalid_log_item(who, result.error()); }
 
 					state = std::make_unique<State>();
 					break;
@@ -48,7 +49,7 @@ namespace
 					return parser_state::good;
 
 				default:
-					item_receiver.on_parse_error(parse_result.ec);
+					item_receiver.on_parse_error(who, parse_result.ec);
 					return parser_state::jammed;
 			}
 		}
@@ -74,7 +75,7 @@ void Pipe::json_log::reader::handle_event(
 		if(read_result.bytes_transferred() == 0)
 		{
 			if(m_state->parser.current_depth() != 0)
-			{ m_item_receiver->on_parse_error(jopp::parser_error_code::more_data_needed); }
+			{ m_item_receiver->on_parse_error(m_who.c_str(), jopp::parser_error_code::more_data_needed); }
 
 			event.stop_listening();
 			return;
@@ -84,7 +85,8 @@ void Pipe::json_log::reader::handle_event(
 			parse_buffer(
 				std::span{std::begin(input_span), read_result.bytes_transferred()},
 				m_state,
-				*m_item_receiver
+				*m_item_receiver,
+				m_who.c_str()
 			)
 		)
 		{
