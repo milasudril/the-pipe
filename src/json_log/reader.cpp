@@ -75,7 +75,7 @@ void Pipe::json_log::reader::handle_event(
 		if(read_result.bytes_transferred() == 0)
 		{
 			if(m_state->parser.current_depth() != 0)
-			{ m_item_receiver->on_parse_error(m_who.c_str(), jopp::parser_error_code::more_data_needed); }
+			{ m_item_receiver->on_parse_error(m_name.c_str(), jopp::parser_error_code::more_data_needed); }
 
 			event.stop_listening();
 			return;
@@ -86,7 +86,7 @@ void Pipe::json_log::reader::handle_event(
 				std::span{std::begin(input_span), read_result.bytes_transferred()},
 				m_state,
 				*m_item_receiver,
-				m_who.c_str()
+				m_name.c_str()
 			)
 		)
 		{
