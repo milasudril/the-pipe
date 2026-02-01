@@ -44,6 +44,7 @@ void Pipe::json_log::reader::handle_event(
 					auto log_item = m_state->container.get_if<jopp::object>();
 					if(log_item == nullptr)
 					{
+						m_item_receiver->on_invalid_log_item("An object expected");
 						m_state = std::make_unique<state>();
 						return;
 					}
