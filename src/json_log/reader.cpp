@@ -5,6 +5,56 @@
 
 #include <jopp/parser.hpp>
 
+namespace
+{
+	enum class parser_state{good, jammed};
+
+	template<class State, class Receiver>
+	parser_state parse_buffer(
+		std::span<char const> input_span,
+		std::unique_ptr<State>& state,
+		Receiver& item_receiver
+	)
+	{
+		while(true)
+		{
+			auto const parse_result = state->parser.parse(input_span);
+			auto const bytes_parsed = parse_result.ptr - std::begin(input_span);
+			input_span = std::span{parse_result.ptr, std::size(input_span) - bytes_parsed};
+
+			switch(parse_result.ec)
+			{
+				case jopp::parser_error_code::completed:
+				{
+					auto log_item = state->container.template get_if<jopp::object>();
+					if(log_item == nullptr)
+					{
+						item_receiver.on_invalid_log_item("A log item must be an object");
+						state = std::make_unique<State>();
+						break;
+					}
+
+					auto result = Pipe::json_log::make_log_item(std::move(*log_item));
+					if(result.has_value())
+					{ item_receiver.consume(std::move(*result)); }
+					else
+					{ item_receiver.on_invalid_log_item(result.error()); }
+
+					state = std::make_unique<State>();
+					break;
+				}
+
+				case jopp::parser_error_code::more_data_needed:
+					return parser_state::good;
+
+				default:
+					item_receiver.on_parse_error(parse_result.ec);
+					return parser_state::jammed;
+			}
+		}
+	}
+}
+
 void Pipe::json_log::reader::handle_event(
 	os_services::fd::activity_event const& event,
 	os_services::io::input_file_descriptor_ref fd
@@ -12,7 +62,6 @@ void Pipe::json_log::reader::handle_event(
 {
 	if(!can_read(event.get_activity_status()))
 	{ return; }
-
 
 	while(true)
 	{
@@ -24,49 +73,26 @@ void Pipe::json_log::reader::handle_event(
 
 		if(read_result.bytes_transferred() == 0)
 		{
-			if(m_state->container.empty())
+			if(m_state->parser.current_depth() != 0)
 			{ m_item_receiver->on_parse_error(jopp::parser_error_code::more_data_needed); }
 
 			event.stop_listening();
 			return;
 		}
 
-		input_span = std::span{m_input_buffer.get(), read_result.bytes_transferred()};
-		while(true)
+		switch(
+			parse_buffer(
+				std::span{std::begin(input_span), read_result.bytes_transferred()},
+				m_state,
+				*m_item_receiver
+			)
+		)
 		{
-			auto const parse_result = m_state->parser.parse(input_span);
-			input_span = std::span{parse_result.ptr, read_result.bytes_transferred()};
-
-			switch(parse_result.ec)
-			{
-				case jopp::parser_error_code::completed:
-				{
-					auto log_item = m_state->container.get_if<jopp::object>();
-					if(log_item == nullptr)
-					{
-						m_item_receiver->on_invalid_log_item("An object expected");
-						m_state = std::make_unique<state>();
-						return;
-					}
-
-					auto result = make_log_item(std::move(*log_item));
-					if(result.has_value())
-					{ m_item_receiver->consume(std::move(*result)); }
-					else
-					{ m_item_receiver->on_invalid_log_item(result.error()); }
-
-					m_state = std::make_unique<state>();
-					break;
-				}
-
-				case jopp::parser_error_code::more_data_needed:
-					return;
-
-				default:
-					m_item_receiver->on_parse_error(parse_result.ec);
-					event.stop_listening();
-					return;
-			}
+			case parser_state::good:
+				break;
+			case parser_state::jammed:
+				event.stop_listening();
+				return;
 		}
 	}
 }
