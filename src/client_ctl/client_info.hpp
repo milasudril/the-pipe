@@ -9,20 +9,20 @@ namespace Pipe::client_ctl
 {
 	struct port_info
 	{
-		std::string type;
+		std::string stream_content_type;
 	};
 
 	inline jopp::object to_jopp_object(port_info const& obj)
 	{
 		jopp::object ret;
-		ret.insert("type", obj.type);
+		ret.insert("stream_content_type", obj.stream_content_type);
 		return ret;
 	}
 
 	inline port_info make_port_info(jopp::object const& obj)
 	{
 		return port_info{
-			.type = obj.get_field_as<std::string>("type")
+			.stream_content_type = obj.get_field_as<std::string>("stream_content_type")
 		};
 	}
 
