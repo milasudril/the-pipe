@@ -1,6 +1,6 @@
-//@	{"target":{"name":"activity_monitor.test"}}
+//@	{"target":{"name":"epoll_instance.test"}}
 
-#include "./activity_monitor.hpp"
+#include "./epoll_instance.hpp"
 #include "src/os_services/fd/activity_event.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
 #include "src/os_services/ipc/socket.hpp"
@@ -12,38 +12,38 @@
 #include <mutex>
 #include <condition_variable>
 
-TESTCASE(Pipe_os_services_fd_activity_status_to_epoll_event)
+TESTCASE(Pipe_os_services_io_multiplexeractivity_status_to_epoll_event)
 {
-	EXPECT_EQ(to_epoll_event(Pipe::os_services::fd::activity_status::none), 0);
-	EXPECT_EQ(to_epoll_event(Pipe::os_services::fd::activity_status::read), EPOLLIN);
-	EXPECT_EQ(to_epoll_event(Pipe::os_services::fd::activity_status::write), EPOLLOUT);
-	EXPECT_EQ(to_epoll_event(Pipe::os_services::fd::activity_status::read_or_write), EPOLLIN|EPOLLOUT);
+	EXPECT_EQ(Pipe::os_services::io_multiplexer::to_epoll_event(Pipe::os_services::fd::activity_status::none), 0);
+	EXPECT_EQ(Pipe::os_services::io_multiplexer::to_epoll_event(Pipe::os_services::fd::activity_status::read), EPOLLIN);
+	EXPECT_EQ(Pipe::os_services::io_multiplexer::to_epoll_event(Pipe::os_services::fd::activity_status::write), EPOLLOUT);
+	EXPECT_EQ(Pipe::os_services::io_multiplexer::to_epoll_event(Pipe::os_services::fd::activity_status::read_or_write), EPOLLIN|EPOLLOUT);
 
 	try
 	{
-		to_epoll_event(static_cast<Pipe::os_services::fd::activity_status>(3567));
+		Pipe::os_services::io_multiplexer::to_epoll_event(static_cast<Pipe::os_services::fd::activity_status>(3567));
 		abort();
 	}
 	catch(...)
 	{}
 }
 
-TESTCASE(Pipe_os_services_fd_epoll_event_to_activity_status)
+TESTCASE(Pipe_os_services_io_multiplexerepoll_event_to_activity_status)
 {
 	EXPECT_EQ(
-		Pipe::os_services::fd::epoll_event_to_activity_status(0),
+		Pipe::os_services::io_multiplexer::epoll_event_to_activity_status(0),
 		Pipe::os_services::fd::activity_status::none
 	);
 	EXPECT_EQ(
-		Pipe::os_services::fd::epoll_event_to_activity_status(EPOLLIN),
+		Pipe::os_services::io_multiplexer::epoll_event_to_activity_status(EPOLLIN),
 		Pipe::os_services::fd::activity_status::read
 	);
 	EXPECT_EQ(
-		Pipe::os_services::fd::epoll_event_to_activity_status(EPOLLOUT),
+		Pipe::os_services::io_multiplexer::epoll_event_to_activity_status(EPOLLOUT),
 		Pipe::os_services::fd::activity_status::write
 	);
 	EXPECT_EQ(
-		Pipe::os_services::fd::epoll_event_to_activity_status(EPOLLOUT|EPOLLIN),
+		Pipe::os_services::io_multiplexer::epoll_event_to_activity_status(EPOLLOUT|EPOLLIN),
 		Pipe::os_services::fd::activity_status::read_or_write
 	);
 }
@@ -56,7 +56,7 @@ namespace
 		Pipe::os_services::fd::activity_event const* last_activity_event{nullptr};
 	};
 
-	class my_epoll_entry_data:public Pipe::os_services::fd::epoll_entry_data
+	class my_epoll_entry_data:public Pipe::os_services::io_multiplexer::epoll_entry_data
 	{
 	public:
 		explicit my_epoll_entry_data(my_epoll_entry_data_status& status):m_status{status}
@@ -65,8 +65,8 @@ namespace
 		int get_fd_native_handle() const noexcept override
 		{ return 34; }
 
-		Pipe::os_services::fd::event_handler_id get_id() const noexcept override
-		{ return Pipe::os_services::fd::event_handler_id{765}; }
+		Pipe::os_services::io_multiplexer::event_handler_id get_id() const noexcept override
+		{ return Pipe::os_services::io_multiplexer::event_handler_id{765}; }
 
 		void handle_event(Pipe::os_services::fd::activity_event const& event) override
 		{
@@ -80,11 +80,11 @@ namespace
 	};
 }
 
-TESTCASE(Pipe_os_services_fd_epoll_fd_activity_no_valid_epoll_instance)
+TESTCASE(Pipe_os_services_io_multiplexerepoll_io_multiplexeractivity_no_valid_epoll_instance)
 {
 	my_epoll_entry_data_status status;
 	my_epoll_entry_data my_data{status};
-	Pipe::os_services::fd::epoll_fd_activity activity{
+	Pipe::os_services::io_multiplexer::epoll_fd_activity activity{
 		my_data,
 		Pipe::os_services::fd::activity_status::read,
 		Pipe::os_services::fd::file_descriptor_ref{}
@@ -110,13 +110,13 @@ TESTCASE(Pipe_os_services_fd_epoll_fd_activity_no_valid_epoll_instance)
 
 namespace
 {
-	struct my_fd_activity_event_handler_status
+	struct my_io_multiplexeractivity_event_handler_status
 	{
 		Pipe::os_services::fd::activity_event const* last_activity_event{nullptr};
 		Pipe::os_services::fd::file_descriptor_ref fd;
 	};
 
-	struct my_fd_activity_event_handler
+	struct my_io_multiplexeractivity_event_handler
 	{
 		void handle_event(
 			Pipe::os_services::fd::activity_event const& event,
@@ -127,7 +127,7 @@ namespace
 			status.get().fd = fd;
 		}
 
-		std::reference_wrapper<my_fd_activity_event_handler_status> status;
+		std::reference_wrapper<my_io_multiplexeractivity_event_handler_status> status;
 	};
 
 	class my_activity_event:public Pipe::os_services::fd::activity_event
@@ -144,14 +144,14 @@ namespace
 	};
 };
 
-TESTCASE(Pipe_os_services_fd_epoll_entry_data_impl)
+TESTCASE(Pipe_os_services_io_multiplexerepoll_entry_data_impl)
 {
-	my_fd_activity_event_handler_status status;
+	my_io_multiplexeractivity_event_handler_status status;
 	auto const testfd = ::dup(STDOUT_FILENO);
-	Pipe::os_services::fd::epoll_entry_data_impl entry_data{
-		my_fd_activity_event_handler{status},
+	Pipe::os_services::io_multiplexer::epoll_entry_data_impl entry_data{
+		my_io_multiplexeractivity_event_handler{status},
 		Pipe::os_services::fd::file_descriptor{testfd},
-		Pipe::os_services::fd::event_handler_id{23}
+		Pipe::os_services::io_multiplexer::event_handler_id{23}
 	};
 
 	EXPECT_EQ(entry_data.get_fd_native_handle(), testfd);
@@ -159,7 +159,7 @@ TESTCASE(Pipe_os_services_fd_epoll_entry_data_impl)
 	entry_data.handle_event(event);
 	EXPECT_EQ(status.last_activity_event, &event)
 	EXPECT_EQ(status.fd.native_handle(), testfd);
-	EXPECT_EQ(entry_data.get_id(), Pipe::os_services::fd::event_handler_id{23});
+	EXPECT_EQ(entry_data.get_id(), Pipe::os_services::io_multiplexer::event_handler_id{23});
 }
 
 namespace
@@ -185,7 +185,7 @@ namespace
 
 	struct my_server_event_handler
 	{
-		std::reference_wrapper<Pipe::os_services::fd::activity_monitor> monitor;
+		std::reference_wrapper<Pipe::os_services::io_multiplexer::epoll_instance> monitor;
 
 		void handle_event(
 			Pipe::os_services::fd::activity_event const& activity,
@@ -200,7 +200,7 @@ namespace
 					my_client{}
 				);
 
-				EXPECT_EQ(id, Pipe::os_services::fd::event_handler_id{1});
+				EXPECT_EQ(id, Pipe::os_services::io_multiplexer::event_handler_id{1});
 			}
 		}
 	};
@@ -231,20 +231,20 @@ namespace
 	};
 }
 
-TESTCASE(Pipe_os_services_fd_activity_monitor)
+TESTCASE(Pipe_os_services_io_multiplexerepoll_instance)
 {
 	event server_created;
 	auto const sockname = Pipe::utils::random_printable_ascii_string(Pipe::utils::num_chars_16_bytes);
 	auto const address = Pipe::os_services::ipc::make_abstract_sockaddr_un(sockname);
 	std::jthread server_thread{[address, &server_created](){
-		Pipe::os_services::fd::activity_monitor monitor;
+		Pipe::os_services::io_multiplexer::epoll_instance monitor;
 		EXPECT_EQ(
 			monitor.add(
 				Pipe::os_services::ipc::make_server_socket<SOCK_SEQPACKET>(address, 1024),
 				Pipe::os_services::fd::activity_status::read,
 				my_server_event_handler{monitor}
 			),
-			Pipe::os_services::fd::event_handler_id{0}
+			Pipe::os_services::io_multiplexer::event_handler_id{0}
 		);
 
 		server_created.raise();

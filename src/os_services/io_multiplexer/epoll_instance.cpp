@@ -1,8 +1,8 @@
-//@	{"target":{"name": "activity_monitor.o"}}
+//@	{"target":{"name": "epoll_instance.o"}}
 
-#include "./activity_monitor.hpp"
+#include "./epoll_instance.hpp"
 
-void Pipe::os_services::fd::activity_monitor::wait_for_and_distpatch_events()
+void Pipe::os_services::io_multiplexer::epoll_instance::wait_for_and_distpatch_events()
 {
 	std::array<::epoll_event, 1024> events{};
 	auto const res = error_handling::do_while_eintr(

@@ -6,7 +6,7 @@
 #include "src/os_services/ipc/socket.hpp"
 #include "src/os_services/ipc/unix_domain_socket.hpp"
 #include "src/os_services/ipc/socket_pair.hpp"
-#include "src/os_services/fd/activity_monitor.hpp"
+#include "src/os_services/io_multiplexer/epoll_instance.hpp"
 #include "src/os_services/proc_mgmt/proc_mgmt.hpp"
 #include "src/client_ctl/startup_config.hpp"
 #include "src/utils/utils.hpp"
@@ -56,7 +56,7 @@ namespace Pipe::host
 
 		void load(
 			std::filesystem::path const& client_binary,
-			os_services::fd::activity_monitor& activity_monitor
+			os_services::io_multiplexer::epoll_instance& activity_monitor
 		)
 		{
 			os_services::ipc::pipe logpipe;

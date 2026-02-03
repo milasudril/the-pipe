@@ -1,11 +1,10 @@
-//@	{"dependencies_extra":[{"ref": "./activity_monitor.o", "rel": "implementation"}]}
+//@	{"dependencies_extra":[{"ref": "./epoll_instance.o", "rel": "implementation"}]}
 
-#ifndef PIPE_OS_SERVICES_FD_ACTIVITY_MONITOR_HPP
-#define PIPE_OS_SERVICES_FD_ACTIVITY_MONITOR_HPP
+#ifndef PIPE_OS_SERVICES_IO_MULTIPLEXER_EPOLL_INSTANCE_HPP
+#define PIPE_OS_SERVICES_IO_MULTIPLEXER_EPOLL_INSTANCE_HPP
 
-#include "./file_descriptor.hpp"
-#include "./activity_event.hpp"
-
+#include "src/os_services/fd/activity_event.hpp"
+#include "src/os_services/fd/file_descriptor.hpp"
 #include "src/os_services/error_handling/error_handling.hpp"
 #include "src/os_services/error_handling/system_error.hpp"
 
@@ -13,22 +12,22 @@
 #include <unordered_map>
 #include <vector>
 
-namespace Pipe::os_services::fd
+namespace Pipe::os_services::io_multiplexer
 {
 	/**
 	 * \brief Converts an activity_status to epoll event flags
 	 */
-	constexpr unsigned int to_epoll_event(activity_status status)
+	constexpr unsigned int to_epoll_event(fd::activity_status status)
 	{
 		switch(status)
 		{
-			case activity_status::none:
+			case fd::activity_status::none:
 				return 0;
-			case activity_status::read:
+			case fd::activity_status::read:
 				return EPOLLIN;
-			case activity_status::write:
+			case fd::activity_status::write:
 				return EPOLLOUT;
-			case activity_status::read_or_write:
+			case fd::activity_status::read_or_write:
 				return EPOLLIN|EPOLLOUT;
 		}
 
@@ -38,16 +37,16 @@ namespace Pipe::os_services::fd
 	/**
 	 * \brief Converts epoll flags to an activity_status
 	 */
-	constexpr activity_status epoll_event_to_activity_status(unsigned int event)
+	constexpr fd::activity_status epoll_event_to_activity_status(unsigned int event)
 	{
 		if((event & EPOLLIN) && (event & EPOLLOUT))
-		{ return activity_status::read_or_write; }
+		{ return fd::activity_status::read_or_write; }
 		if(event & EPOLLIN)
-		{ return activity_status::read; }
+		{ return fd::activity_status::read; }
 		if(event & EPOLLOUT)
-		{ return activity_status::write; }
+		{ return fd::activity_status::write; }
 
-		return activity_status::none;
+		return fd::activity_status::none;
 	}
 
 	class event_handler_id
@@ -97,7 +96,7 @@ namespace Pipe::os_services::fd
 		/**
 		 * \brief This function should process an activity_event
 		 */
-		virtual void handle_event(activity_event const& event) = 0;
+		virtual void handle_event(fd::activity_event const& event) = 0;
 
 		/**
 		 * \brief This function should return the id of the event handler
@@ -113,7 +112,7 @@ namespace Pipe::os_services::fd
 	/**
 	 * \brief Epoll specific implementation of activity_event
 	 */
-	class epoll_fd_activity final:public activity_event
+	class epoll_fd_activity final:public fd::activity_event
 	{
 	public:
 		/**
@@ -124,15 +123,15 @@ namespace Pipe::os_services::fd
 		 */
 		explicit epoll_fd_activity(
 			epoll_entry_data& epoll_event_data,
-			activity_status status,
-			file_descriptor_ref epoll_fd
+			fd::activity_status status,
+			fd::file_descriptor_ref epoll_fd
 		) noexcept:
 			m_epoll_event_data{epoll_event_data},
 			m_status{status},
 			m_epoll_fd{epoll_fd}
 		{}
 
-		void update_listening_status(activity_status new_status) const override
+		void update_listening_status(fd::activity_status new_status) const override
 		{
 			::epoll_event event{
 				.events = to_epoll_event(new_status),
@@ -153,7 +152,7 @@ namespace Pipe::os_services::fd
 		void stop_listening() const noexcept override
 		{ m_item_should_be_removed = true; }
 
-		activity_status get_activity_status() const noexcept override
+		fd::activity_status get_activity_status() const noexcept override
 		{ return m_status; }
 
 		/**
@@ -173,8 +172,8 @@ namespace Pipe::os_services::fd
 
 	private:
 		std::reference_wrapper<epoll_entry_data> m_epoll_event_data;
-		activity_status m_status;
-		file_descriptor_ref m_epoll_fd;
+		fd::activity_status m_status;
+		fd::file_descriptor_ref m_epoll_fd;
 		mutable bool m_item_should_be_removed{false};
 	};
 
@@ -184,7 +183,7 @@ namespace Pipe::os_services::fd
 	 * \tparam FileDescriptorTag The tag used to identify the type of file descriptor to use
 	 */
 	template<class EventHandler, class FileDescriptorTag>
-	requires(activity_event_handler<EventHandler, FileDescriptorTag>)
+	requires(fd::activity_event_handler<EventHandler, FileDescriptorTag>)
 	class epoll_entry_data_impl final: public epoll_entry_data
 	{
 	public:
@@ -195,7 +194,7 @@ namespace Pipe::os_services::fd
 		requires(std::is_same_v<std::remove_cvref_t<T>, EventHandler>)
 		explicit epoll_entry_data_impl(
 			T&& eh,
-			tagged_file_descriptor<FileDescriptorTag> fd,
+			fd::tagged_file_descriptor<FileDescriptorTag> fd,
 			event_handler_id id
 		) noexcept:
 			m_event_handler{std::forward<T>(eh)},
@@ -205,7 +204,7 @@ namespace Pipe::os_services::fd
 
 		explicit epoll_entry_data_impl(
 			EventHandler&& eh,
-			tagged_file_descriptor<FileDescriptorTag> fd,
+			fd::tagged_file_descriptor<FileDescriptorTag> fd,
 			event_handler_id id
 		) noexcept:
 			m_event_handler{std::move(eh)},
@@ -216,7 +215,7 @@ namespace Pipe::os_services::fd
 		int get_fd_native_handle() const noexcept override
 		{ return m_file_descriptor.get().native_handle(); }
 
-		void handle_event(activity_event const& event) override
+		void handle_event(fd::activity_event const& event) override
 		{ utils::unwrap(m_event_handler).handle_event(event, m_file_descriptor.get()); }
 
 		event_handler_id get_id() const noexcept override
@@ -224,20 +223,20 @@ namespace Pipe::os_services::fd
 
 	private:
 		EventHandler m_event_handler;
-		tagged_file_descriptor<FileDescriptorTag> m_file_descriptor;
+		fd::tagged_file_descriptor<FileDescriptorTag> m_file_descriptor;
 		event_handler_id m_id;
 	};
 
 	/**
 	 * \brief Used to monitor activity on file descriptors
 	 */
-	class activity_monitor
+	class epoll_instance
 	{
 	public:
 		class config_transaction
 		{
 		public:
-			explicit config_transaction(activity_monitor& monitor):
+			explicit config_transaction(epoll_instance& monitor):
 				m_monitor{monitor}
 			{}
 
@@ -247,10 +246,10 @@ namespace Pipe::os_services::fd
 				{ m_monitor.get().remove(item); }
 			}
 
-			template<class FileDescriptorTag, activity_event_handler<FileDescriptorTag> EventHandler>
+			template<class FileDescriptorTag, fd::activity_event_handler<FileDescriptorTag> EventHandler>
 			auto& add(
-				tagged_file_descriptor<FileDescriptorTag> fd_to_watch,
-				activity_status initial_listen_status,
+				fd::tagged_file_descriptor<FileDescriptorTag> fd_to_watch,
+				fd::activity_status initial_listen_status,
 				EventHandler&& eh
 			)
 			{
@@ -267,16 +266,16 @@ namespace Pipe::os_services::fd
 			{ m_added_ids.clear(); }
 
 		private:
-			std::reference_wrapper<activity_monitor> m_monitor;
+			std::reference_wrapper<epoll_instance> m_monitor;
 			std::vector<event_handler_id> m_added_ids;
 		};
 
 		friend class config_transaction;
 
 		/**
-		 * \brief Constructs an activity_monitor
+		 * \brief Constructs an epoll_instance
 		 */
-		activity_monitor():
+		epoll_instance():
 			m_epoll_fd{::epoll_create1(0)}
 		{
 			if(m_epoll_fd == nullptr)
@@ -289,13 +288,13 @@ namespace Pipe::os_services::fd
 		}
 
 		/**
-		 * \brief Adds fd_to_watch to the activity_monitor, and starts listen for the activity_status
+		 * \brief Adds fd_to_watch to the epoll_instance, and starts listen for the activity_status
 		 * given by initial_listen_status
 		 */
-		template<class FileDescriptorTag, activity_event_handler<FileDescriptorTag> EventHandler>
+		template<class FileDescriptorTag, fd::activity_event_handler<FileDescriptorTag> EventHandler>
 		[[nodiscard]] event_handler_id add(
-			tagged_file_descriptor<FileDescriptorTag> fd_to_watch,
-			activity_status initial_listen_status,
+			fd::tagged_file_descriptor<FileDescriptorTag> fd_to_watch,
+			fd::activity_status initial_listen_status,
 			EventHandler&& eh
 		)
 		{
@@ -352,7 +351,7 @@ namespace Pipe::os_services::fd
 		void wait_for_and_distpatch_events();
 
 	private:
-		file_descriptor m_epoll_fd;
+		fd::file_descriptor m_epoll_fd;
 		std::unordered_map<event_handler_id, std::unique_ptr<epoll_entry_data>, event_handler_id_hash> m_listeners;
 		event_handler_id m_current_id;
 	};
