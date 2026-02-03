@@ -1,6 +1,6 @@
-//@	{"target":{"name": "activity_event.test"}}
+//@	{"target":{"name": "activity_monitor.test"}}
 
-#include "./activity_event.hpp"
+#include "./activity_monitor.hpp"
 
 #include <testfwk/testfwk.hpp>
 

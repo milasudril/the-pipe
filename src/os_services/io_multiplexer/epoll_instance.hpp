@@ -3,7 +3,7 @@
 #ifndef PIPE_OS_SERVICES_IO_MULTIPLEXER_EPOLL_INSTANCE_HPP
 #define PIPE_OS_SERVICES_IO_MULTIPLEXER_EPOLL_INSTANCE_HPP
 
-#include "src/os_services/fd/activity_event.hpp"
+#include "src/os_services/fd/activity_monitor.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
 #include "src/os_services/error_handling/error_handling.hpp"
 #include "src/os_services/error_handling/system_error.hpp"

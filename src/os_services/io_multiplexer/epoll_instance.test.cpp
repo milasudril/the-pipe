@@ -1,7 +1,7 @@
 //@	{"target":{"name":"epoll_instance.test"}}
 
 #include "./epoll_instance.hpp"
-#include "src/os_services/fd/activity_event.hpp"
+#include "src/os_services/fd/activity_monitor.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
 #include "src/os_services/ipc/socket.hpp"
 #include "src/os_services/ipc/unix_domain_socket.hpp"

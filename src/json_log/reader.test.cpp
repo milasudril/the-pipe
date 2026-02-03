@@ -3,7 +3,7 @@
 #include "./reader.hpp"
 #include "./item_converter.hpp"
 #include "src/log/log.hpp"
-#include "src/os_services/fd/activity_event.hpp"
+#include "src/os_services/fd/activity_monitor.hpp"
 #include "src/os_services/ipc/pipe.hpp"
 
 #include <jopp/parser.hpp>

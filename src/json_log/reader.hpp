@@ -5,7 +5,7 @@
 
 #include "src/log/log.hpp"
 #include "src/os_services/io/io.hpp"
-#include "src/os_services/fd/activity_event.hpp"
+#include "src/os_services/fd/activity_monitor.hpp"
 #include "src/utils/utils.hpp"
 
 #include <jopp/types.hpp>
