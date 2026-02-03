@@ -70,7 +70,7 @@ namespace Pipe::client_ctl
 	/**
 	 * \brief Stores information about a client application
 	 */
-	struct client_info
+	struct client_application_info
 	{
 		/**
 		 * \brief A user-friendly name, independent of the name of the actual binary
@@ -89,9 +89,9 @@ namespace Pipe::client_ctl
 	};
 
 	/**
-	 * \brief Converts a client_info to a jopp::object
+	 * \brief Converts a client_application_info to a jopp::object
 	 */
-	inline jopp::object to_jopp_object(client_info const& obj)
+	inline jopp::object to_jopp_object(client_application_info const& obj)
 	{
 		jopp::object ret;
 		ret.insert("display_name", obj.display_name);
@@ -101,11 +101,11 @@ namespace Pipe::client_ctl
 	}
 
 	/**
-	 * \brief Converts a jopp::object to a client_info
+	 * \brief Converts a jopp::object to a client_application_info
 	 */
-	inline client_info make_client_info(jopp::object const& obj)
+	inline client_application_info make_client_application_info(jopp::object const& obj)
 	{
-		return client_info{
+		return client_application_info{
 			.display_name = obj.get_field_as<std::string>("display_name"),
 			.inputs = make_port_info_map(obj.get_field_as<jopp::object>("inputs")),
 			.outputs = make_port_info_map(obj.get_field_as<jopp::object>("output"))
