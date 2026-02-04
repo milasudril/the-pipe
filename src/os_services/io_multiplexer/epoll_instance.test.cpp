@@ -65,8 +65,8 @@ namespace
 		int get_fd_native_handle() const noexcept override
 		{ return 34; }
 
-		Pipe::os_services::io_multiplexer::event_handler_id get_id() const noexcept override
-		{ return Pipe::os_services::io_multiplexer::event_handler_id{765}; }
+		Pipe::os_services::fd::event_handler_id get_id() const noexcept override
+		{ return Pipe::os_services::fd::event_handler_id{765}; }
 
 		void handle_event(Pipe::os_services::fd::activity_event const& event) override
 		{
@@ -151,7 +151,7 @@ TESTCASE(Pipe_os_services_io_multiplexerepoll_entry_data_impl)
 	Pipe::os_services::io_multiplexer::epoll_entry_data_impl entry_data{
 		my_io_multiplexeractivity_event_handler{status},
 		Pipe::os_services::fd::file_descriptor{testfd},
-		Pipe::os_services::io_multiplexer::event_handler_id{23}
+		Pipe::os_services::fd::event_handler_id{23}
 	};
 
 	EXPECT_EQ(entry_data.get_fd_native_handle(), testfd);
@@ -159,7 +159,7 @@ TESTCASE(Pipe_os_services_io_multiplexerepoll_entry_data_impl)
 	entry_data.handle_event(event);
 	EXPECT_EQ(status.last_activity_event, &event)
 	EXPECT_EQ(status.fd.native_handle(), testfd);
-	EXPECT_EQ(entry_data.get_id(), Pipe::os_services::io_multiplexer::event_handler_id{23});
+	EXPECT_EQ(entry_data.get_id(), Pipe::os_services::fd::event_handler_id{23});
 }
 
 namespace
@@ -200,7 +200,7 @@ namespace
 					my_client{}
 				);
 
-				EXPECT_EQ(id, Pipe::os_services::io_multiplexer::event_handler_id{1});
+				EXPECT_EQ(id, Pipe::os_services::fd::event_handler_id{1});
 			}
 		}
 	};
@@ -244,7 +244,7 @@ TESTCASE(Pipe_os_services_io_multiplexerepoll_instance)
 				Pipe::os_services::fd::activity_status::read,
 				my_server_event_handler{monitor}
 			),
-			Pipe::os_services::io_multiplexer::event_handler_id{0}
+			Pipe::os_services::fd::event_handler_id{0}
 		);
 
 		server_created.raise();

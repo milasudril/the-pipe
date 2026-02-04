@@ -49,39 +49,6 @@ namespace Pipe::os_services::io_multiplexer
 		return fd::activity_status::none;
 	}
 
-	class event_handler_id
-	{
-	public:
-		constexpr event_handler_id() = default;
-
-		constexpr explicit event_handler_id(uint64_t value):
-			m_value{value}
-		{}
-
-		constexpr uint64_t value() const
-		{ return m_value; }
-
-		constexpr event_handler_id next()
-		{
-			auto ret = *this;
-			++m_value;
-			return ret;
-		}
-
-		constexpr bool operator==(event_handler_id const& ) const = default;
-
-		constexpr bool operator!=(event_handler_id const& ) const = default;
-
-	private:
-		uint64_t m_value{};
-	};
-
-	struct event_handler_id_hash
-	{
-		static constexpr auto operator()(event_handler_id id) noexcept
-		{ return std::hash<uint64_t>{}(id.value()); }
-	};
-
 	/**
 	 * \brief Abstract base class used for data within an epoll event
 	 */
@@ -101,7 +68,7 @@ namespace Pipe::os_services::io_multiplexer
 		/**
 		 * \brief This function should return the id of the event handler
 		 */
-		virtual event_handler_id get_id() const noexcept = 0;
+		virtual fd::event_handler_id get_id() const noexcept = 0;
 
 		/**
 		 * \brief Add virtual destructor so objects can be destructed polymorphically
@@ -195,7 +162,7 @@ namespace Pipe::os_services::io_multiplexer
 		explicit epoll_entry_data_impl(
 			T&& eh,
 			fd::tagged_file_descriptor<FileDescriptorTag> fd,
-			event_handler_id id
+			fd::event_handler_id id
 		) noexcept:
 			m_event_handler{std::forward<T>(eh)},
 			m_file_descriptor{std::move(fd)},
@@ -205,7 +172,7 @@ namespace Pipe::os_services::io_multiplexer
 		explicit epoll_entry_data_impl(
 			EventHandler&& eh,
 			fd::tagged_file_descriptor<FileDescriptorTag> fd,
-			event_handler_id id
+			fd::event_handler_id id
 		) noexcept:
 			m_event_handler{std::move(eh)},
 			m_file_descriptor{std::move(fd)},
@@ -218,13 +185,13 @@ namespace Pipe::os_services::io_multiplexer
 		void handle_event(fd::activity_event const& event) override
 		{ utils::unwrap(m_event_handler).handle_event(event, m_file_descriptor.get()); }
 
-		event_handler_id get_id() const noexcept override
+		fd::event_handler_id get_id() const noexcept override
 		{ return m_id; }
 
 	private:
 		EventHandler m_event_handler;
 		fd::tagged_file_descriptor<FileDescriptorTag> m_file_descriptor;
-		event_handler_id m_id;
+		fd::event_handler_id m_id;
 	};
 
 	/**
@@ -267,7 +234,7 @@ namespace Pipe::os_services::io_multiplexer
 
 		private:
 			std::reference_wrapper<epoll_instance> m_monitor;
-			std::vector<event_handler_id> m_added_ids;
+			std::vector<fd::event_handler_id> m_added_ids;
 		};
 
 		friend class config_transaction;
@@ -292,7 +259,7 @@ namespace Pipe::os_services::io_multiplexer
 		 * given by initial_listen_status
 		 */
 		template<class FileDescriptorTag, fd::activity_event_handler<FileDescriptorTag> EventHandler>
-		[[nodiscard]] event_handler_id add(
+		[[nodiscard]] fd::event_handler_id add(
 			fd::tagged_file_descriptor<FileDescriptorTag> fd_to_watch,
 			fd::activity_status initial_listen_status,
 			EventHandler&& eh
@@ -336,7 +303,7 @@ namespace Pipe::os_services::io_multiplexer
 			}
 			return id;
 		}
-		void remove(event_handler_id id) noexcept
+		void remove(fd::event_handler_id id) noexcept
 		{
 			auto i = m_listeners.find(id);
 			if(i == std::end(m_listeners))
@@ -352,8 +319,8 @@ namespace Pipe::os_services::io_multiplexer
 
 	private:
 		fd::file_descriptor m_epoll_fd;
-		std::unordered_map<event_handler_id, std::unique_ptr<epoll_entry_data>, event_handler_id_hash> m_listeners;
-		event_handler_id m_current_id;
+		std::unordered_map<fd::event_handler_id, std::unique_ptr<epoll_entry_data>, fd::event_handler_id_hash> m_listeners;
+		fd::event_handler_id m_current_id;
 	};
 }
 
