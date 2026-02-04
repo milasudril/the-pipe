@@ -99,6 +99,8 @@ struct Pipe::os_services::fd::file_descriptor_deleter<Pipe::os_services::proc_mg
 
 		siginfo_t siginfo{};
 		::waitid(P_PIDFD, pid, &siginfo, WEXITED);
+
+		::close(pid);
 	}
 };
 
