@@ -74,12 +74,91 @@ namespace Pipe::os_services::fd
 	};
 
 
+	/**
+	 * \brief An entity to be used to observe the state of a file descriptor
+	 * \tparam T The type to query
+	 * \tparam FileDescriptorTag Identifies the type of file descriptor to be used
+	 */
+	template<class T, class FileDescriptorTag>
+	concept new_activity_event_handler = requires(
+		T& obj,
+		activity_monitor& source,
+		generic_activity_event const& e,
+		tagged_file_descriptor_ref<FileDescriptorTag> fd
+	)
+	{
+		/**
+		 * \brief Will be called when the state of the file descriptor needs to be checked
+		 */
+		{utils::unwrap(obj).handle_event(source, e, fd)} -> std::same_as<void>;
+	};
+
 	class activity_monitor
 	{
 	public:
 		template<class Tag>
 		void update_listening_status(tagged_file_descriptor_ref<Tag> fd, activity_status new_status)
 		{ update_listening_status(file_descriptor_ref{fd.native_handle()}, new_status); }
+
+		template<class FileDescriptorTag, new_activity_event_handler<FileDescriptorTag> EventHandler>
+		class event_handler_wrapper
+		{
+		public:
+			explicit event_handler_wrapper(
+				EventHandler&& eh,
+				tagged_file_descriptor<FileDescriptorTag> fd_to_watch
+			) noexcept:
+				m_event_handler{std::move(eh)},
+				m_fd_to_watch{std::move(fd_to_watch)}
+			{}
+
+			void handle_event(activity_monitor& monitor, generic_activity_event const& event)
+			{
+				m_event_handler.handle_event(monitor, event);
+			}
+
+		private:
+			EventHandler m_event_handler;
+			tagged_file_descriptor<FileDescriptorTag> m_fd_to_watch;
+		};
+
+		template<class FileDescriptorTag, new_activity_event_handler<FileDescriptorTag> EventHandler>
+		[[nodiscard]] fd::event_handler_id add(
+			EventHandler&& eh,
+			tagged_file_descriptor<FileDescriptorTag> fd_to_watch,
+			activity_status initial_listening_status
+		)
+		{
+			using event_handler_type = event_handler_wrapper<FileDescriptorTag, EventHandler>;
+			return add(
+				event_handler_info{
+					.object_address = source_object_location{.address = &eh},
+					.size = sizeof(EventHandler),
+					.fd_to_watch = file_descriptor{fd_to_watch.release().native_handle()},
+					.handle_event = [](
+						void* object,
+						activity_monitor& event_source,
+						generic_activity_event const& event
+					){
+						utils::unwrap(*static_cast<event_handler_type*>(object)).handle_event(event_source, event);
+					},
+					.construct_event_handler_at = [](
+						dest_object_location dest,
+						source_object_location src,
+						file_descriptor fd_to_watch
+					){
+						::new(dest.address)event_handler_type(
+							std::move(*static_cast<EventHandler*>(src.address)),
+							tagged_file_descriptor<FileDescriptorTag>(fd_to_watch.release().native_handle())
+						);
+					},
+					.destroy_event_handler_at = [](void* object){
+						static_cast<event_handler_type*>(object)->~event_handler_type();
+					}
+				},
+				initial_listening_status
+			);
+		}
 
 		virtual void remove(event_handler_id id) = 0;
 
@@ -91,7 +170,7 @@ namespace Pipe::os_services::fd
 			void* address;
 		};
 
-		struct dest_target_location
+		struct dest_object_location
 		{
 			void* address;
 		};
@@ -100,9 +179,7 @@ namespace Pipe::os_services::fd
 		{
 			source_object_location object_address;
 			size_t size;
-			size_t alignment;
 			file_descriptor fd_to_watch;
-			activity_status initial_listening_status;
 
 			void (*handle_event)(
 				void* object,
@@ -111,15 +188,18 @@ namespace Pipe::os_services::fd
 			);
 
 			void (*construct_event_handler_at)(
-				dest_target_location dest,
+				dest_object_location dest,
 				source_object_location src,
 				file_descriptor fd_to_watch
 			);
 
-			void (*destroy_at)(void* object);
+			void (*destroy_event_handler_at)(void* object);
 		};
 
-		virtual event_handler_id add(event_handler_info const& info);
+		virtual event_handler_id add(
+			event_handler_info const& info,
+			activity_status initial_listening_status) = 0;
+
 		virtual ~activity_monitor() = default;
 	};
 
