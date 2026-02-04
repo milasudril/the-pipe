@@ -237,8 +237,6 @@ namespace Pipe::os_services::io_multiplexer
 			std::vector<fd::event_handler_id> m_added_ids;
 		};
 
-		friend class config_transaction;
-
 		/**
 		 * \brief Constructs an epoll_instance
 		 */
