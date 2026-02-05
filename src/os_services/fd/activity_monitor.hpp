@@ -120,15 +120,7 @@ namespace Pipe::os_services::fd
 						// TODO: want to tag the event based on an additional id
 						utils::unwrap(*static_cast<EventHandler*>(object)).handle_event(event_source, event);
 					},
-					.construct_event_handler_at = [](
-						dest_object_location dest,
-						source_object_location src
-					){
-						::new(dest.address)EventHandler(std::move(*static_cast<EventHandler*>(src.address)));
-					},
-					.destroy_event_handler_at = [](void* object){
-						static_cast<EventHandler*>(object)->~EventHandler();
-					}
+					.vtable = eh_vt<FileDescriptorTag, EventHandler>
 				},
 				make_generic_file_descriptor(std::move(fd_to_watch)),
 				initial_listening_status
@@ -141,33 +133,39 @@ namespace Pipe::os_services::fd
 		virtual void update_listening_status(file_descriptor_ref fd, activity_status new_status) = 0;
 
 		struct source_object_location
-		{
-			void* address;
-		};
+		{ void* address; };
 
 		struct dest_object_location
+		{ void* address; };
+
+		struct event_handler_vtable
 		{
-			void* address;
-		};
-
-		struct event_handler_info
-		{
-			source_object_location object_address;
-			size_t size;
-			file_descriptor fd_to_watch;
-
-			void (*handle_event)(
-				void* object,
-				activity_monitor& source,
-				generic_activity_event const& event
-			);
-
 			void (*construct_event_handler_at)(
 				dest_object_location dest,
 				source_object_location src
 			);
 
 			void (*destroy_event_handler_at)(void* object);
+		};
+
+		template<class FileDescriptorTag, new_activity_event_handler<FileDescriptorTag> EventHandler>
+		static constexpr event_handler_vtable eh_vt{
+			.construct_event_handler_at = [](
+				dest_object_location dest,
+				source_object_location src
+			){
+				::new(dest.address)EventHandler(std::move(*static_cast<EventHandler*>(src.address)));
+			},
+			.destroy_event_handler_at = [](void* object){
+				static_cast<EventHandler*>(object)->~EventHandler();
+			}
+		};
+
+		struct event_handler_info
+		{
+			source_object_location object_address;
+			size_t size;
+			event_handler_vtable vtable;
 		};
 
 		virtual event_handler_id add(
