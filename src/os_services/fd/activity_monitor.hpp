@@ -1,7 +1,6 @@
 #ifndef PIPE_OS_SERVICES_FD_ACITIVITY_EVENT_HPP
 #define PIPE_OS_SERVICES_FD_ACITIVITY_EVENT_HPP
 
-#include "src/log/log.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
 #include "src/utils/utils.hpp"
 #include <concepts>
@@ -71,8 +70,10 @@ namespace Pipe::os_services::fd
 
 	struct generic_activity_event
 	{
+		fd::file_descriptor_ref fd;
+		fd::activity_status status;
+		fd::event_handler_id event_handler;
 	};
-
 
 	/**
 	 * \brief An entity to be used to observe the state of a file descriptor
@@ -83,14 +84,13 @@ namespace Pipe::os_services::fd
 	concept new_activity_event_handler = requires(
 		T& obj,
 		activity_monitor& source,
-		generic_activity_event const& e,
-		tagged_file_descriptor_ref<FileDescriptorTag> fd
+		generic_activity_event const& event
 	)
 	{
 		/**
 		 * \brief Will be called when the state of the file descriptor needs to be checked
 		 */
-		{utils::unwrap(obj).handle_event(source, e, fd)} -> std::same_as<void>;
+		{utils::unwrap(obj).handle_event(source, event)} -> std::same_as<void>;
 	};
 
 	class activity_monitor
@@ -101,61 +101,36 @@ namespace Pipe::os_services::fd
 		{ update_listening_status(file_descriptor_ref{fd.native_handle()}, new_status); }
 
 		template<class FileDescriptorTag, new_activity_event_handler<FileDescriptorTag> EventHandler>
-		class event_handler_wrapper
-		{
-		public:
-			explicit event_handler_wrapper(
-				EventHandler&& eh,
-				tagged_file_descriptor<FileDescriptorTag> fd_to_watch
-			) noexcept:
-				m_event_handler{std::move(eh)},
-				m_fd_to_watch{std::move(fd_to_watch)}
-			{}
-
-			void handle_event(activity_monitor& monitor, generic_activity_event const& event)
-			{
-				m_event_handler.handle_event(monitor, event);
-			}
-
-		private:
-			EventHandler m_event_handler;
-			tagged_file_descriptor<FileDescriptorTag> m_fd_to_watch;
-		};
-
-		template<class FileDescriptorTag, new_activity_event_handler<FileDescriptorTag> EventHandler>
 		[[nodiscard]] fd::event_handler_id add(
 			EventHandler&& eh,
 			tagged_file_descriptor<FileDescriptorTag> fd_to_watch,
 			activity_status initial_listening_status
 		)
 		{
-			using event_handler_type = event_handler_wrapper<FileDescriptorTag, EventHandler>;
 			return add(
 				event_handler_info{
 					.object_address = source_object_location{.address = &eh},
 					.size = sizeof(EventHandler),
-					.fd_to_watch = make_generic_file_descriptor(std::move(fd_to_watch)),
 					.handle_event = [](
 						void* object,
 						activity_monitor& event_source,
 						generic_activity_event const& event
 					){
-						utils::unwrap(*static_cast<event_handler_type*>(object)).handle_event(event_source, event);
+						// TODO: fd in event should change type
+						// TODO: want to tag the event based on an additional id
+						utils::unwrap(*static_cast<EventHandler*>(object)).handle_event(event_source, event);
 					},
 					.construct_event_handler_at = [](
 						dest_object_location dest,
-						source_object_location src,
-						file_descriptor fd_to_watch
+						source_object_location src
 					){
-						::new(dest.address)event_handler_type(
-							std::move(*static_cast<EventHandler*>(src.address)),
-							tagged_file_descriptor<FileDescriptorTag>(fd_to_watch.release().native_handle())
-						);
+						::new(dest.address)EventHandler(std::move(*static_cast<EventHandler*>(src.address)));
 					},
 					.destroy_event_handler_at = [](void* object){
-						static_cast<event_handler_type*>(object)->~event_handler_type();
+						static_cast<EventHandler*>(object)->~EventHandler();
 					}
 				},
+				make_generic_file_descriptor(std::move(fd_to_watch)),
 				initial_listening_status
 			);
 		}
@@ -189,8 +164,7 @@ namespace Pipe::os_services::fd
 
 			void (*construct_event_handler_at)(
 				dest_object_location dest,
-				source_object_location src,
-				file_descriptor fd_to_watch
+				source_object_location src
 			);
 
 			void (*destroy_event_handler_at)(void* object);
@@ -198,7 +172,9 @@ namespace Pipe::os_services::fd
 
 		virtual event_handler_id add(
 			event_handler_info const& info,
-			activity_status initial_listening_status) = 0;
+			fd::file_descriptor fd_to_watch,
+			activity_status initial_listening_status
+		) = 0;
 
 		virtual ~activity_monitor() = default;
 	};
