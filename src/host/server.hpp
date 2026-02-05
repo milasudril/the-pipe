@@ -1,6 +1,7 @@
 #include "./client_process.hpp"
 
 #include "src/os_services/fd/activity_monitor.hpp"
+#include "src/os_services/fd/file_descriptor.hpp"
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/ipc/pipe.hpp"
 #include "src/os_services/ipc/socket.hpp"
@@ -71,7 +72,7 @@ namespace Pipe::host
 				)
 			);
 			std::array args_cstr{startup_config.c_str()};
-			std::array fds_to_keep{Pipe::os_services::fd::file_descriptor{ctl_sockets.take_socket_b().release()}};
+			std::array fds_to_keep{Pipe::os_services::fd::make_generic_file_descriptor(ctl_sockets.take_socket_b())};
 
 			auto process = os_services::proc_mgmt::spawn(
 				client_binary.c_str(),

@@ -76,6 +76,14 @@ namespace Pipe::os_services::io_multiplexer
 		virtual ~epoll_entry_data() noexcept = default;
 	};
 
+
+	struct epoll_fd_tag
+	{};
+
+	using epoll_file_descriptor_ref = fd::tagged_file_descriptor_ref<epoll_fd_tag>;
+
+	using epoll_file_descriptor = fd::tagged_file_descriptor<epoll_fd_tag>;
+
 	/**
 	 * \brief Epoll specific implementation of activity_event
 	 */
@@ -91,7 +99,7 @@ namespace Pipe::os_services::io_multiplexer
 		explicit epoll_fd_activity(
 			epoll_entry_data& epoll_event_data,
 			fd::activity_status status,
-			fd::file_descriptor_ref epoll_fd
+			epoll_file_descriptor_ref epoll_fd
 		) noexcept:
 			m_epoll_event_data{epoll_event_data},
 			m_status{status},
@@ -316,7 +324,7 @@ namespace Pipe::os_services::io_multiplexer
 		void wait_for_and_distpatch_events();
 
 	private:
-		fd::file_descriptor m_epoll_fd;
+		epoll_file_descriptor m_epoll_fd;
 		std::unordered_map<fd::event_handler_id, std::unique_ptr<epoll_entry_data>, fd::event_handler_id_hash> m_listeners;
 		fd::event_handler_id m_current_id;
 	};

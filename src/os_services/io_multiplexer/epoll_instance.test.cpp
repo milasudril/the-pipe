@@ -3,6 +3,7 @@
 #include "./epoll_instance.hpp"
 #include "src/os_services/fd/activity_monitor.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
+#include "src/os_services/io/io.hpp"
 #include "src/os_services/ipc/socket.hpp"
 #include "src/os_services/ipc/unix_domain_socket.hpp"
 #include "src/utils/utils.hpp"
@@ -87,7 +88,7 @@ TESTCASE(Pipe_os_services_io_multiplexerepoll_io_multiplexeractivity_no_valid_ep
 	Pipe::os_services::io_multiplexer::epoll_fd_activity activity{
 		my_data,
 		Pipe::os_services::fd::activity_status::read,
-		Pipe::os_services::fd::file_descriptor_ref{}
+		Pipe::os_services::io_multiplexer::epoll_file_descriptor_ref{}
 	};
 
 	EXPECT_EQ(status.last_activity_event, nullptr);
@@ -110,24 +111,24 @@ TESTCASE(Pipe_os_services_io_multiplexerepoll_io_multiplexeractivity_no_valid_ep
 
 namespace
 {
-	struct my_io_multiplexeractivity_event_handler_status
+	struct my_fd_activity_event_handler_status
 	{
 		Pipe::os_services::fd::activity_event const* last_activity_event{nullptr};
-		Pipe::os_services::fd::file_descriptor_ref fd;
+		Pipe::os_services::io::output_file_descriptor_ref fd;
 	};
 
-	struct my_io_multiplexeractivity_event_handler
+	struct my_fd_activity_event_handler
 	{
 		void handle_event(
 			Pipe::os_services::fd::activity_event const& event,
-			Pipe::os_services::fd::file_descriptor_ref fd
+			Pipe::os_services::io::output_file_descriptor_ref fd
 		)
 		{
 			status.get().last_activity_event = &event;
 			status.get().fd = fd;
 		}
 
-		std::reference_wrapper<my_io_multiplexeractivity_event_handler_status> status;
+		std::reference_wrapper<my_fd_activity_event_handler_status> status;
 	};
 
 	class my_activity_event:public Pipe::os_services::fd::activity_event
@@ -144,13 +145,13 @@ namespace
 	};
 };
 
-TESTCASE(Pipe_os_services_io_multiplexerepoll_entry_data_impl)
+TESTCASE(Pipe_os_services_io_multiplexer_epoll_entry_data_impl)
 {
-	my_io_multiplexeractivity_event_handler_status status;
+	my_fd_activity_event_handler_status status;
 	auto const testfd = ::dup(STDOUT_FILENO);
 	Pipe::os_services::io_multiplexer::epoll_entry_data_impl entry_data{
-		my_io_multiplexeractivity_event_handler{status},
-		Pipe::os_services::fd::file_descriptor{testfd},
+		my_fd_activity_event_handler{status},
+		Pipe::os_services::io::output_file_descriptor{testfd},
 		Pipe::os_services::fd::event_handler_id{23}
 	};
 
@@ -231,7 +232,7 @@ namespace
 	};
 }
 
-TESTCASE(Pipe_os_services_io_multiplexerepoll_instance)
+TESTCASE(Pipe_os_services_io_multiplexer_epoll_instance)
 {
 	event server_created;
 	auto const sockname = Pipe::utils::random_printable_ascii_string(Pipe::utils::num_chars_16_bytes);

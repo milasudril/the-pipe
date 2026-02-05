@@ -137,7 +137,7 @@ namespace Pipe::os_services::fd
 		static void operator()(tagged_file_descriptor_ref<Tag> fd) noexcept
 		{
 			if(fd.native_handle() != -1)
-			{ close(fd.native_handle()); }
+			{ ::close(fd.native_handle()); }
 		}
 	};
 
@@ -158,6 +158,35 @@ namespace Pipe::os_services::fd
 	struct generic_fd_tag
 	{};
 
+	template<>
+	struct file_descriptor_deleter<generic_fd_tag>
+	{
+		/**
+		 * \brief The "pointer" type to "delete"
+		 */
+		using pointer = tagged_file_descriptor_ref<generic_fd_tag>;
+
+		template<class OtherTag>
+		file_descriptor_deleter(OtherTag):
+			orig_close_function{
+				[](tagged_file_descriptor_ref<generic_fd_tag> fd) noexcept {
+					file_descriptor_deleter<OtherTag>::operator()(tagged_file_descriptor_ref<OtherTag>{fd.native_handle()});
+				}
+			}
+		{}
+
+		void (*orig_close_function)(tagged_file_descriptor_ref<generic_fd_tag> fd) noexcept;
+
+		/**
+		 * \brief Function call operator that implements the delete operation
+		 */
+		void operator()(tagged_file_descriptor_ref<generic_fd_tag> fd) const noexcept
+		{
+			if(fd.native_handle() != -1)
+			{ orig_close_function(fd); }
+		}
+	};
+
 	/**
 	 * \brief A reference to an arbitrary file descriptor
 	 */
@@ -167,6 +196,18 @@ namespace Pipe::os_services::fd
 	 * \brief An owner of an arbitrary file descriptor
 	 */
 	using file_descriptor = tagged_file_descriptor<generic_fd_tag>;
+
+	/**
+	 * \brief From fd creates a file_descriptor, which inherits the destructor from fd
+	 */
+	template<class OtherTag>
+	auto make_generic_file_descriptor(tagged_file_descriptor<OtherTag> fd)
+	{
+		return file_descriptor{
+			fd.release().native_handle(),
+			file_descriptor_deleter<generic_fd_tag>{OtherTag{}}
+		};
+	}
 }
 
 #endif

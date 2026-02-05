@@ -3,6 +3,7 @@
 #include "./writer.hpp"
 #include "./item_converter.hpp"
 #include "src/log/log.hpp"
+#include "src/os_services/fd/file_descriptor.hpp"
 #include "src/os_services/io/io.hpp"
 
 #include <sys/mman.h>
@@ -10,9 +11,17 @@
 #include <jopp/parser.hpp>
 #include <unistd.h>
 
+namespace
+{
+	struct memfd_tag
+	{};
+
+	using memfd = Pipe::os_services::fd::tagged_file_descriptor<memfd_tag>;
+}
+
 TESTCASE(Pipe_json_log_direct_write_small_buffer)
 {
-	Pipe::os_services::fd::file_descriptor fd{memfd_create("", 0)};
+	memfd fd{memfd_create("", 0)};
 
 	Pipe::json_log::writer writer{
 		5,

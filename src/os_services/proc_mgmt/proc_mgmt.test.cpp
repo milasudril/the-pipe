@@ -181,7 +181,7 @@ TESTCASE(Pipe_proc_mgmt_spawn_run_with_extra_fd)
 	Pipe::os_services::ipc::socket_pair<SOCK_STREAM> sockets;
 	std::array<char const*, 2> args{	"/proc/self/fd"};
 	auto const fd_to_look_for = sockets.socket_b().native_handle();
-	std::array fds_to_forward{Pipe::os_services::fd::file_descriptor{sockets.take_socket_b().release()}};
+	std::array fds_to_forward{Pipe::os_services::fd::make_generic_file_descriptor(sockets.take_socket_b())};
 	Pipe::os_services::ipc::pipe sysout;
 	auto const proc = Pipe::os_services::proc_mgmt::spawn(
 		"/usr/bin/ls",

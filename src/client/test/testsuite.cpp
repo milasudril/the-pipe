@@ -1,5 +1,6 @@
 //@	{"target":{"name":"testsuite.o"}}
 
+#include "src/os_services/fd/file_descriptor.hpp"
 #include "src/os_services/ipc/socket_pair.hpp"
 #include "src/os_services/proc_mgmt/proc_mgmt.hpp"
 #include "src/os_services/ipc/pipe.hpp"
@@ -111,7 +112,7 @@ TESTCASE(Pipe_client_main_sucessful_start)
 		)
 	);
 
-	std::array fds_to_keep{Pipe::os_services::fd::file_descriptor{sockets.take_socket_b().release()}};
+	std::array fds_to_keep{Pipe::os_services::fd::make_generic_file_descriptor(sockets.take_socket_b())};
 	std::array args_cstr{startup_config.c_str()};
 
 	auto const res = Pipe::os_services::proc_mgmt::spawn(

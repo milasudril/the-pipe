@@ -134,7 +134,7 @@ namespace Pipe::os_services::fd
 				event_handler_info{
 					.object_address = source_object_location{.address = &eh},
 					.size = sizeof(EventHandler),
-					.fd_to_watch = file_descriptor{fd_to_watch.release().native_handle()},
+					.fd_to_watch = make_generic_file_descriptor(std::move(fd_to_watch)),
 					.handle_event = [](
 						void* object,
 						activity_monitor& event_source,
