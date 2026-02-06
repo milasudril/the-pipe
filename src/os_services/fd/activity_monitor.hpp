@@ -111,7 +111,7 @@ namespace Pipe::os_services::fd
 			return do_add(
 				event_handler_info{
 					.object_address = source_object_location{.address = &eh},
-					.size = sizeof(EventHandler),
+					.object_size = sizeof(EventHandler),
 					.handle_event = [](
 						void* object,
 						activity_monitor& event_source,
@@ -167,7 +167,7 @@ namespace Pipe::os_services::fd
 		struct event_handler_info
 		{
 			source_object_location object_address;
-			size_t size;
+			size_t object_size;
 			void (*handle_event)(
 				void* object,
 				activity_monitor& event_source,

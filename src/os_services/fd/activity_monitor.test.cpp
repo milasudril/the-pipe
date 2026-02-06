@@ -58,8 +58,8 @@ namespace
 
 TESTCASE(Pipe_os_services_fd_activity_monitor_add_fd)
 {
-	my_fd_activity_monitor monitor;
 	my_event_handler eh;
+	my_fd_activity_monitor monitor;
 	Pipe::os_services::ipc::pipe my_pipe;
 	auto const id = monitor.add(std::ref(eh), my_pipe.take_read_end(), Pipe::os_services::fd::activity_status::read);
 	EXPECT_EQ(id, Pipe::os_services::fd::event_handler_id{123});
