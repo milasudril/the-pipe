@@ -64,7 +64,7 @@ namespace
 				);
 
 				data = std::make_unique<std::byte[]>(struct_info.total_size);
-				eh_info.vtable.construct_event_handler_at(
+				eh_info.construct_event_handler_at(
 					dest_object_location{data.get() + struct_info.offsets[0]}, eh_info.object_address
 				);
 
