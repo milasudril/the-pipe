@@ -297,3 +297,79 @@ TESTCASE(Pipe_utils_for_each_disjoint_segment_empty_set_returns_full_range)
 	);
 	EXPECT_EQ(k, std::size(expected_results));
 }
+
+TESTCASE(Pipe_utils_compute_struct_info)
+{
+	{
+		auto const result = compute_struct_info(
+			std::array{
+				Pipe::utils::struct_field_info{.size = 1, .alignment = 1},
+				Pipe::utils::struct_field_info{.size = 4, .alignment = 4},
+				Pipe::utils::struct_field_info{.size = 2, .alignment = 2}
+			}
+		);
+
+		EXPECT_EQ(result.offsets[0], 0);
+		EXPECT_EQ(result.offsets[1], 4);
+		EXPECT_EQ(result.offsets[2], 8);
+		EXPECT_EQ(result.total_size, 12);
+	}
+
+	{
+		auto const result = compute_struct_info(
+			std::array{
+				Pipe::utils::struct_field_info{.size = 8, .alignment = 8},
+				Pipe::utils::struct_field_info{.size = 4, .alignment = 4},
+				Pipe::utils::struct_field_info{.size = 1, .alignment = 1}
+			}
+		);
+
+		EXPECT_EQ(result.offsets[0], 0);
+		EXPECT_EQ(result.offsets[1], 8);
+		EXPECT_EQ(result.offsets[2], 12);
+		EXPECT_EQ(result.total_size, 16);
+	}
+
+	{
+		auto const result = compute_struct_info(
+			std::array{
+				Pipe::utils::struct_field_info{.size = 1, .alignment = 1},
+				Pipe::utils::struct_field_info{.size = 8, .alignment = 8},
+				Pipe::utils::struct_field_info{.size = 1, .alignment = 1}
+			}
+		);
+
+		EXPECT_EQ(result.offsets[0], 0);
+		EXPECT_EQ(result.offsets[1], 8);
+		EXPECT_EQ(result.offsets[2], 16);
+		EXPECT_EQ(result.total_size, 24);
+	}
+
+	{
+		auto const result = compute_struct_info(
+			std::array{
+				Pipe::utils::struct_field_info{.size = 10, .alignment = 1},
+				Pipe::utils::struct_field_info{.size = 4, .alignment = 4},
+				Pipe::utils::struct_field_info{.size = 2, .alignment = 2}
+			}
+		);
+
+		EXPECT_EQ(result.offsets[0], 0);
+		EXPECT_EQ(result.offsets[1], 12);
+		EXPECT_EQ(result.offsets[2], 16);
+		EXPECT_EQ(result.total_size, 20);
+	}
+
+	{
+		auto const result = compute_struct_info(
+			std::array{
+				Pipe::utils::struct_field_info{.size = 4, .alignment = 4},
+				Pipe::utils::struct_field_info{.size = 4, .alignment = 16}
+			}
+		);
+
+		EXPECT_EQ(result.offsets[0], 0);
+		EXPECT_EQ(result.offsets[1], 16);
+		EXPECT_EQ(result.total_size, 32);
+	}
+}

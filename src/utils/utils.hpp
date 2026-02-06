@@ -252,6 +252,45 @@ namespace Pipe::utils
 			{ func(inclusive_integral_range{index_start, index_stop}, args...);}
 		}
 	}
+
+	template<size_t FieldCount>
+	struct struct_info
+	{
+		size_t total_size;
+		std::array<size_t, FieldCount> offsets;
+	};
+
+	struct struct_field_info
+	{
+		size_t size;
+		size_t alignment;
+	};
+
+	template<size_t FieldCount>
+	constexpr struct_info<FieldCount> compute_struct_info(
+		std::array<struct_field_info, FieldCount> const& fields
+	)
+	{
+		struct_info<FieldCount> ret{};
+
+		size_t current_offset = 0;
+		size_t max_alignment = 1;
+		for(size_t k = 0; k != FieldCount; ++k)
+		{
+			max_alignment = std::max(max_alignment, fields[k].alignment);
+			current_offset = (
+				current_offset/fields[k].alignment + (current_offset % fields[k].alignment != 0)
+			)*fields[k].alignment;
+
+			ret.offsets[k] = current_offset;
+			current_offset += fields[k].size;
+		}
+
+		ret.total_size = (
+			current_offset/max_alignment + (current_offset % max_alignment != 0)
+		)*max_alignment;
+		return ret;
+	}
 };
 
 #endif
