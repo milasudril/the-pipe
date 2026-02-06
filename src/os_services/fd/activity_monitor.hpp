@@ -112,6 +112,7 @@ namespace Pipe::os_services::fd
 				event_handler_info{
 					.object_address = source_object_location{.address = &eh},
 					.object_size = sizeof(EventHandler),
+					.object_alignment = alignof(EventHandler),
 					.handle_event = [](
 						void* object,
 						activity_monitor& event_source,
@@ -133,7 +134,7 @@ namespace Pipe::os_services::fd
 		virtual void remove(event_handler_id id) = 0;
 		virtual ~activity_monitor() = default;
 
-	private:
+	protected:
 		struct source_object_location
 		{ void* address; };
 
@@ -163,11 +164,11 @@ namespace Pipe::os_services::fd
 			}
 		};
 
-	protected:
 		struct event_handler_info
 		{
 			source_object_location object_address;
 			size_t object_size;
+			size_t object_alignment;
 			void (*handle_event)(
 				void* object,
 				activity_monitor& event_source,
