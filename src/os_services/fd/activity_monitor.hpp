@@ -102,7 +102,7 @@ namespace Pipe::os_services::fd
 
 		template<class FileDescriptorTag, new_activity_event_handler<FileDescriptorTag> EventHandler>
 		[[nodiscard]] fd::event_handler_id add(
-			EventHandler&& eh,
+			EventHandler eh,
 			tagged_file_descriptor<FileDescriptorTag> fd_to_watch,
 			activity_status initial_listening_status
 		)
