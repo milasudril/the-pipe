@@ -68,9 +68,10 @@ namespace Pipe::os_services::fd
 
 	class activity_monitor;
 
-	struct generic_activity_event
+	template<class FileDescriptorTag>
+	struct new_activity_event
 	{
-		fd::file_descriptor_ref fd;
+		fd::tagged_file_descriptor_ref<FileDescriptorTag> fd;
 		fd::activity_status status;
 		fd::event_handler_id event_handler;
 	};
@@ -84,7 +85,7 @@ namespace Pipe::os_services::fd
 	concept new_activity_event_handler = requires(
 		T& obj,
 		activity_monitor& source,
-		generic_activity_event const& event
+		new_activity_event<FileDescriptorTag> const& event
 	)
 	{
 		/**
@@ -98,7 +99,7 @@ namespace Pipe::os_services::fd
 	public:
 		template<class Tag>
 		void update_listening_status(tagged_file_descriptor_ref<Tag> fd, activity_status new_status)
-		{ update_listening_status(file_descriptor_ref{fd.native_handle()}, new_status); }
+		{ do_update_listening_status(file_descriptor_ref{fd.native_handle()}, new_status); }
 
 		template<class FileDescriptorTag, new_activity_event_handler<FileDescriptorTag> EventHandler>
 		[[nodiscard]] fd::event_handler_id add(
@@ -107,18 +108,20 @@ namespace Pipe::os_services::fd
 			activity_status initial_listening_status
 		)
 		{
-			return add(
+			return do_add(
 				event_handler_info{
 					.object_address = source_object_location{.address = &eh},
 					.size = sizeof(EventHandler),
 					.handle_event = [](
 						void* object,
 						activity_monitor& event_source,
-						generic_activity_event const& event
+						new_activity_event<generic_fd_tag> const& event
 					){
-						// TODO: fd in event should change type
 						// TODO: want to tag the event based on an additional id
-						utils::unwrap(*static_cast<EventHandler*>(object)).handle_event(event_source, event);
+						utils::unwrap(*static_cast<EventHandler*>(object)).handle_event(
+							event_source,
+							std::bit_cast<new_activity_event<FileDescriptorTag>>(event)
+						);
 					},
 					.vtable = eh_vt<FileDescriptorTag, EventHandler>
 				},
@@ -128,10 +131,9 @@ namespace Pipe::os_services::fd
 		}
 
 		virtual void remove(event_handler_id id) = 0;
+		virtual ~activity_monitor() = default;
 
 	private:
-		virtual void update_listening_status(file_descriptor_ref fd, activity_status new_status) = 0;
-
 		struct source_object_location
 		{ void* address; };
 
@@ -161,20 +163,28 @@ namespace Pipe::os_services::fd
 			}
 		};
 
+	protected:
 		struct event_handler_info
 		{
 			source_object_location object_address;
 			size_t size;
+			void (*handle_event)(
+				void* object,
+				activity_monitor& event_source,
+				new_activity_event<generic_fd_tag> const& event
+			);
+
 			event_handler_vtable vtable;
 		};
 
-		virtual event_handler_id add(
+	private:
+		virtual event_handler_id do_add(
 			event_handler_info const& info,
 			fd::file_descriptor fd_to_watch,
 			activity_status initial_listening_status
 		) = 0;
 
-		virtual ~activity_monitor() = default;
+		virtual void do_update_listening_status(file_descriptor_ref fd, activity_status new_status) = 0;
 	};
 
 	/**
