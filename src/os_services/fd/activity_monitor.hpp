@@ -124,14 +124,14 @@ namespace Pipe::os_services::fd
 							std::bit_cast<new_activity_event<FileDescriptorTag>>(event)
 						);
 					},
+					.destroy_event_handler_at = [](void* object){
+						static_cast<EventHandler*>(object)->~EventHandler();
+					},
 					.construct_event_handler_at = [](
 						dest_object_location dest,
 						source_object_location src
 					){
 						::new(dest.address)EventHandler(std::move(*static_cast<EventHandler*>(src.address)));
-					},
-					.destroy_event_handler_at = [](void* object){
-						static_cast<EventHandler*>(object)->~EventHandler();
 					}
 				},
 				make_generic_file_descriptor(std::move(fd_to_watch)),
@@ -159,11 +159,11 @@ namespace Pipe::os_services::fd
 				activity_monitor& event_source,
 				new_activity_event<generic_fd_tag> const& event
 			);
+			void (*destroy_event_handler_at)(void* object);
 			void (*construct_event_handler_at)(
 				dest_object_location dest,
 				source_object_location src
 			);
-			void (*destroy_event_handler_at)(void* object);
 		};
 
 	private:
