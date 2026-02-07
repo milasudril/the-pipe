@@ -124,9 +124,11 @@ namespace
 
 		void do_update_listening_status(
 			Pipe::os_services::fd::file_descriptor_ref,
-			Pipe::os_services::fd::activity_status
+			Pipe::os_services::fd::activity_status activity_status
 		) override
-		{}
+		{
+			obj.get_saved_event_handler_info()->status = activity_status;
+		}
 
 		void remove(Pipe::os_services::fd::event_handler_id) override
 		{}
@@ -195,7 +197,9 @@ TESTCASE(Pipe_os_services_fd_activity_monitor_add_fd)
 	eh.expected_activity_monitor = &monitor;
 	Pipe::os_services::ipc::pipe my_pipe;
 	auto expected_fd = my_pipe.read_end();
-	auto const id = monitor.add<my_tag>(std::ref(eh), my_pipe.take_read_end(), Pipe::os_services::fd::activity_status::read);
+	auto const id = monitor.add<my_tag>(
+		std::ref(eh), my_pipe.take_read_end(), Pipe::os_services::fd::activity_status::read
+	);
 	EXPECT_EQ(id, Pipe::os_services::fd::event_handler_id{123});
 	REQUIRE_EQ(
 		*reinterpret_cast<std::byte const* const*>(monitor.get_event_handler_ptr()), static_cast<void*>(&eh)
@@ -210,4 +214,9 @@ TESTCASE(Pipe_os_services_fd_activity_monitor_add_fd)
 	EXPECT_EQ(eh.saved_event.event_handler, id);
 	EXPECT_EQ(eh.saved_event.fd, expected_fd);
 	EXPECT_EQ(eh.saved_event.status, Pipe::os_services::fd::activity_status::read);
+
+	monitor.update_listening_status(
+		expected_fd, Pipe::os_services::fd::activity_status::write
+	);
+	EXPECT_EQ(eh.saved_event.status, Pipe::os_services::fd::activity_status::write);
 }

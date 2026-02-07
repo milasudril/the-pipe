@@ -98,7 +98,10 @@ namespace Pipe::os_services::fd
 	{
 	public:
 		template<class Tag>
-		void update_listening_status(tagged_file_descriptor_ref<Tag> fd, activity_status new_status)
+		void update_listening_status(
+			tagged_file_descriptor_ref<Tag> fd,
+			activity_status new_status
+		)
 		{ do_update_listening_status(file_descriptor_ref{fd.native_handle()}, new_status); }
 
 		template<
