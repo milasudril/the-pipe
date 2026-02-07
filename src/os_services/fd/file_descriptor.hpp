@@ -165,6 +165,7 @@ namespace Pipe::os_services::fd
 		 * \brief The "pointer" type to "delete"
 		 */
 		using pointer = tagged_file_descriptor_ref<generic_fd_tag>;
+		file_descriptor_deleter() = default;
 
 		template<class OtherTag>
 		file_descriptor_deleter(OtherTag):
@@ -175,7 +176,7 @@ namespace Pipe::os_services::fd
 			}
 		{}
 
-		void (*orig_close_function)(tagged_file_descriptor_ref<generic_fd_tag> fd) noexcept;
+		void (*orig_close_function)(tagged_file_descriptor_ref<generic_fd_tag> fd) noexcept = nullptr;
 
 		/**
 		 * \brief Function call operator that implements the delete operation

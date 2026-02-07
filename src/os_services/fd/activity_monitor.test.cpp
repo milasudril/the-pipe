@@ -29,17 +29,26 @@ namespace
 {
 	class fd_activity_monitor_stub:public Pipe::os_services::fd::activity_monitor
 	{
+		struct event_handler_vtable
+		{
+			Pipe::os_services::fd::file_descriptor_deleter<Pipe::os_services::fd::generic_fd_tag> fd_deleter;
+			void (*destroy_event_handler_at)(void* object);
+		};
+
 		struct saved_event_handler_info
 		{
+			saved_event_handler_info():vtable{std::make_unique<event_handler_vtable>()}
+			{}
+
 			void (*handle_event)(
 				void* object,
 				activity_monitor& event_source,
 				Pipe::os_services::fd::new_activity_event<Pipe::os_services::fd::generic_fd_tag> const& event
 			);
-			Pipe::os_services::fd::file_descriptor fd;
-			Pipe::os_services::fd::activity_status status;
+			Pipe::os_services::fd::file_descriptor_ref fd;
+			Pipe::os_services::fd::activity_status status;  // Not used in real version
 			Pipe::os_services::fd::event_handler_id id;
-			void (*destroy_event_handler_at)(void* object);
+			std::unique_ptr<event_handler_vtable> vtable;
 		};
 
 		class blob
@@ -60,35 +69,28 @@ namespace
 				auto const struct_info = Pipe::utils::compute_struct_info(
 					std::array{
 						Pipe::utils::struct_field_info{
-							.size = sizeof(size_t),
-							.alignment = alignof(size_t)
+							.size = sizeof(saved_event_handler_info),
+							.alignment = alignof(saved_event_handler_info)
 						},
 						Pipe::utils::struct_field_info{
 							.size = eh_info.object_size,
 							.alignment = eh_info.object_alignment
-						},
-						Pipe::utils::struct_field_info{
-							.size = sizeof(saved_event_handler_info),
-							.alignment = alignof(saved_event_handler_info)
 						}
 					}
 				);
-				assert(struct_info.offsets[0] == 0);
-				assert(struct_info.offsets[1] == sizeof(size_t));
+				static_assert(sizeof(saved_event_handler_info)%alignof(std::max_align_t) == 0);	assert(eh_info.object_alignment <= alignof(std::max_align_t));
 
 				data = std::make_unique<std::byte[]>(struct_info.total_size);
-				new(data.get())size_t(struct_info.offsets[2]);
+				auto saved_eh_info = new(data.get())saved_event_handler_info;
+				saved_eh_info->handle_event = eh_info.handle_event;
+				saved_eh_info->vtable->fd_deleter = fd.get_deleter();
+				saved_eh_info->vtable->destroy_event_handler_at = eh_info.destroy_event_handler_at;
+				saved_eh_info->fd = fd.release();
+				saved_eh_info->status = status;
+				saved_eh_info->id = id;
 
 				eh_info.construct_event_handler_at(
-					dest_object_location{data.get() + sizeof(size_t)}, eh_info.object_address
-				);
-
-				new(data.get() + struct_info.offsets[2])saved_event_handler_info(
-					eh_info.handle_event,
-					std::move(fd),
-					status,
-					id,
-					eh_info.destroy_event_handler_at
+					dest_object_location{data.get() + sizeof(saved_event_handler_info)}, eh_info.object_address
 				);
 			}
 
@@ -97,18 +99,19 @@ namespace
 
 			auto get_saved_event_handler_info()
 			{
-				return reinterpret_cast<saved_event_handler_info*>(data.get() + event_handler_info_offset());
+				return reinterpret_cast<saved_event_handler_info*>(data.get());
 			}
 
 			void* get_event_handler_ptr() const
-			{ return data.get() + sizeof(size_t); }
+			{ return data.get() + sizeof(saved_event_handler_info); }
 
 			~blob()
 			{
 				if(data != nullptr)
 				{
 					auto const eh_info = get_saved_event_handler_info();
-					eh_info->destroy_event_handler_at(get_event_handler_ptr());
+					eh_info->vtable->destroy_event_handler_at(get_event_handler_ptr());
+					eh_info->vtable->fd_deleter(eh_info->fd);
 					eh_info->~saved_event_handler_info();
 				}
 			}
@@ -152,7 +155,7 @@ namespace
 				obj.get_event_handler_ptr(),
 				*this,
 				Pipe::os_services::fd::new_activity_event<Pipe::os_services::fd::generic_fd_tag>{
-					.fd = ehi->fd.get(),
+					.fd = ehi->fd,
 					.status = ehi->status,
 					.event_handler = ehi->id
 				}
