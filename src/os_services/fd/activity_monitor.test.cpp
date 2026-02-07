@@ -218,5 +218,6 @@ TESTCASE(Pipe_os_services_fd_activity_monitor_add_fd)
 	monitor.update_listening_status(
 		expected_fd, Pipe::os_services::fd::activity_status::write
 	);
+	monitor.trigger();
 	EXPECT_EQ(eh.saved_event.status, Pipe::os_services::fd::activity_status::write);
 }
