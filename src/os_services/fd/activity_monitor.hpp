@@ -125,7 +125,6 @@ namespace Pipe::os_services::fd
 						activity_monitor& event_source,
 						new_activity_event<void, generic_fd_tag> const& event
 					){
-						// TODO: want to tag the event based on an additional id
 						utils::unwrap(*static_cast<EventHandler*>(object)).handle_event(
 							event_source,
 							std::bit_cast<new_activity_event<CallbackTag, FileDescriptorTag>>(event)
