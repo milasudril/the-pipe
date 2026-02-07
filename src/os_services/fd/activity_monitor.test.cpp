@@ -43,7 +43,7 @@ namespace
 			void (*handle_event)(
 				void* object,
 				activity_monitor& event_source,
-				Pipe::os_services::fd::new_activity_event<Pipe::os_services::fd::generic_fd_tag> const& event
+				Pipe::os_services::fd::new_activity_event<void, Pipe::os_services::fd::generic_fd_tag> const& event
 			);
 			Pipe::os_services::fd::file_descriptor_ref fd;
 			Pipe::os_services::fd::activity_status status;  // Not used in real version
@@ -154,7 +154,7 @@ namespace
 			ehi->handle_event(
 				obj.get_event_handler_ptr(),
 				*this,
-				Pipe::os_services::fd::new_activity_event<Pipe::os_services::fd::generic_fd_tag>{
+				Pipe::os_services::fd::new_activity_event<void, Pipe::os_services::fd::generic_fd_tag>{
 					.fd = ehi->fd,
 					.status = ehi->status,
 					.event_handler = ehi->id
@@ -163,15 +163,23 @@ namespace
 		}
 	};
 
+	struct my_tag{};
+
 	struct my_event_handler
 	{
 		Pipe::os_services::fd::activity_monitor* expected_activity_monitor = nullptr;
 		Pipe::os_services::fd::activity_monitor* called_with_activity_monitor = nullptr;
-		Pipe::os_services::fd::new_activity_event<Pipe::os_services::io::input_file_descriptor_tag> saved_event{};
+		Pipe::os_services::fd::new_activity_event<
+			my_tag,
+			Pipe::os_services::io::input_file_descriptor_tag
+		> saved_event{};
 
 		void handle_event(
 			Pipe::os_services::fd::activity_monitor& activity_monitor,
-			Pipe::os_services::fd::new_activity_event<Pipe::os_services::io::input_file_descriptor_tag> const& event
+			Pipe::os_services::fd::new_activity_event<
+				my_tag,
+				Pipe::os_services::io::input_file_descriptor_tag
+			> const& event
 		)
 		{
 			called_with_activity_monitor = &activity_monitor;
@@ -187,7 +195,7 @@ TESTCASE(Pipe_os_services_fd_activity_monitor_add_fd)
 	eh.expected_activity_monitor = &monitor;
 	Pipe::os_services::ipc::pipe my_pipe;
 	auto expected_fd = my_pipe.read_end();
-	auto const id = monitor.add(std::ref(eh), my_pipe.take_read_end(), Pipe::os_services::fd::activity_status::read);
+	auto const id = monitor.add<my_tag>(std::ref(eh), my_pipe.take_read_end(), Pipe::os_services::fd::activity_status::read);
 	EXPECT_EQ(id, Pipe::os_services::fd::event_handler_id{123});
 	REQUIRE_EQ(
 		*reinterpret_cast<std::byte const* const*>(monitor.get_event_handler_ptr()), static_cast<void*>(&eh)

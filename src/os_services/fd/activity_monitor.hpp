@@ -68,7 +68,7 @@ namespace Pipe::os_services::fd
 
 	class activity_monitor;
 
-	template<class FileDescriptorTag>
+	template<class CallbackTag, class FileDescriptorTag>
 	struct new_activity_event
 	{
 		fd::tagged_file_descriptor_ref<FileDescriptorTag> fd;
@@ -81,11 +81,11 @@ namespace Pipe::os_services::fd
 	 * \tparam T The type to query
 	 * \tparam FileDescriptorTag Identifies the type of file descriptor to be used
 	 */
-	template<class T, class FileDescriptorTag>
+	template<class T, class CallbackTag, class FileDescriptorTag>
 	concept new_activity_event_handler = requires(
 		T& obj,
 		activity_monitor& source,
-		new_activity_event<FileDescriptorTag> const& event
+		new_activity_event<CallbackTag, FileDescriptorTag> const& event
 	)
 	{
 		/**
@@ -101,7 +101,11 @@ namespace Pipe::os_services::fd
 		void update_listening_status(tagged_file_descriptor_ref<Tag> fd, activity_status new_status)
 		{ do_update_listening_status(file_descriptor_ref{fd.native_handle()}, new_status); }
 
-		template<class FileDescriptorTag, new_activity_event_handler<FileDescriptorTag> EventHandler>
+		template<
+			class CallbackTag,
+			class FileDescriptorTag,
+			new_activity_event_handler<CallbackTag, FileDescriptorTag> EventHandler
+		>
 		[[nodiscard]] fd::event_handler_id add(
 			EventHandler eh,
 			tagged_file_descriptor<FileDescriptorTag> fd_to_watch,
@@ -116,12 +120,12 @@ namespace Pipe::os_services::fd
 					.handle_event = [](
 						void* object,
 						activity_monitor& event_source,
-						new_activity_event<generic_fd_tag> const& event
+						new_activity_event<void, generic_fd_tag> const& event
 					){
 						// TODO: want to tag the event based on an additional id
 						utils::unwrap(*static_cast<EventHandler*>(object)).handle_event(
 							event_source,
-							std::bit_cast<new_activity_event<FileDescriptorTag>>(event)
+							std::bit_cast<new_activity_event<CallbackTag, FileDescriptorTag>>(event)
 						);
 					},
 					.destroy_event_handler_at = [](void* object){
@@ -157,7 +161,7 @@ namespace Pipe::os_services::fd
 			void (*handle_event)(
 				void* object,
 				activity_monitor& event_source,
-				new_activity_event<generic_fd_tag> const& event
+				new_activity_event<void, generic_fd_tag> const& event
 			);
 			void (*destroy_event_handler_at)(void* object);
 			void (*construct_event_handler_at)(
