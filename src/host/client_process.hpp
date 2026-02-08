@@ -1,6 +1,6 @@
 #include "src/os_services/ipc/socket.hpp"
 #include "src/os_services/ipc/unix_domain_socket.hpp"
-#include "src/os_services/fd/activity_monitor.hpp"
+#include "src/os_services/fd/activity_event_handler_store.hpp"
 
 namespace Pipe::host
 {
@@ -10,7 +10,7 @@ namespace Pipe::host
 		struct client_ctl_tag{};
 
 		void handle_event(
-			os_services::fd::activity_monitor&,
+			os_services::fd::activity_event_handler_store&,
 			os_services::fd::activity_event<
 				client_ctl_tag,
 				os_services::ipc::connected_socket_tag<SOCK_STREAM, sockaddr_un>

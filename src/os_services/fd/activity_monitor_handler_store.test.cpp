@@ -1,6 +1,6 @@
-//@	{"target":{"name": "activity_monitor.test"}}
+//@	{"target":{"name": "activity_event_handler_store.test"}}
 
-#include "./activity_monitor.hpp"
+#include "./activity_event_handler_store.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/ipc/pipe.hpp"
@@ -27,7 +27,7 @@ TESTCASE(Pipe_os_services_fd_activity_status_can_write)
 
 namespace
 {
-	class fd_activity_monitor_stub:public Pipe::os_services::fd::activity_monitor
+	class fd_activity_event_handler_store_stub:public Pipe::os_services::fd::activity_event_handler_store
 	{
 		struct event_handler_vtable
 		{
@@ -42,7 +42,7 @@ namespace
 
 			void (*handle_event)(
 				void* object,
-				activity_monitor& event_source,
+				activity_event_handler_store& event_source,
 				Pipe::os_services::fd::activity_event<void, Pipe::os_services::fd::generic_fd_tag> const& event
 			);
 			Pipe::os_services::fd::file_descriptor_ref fd;
@@ -170,32 +170,32 @@ namespace
 
 	struct my_event_handler
 	{
-		Pipe::os_services::fd::activity_monitor* expected_activity_monitor = nullptr;
-		Pipe::os_services::fd::activity_monitor* called_with_activity_monitor = nullptr;
+		Pipe::os_services::fd::activity_event_handler_store* expected_activity_event_handler_store = nullptr;
+		Pipe::os_services::fd::activity_event_handler_store* called_with_activity_event_handler_store = nullptr;
 		Pipe::os_services::fd::activity_event<
 			my_tag,
 			Pipe::os_services::io::input_file_descriptor_tag
 		> saved_event{};
 
 		void handle_event(
-			Pipe::os_services::fd::activity_monitor& activity_monitor,
+			Pipe::os_services::fd::activity_event_handler_store& activity_event_handler_store,
 			Pipe::os_services::fd::activity_event<
 				my_tag,
 				Pipe::os_services::io::input_file_descriptor_tag
 			> const& event
 		)
 		{
-			called_with_activity_monitor = &activity_monitor;
+			called_with_activity_event_handler_store = &activity_event_handler_store;
 			saved_event = event;
 		}
 	};
 }
 
-TESTCASE(Pipe_os_services_fd_activity_monitor_add_fd)
+TESTCASE(Pipe_os_services_fd_activity_event_handler_store_add_fd)
 {
 	my_event_handler eh;
-	fd_activity_monitor_stub monitor;
-	eh.expected_activity_monitor = &monitor;
+	fd_activity_event_handler_store_stub monitor;
+	eh.expected_activity_event_handler_store = &monitor;
 	Pipe::os_services::ipc::pipe my_pipe;
 	auto expected_fd = my_pipe.read_end();
 	auto const id = monitor.add<my_tag>(
@@ -206,12 +206,12 @@ TESTCASE(Pipe_os_services_fd_activity_monitor_add_fd)
 		*reinterpret_cast<std::byte const* const*>(monitor.get_event_handler_ptr()), static_cast<void*>(&eh)
 	);
 
-	EXPECT_NE(eh.called_with_activity_monitor, eh.expected_activity_monitor);
+	EXPECT_NE(eh.called_with_activity_event_handler_store, eh.expected_activity_event_handler_store);
 	EXPECT_NE(eh.saved_event.event_handler, id);
 	EXPECT_NE(eh.saved_event.fd, expected_fd);
 	EXPECT_NE(eh.saved_event.status, Pipe::os_services::fd::activity_status::read);
 	monitor.trigger();
-	EXPECT_EQ(eh.called_with_activity_monitor, eh.expected_activity_monitor);
+	EXPECT_EQ(eh.called_with_activity_event_handler_store, eh.expected_activity_event_handler_store);
 	EXPECT_EQ(eh.saved_event.event_handler, id);
 	EXPECT_EQ(eh.saved_event.fd, expected_fd);
 	EXPECT_EQ(eh.saved_event.status, Pipe::os_services::fd::activity_status::read);

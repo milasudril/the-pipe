@@ -66,7 +66,7 @@ namespace Pipe::os_services::fd
 		{ return std::hash<uint64_t>{}(id.value()); }
 	};
 
-	class activity_monitor;
+	class activity_event_handler_store;
 
 	template<class CallbackTag, class FileDescriptorTag>
 	struct activity_event
@@ -84,7 +84,7 @@ namespace Pipe::os_services::fd
 	template<class T, class CallbackTag, class FileDescriptorTag>
 	concept activity_event_handler = requires(
 		T& obj,
-		activity_monitor& source,
+		activity_event_handler_store& source,
 		activity_event<CallbackTag, FileDescriptorTag> const& event
 	)
 	{
@@ -94,13 +94,13 @@ namespace Pipe::os_services::fd
 		{utils::unwrap(obj).handle_event(source, event)} -> std::same_as<void>;
 	};
 
-	class activity_monitor
+	class activity_event_handler_store
 	{
 	public:
 		class config_transaction
 		{
 		public:
-			explicit config_transaction(activity_monitor& monitor):
+			explicit config_transaction(activity_event_handler_store& monitor):
 				m_monitor{monitor}
 			{}
 
@@ -122,7 +122,7 @@ namespace Pipe::os_services::fd
 			{ m_added_ids.clear(); }
 
 		private:
-			std::reference_wrapper<activity_monitor> m_monitor;
+			std::reference_wrapper<activity_event_handler_store> m_monitor;
 			std::vector<event_handler_id> m_added_ids;
 		};
 
@@ -156,7 +156,7 @@ namespace Pipe::os_services::fd
 					.object_alignment = alignof(EventHandler),
 					.handle_event = [](
 						void* object,
-						activity_monitor& event_source,
+						activity_event_handler_store& event_source,
 						activity_event<void, generic_fd_tag> const& event
 					){
 						utils::unwrap(*static_cast<EventHandler*>(object)).handle_event(
@@ -180,7 +180,7 @@ namespace Pipe::os_services::fd
 		}
 
 		virtual void remove(event_handler_id id) = 0;
-		virtual ~activity_monitor() = default;
+		virtual ~activity_event_handler_store() = default;
 
 		struct source_object_location
 		{ void* address; };
@@ -195,7 +195,7 @@ namespace Pipe::os_services::fd
 			size_t object_alignment;
 			void (*handle_event)(
 				void* object,
-				activity_monitor& event_source,
+				activity_event_handler_store& event_source,
 				activity_event<void, generic_fd_tag> const& event
 			);
 			void (*destroy_event_handler_at)(void* object);

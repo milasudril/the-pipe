@@ -1,7 +1,7 @@
 //@	{"target":{"name":"epoll_instance.test"}}
 
 #include "./epoll_instance.hpp"
-#include "src/os_services/fd/activity_monitor.hpp"
+#include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/ipc/pipe.hpp"
@@ -74,7 +74,7 @@ TESTCASE(Pipe_os_services_io_multiplexer_epoll_entry_data_create_and_get_props)
 	Pipe::os_services::ipc::pipe pipe;
 	{
 		Pipe::os_services::io_multiplexer::epoll_entry_data entry_data{
-			Pipe::os_services::fd::activity_monitor::event_handler_info{
+			Pipe::os_services::fd::activity_event_handler_store::event_handler_info{
 				.object_address = {.address = &my_object},
 				.object_size = 1,
 				.object_alignment = 1,
@@ -83,8 +83,8 @@ TESTCASE(Pipe_os_services_io_multiplexer_epoll_entry_data_create_and_get_props)
 					object_destroyed_at = obj;
 				},
 				.construct_event_handler_at = [](
-					Pipe::os_services::fd::activity_monitor::dest_object_location dest,
-					Pipe::os_services::fd::activity_monitor::source_object_location src
+					Pipe::os_services::fd::activity_event_handler_store::dest_object_location dest,
+					Pipe::os_services::fd::activity_event_handler_store::source_object_location src
 				){
 					object_constructed_from = src.address;
 					object_constructed_at = dest.address;
@@ -110,7 +110,7 @@ namespace
 			Pipe::os_services::ipc::connected_socket_tag<SOCK_SEQPACKET, sockaddr_un>
 		>;
 
-		void handle_event(Pipe::os_services::fd::activity_monitor& source, event_type const& event)
+		void handle_event(Pipe::os_services::fd::activity_event_handler_store& source, event_type const& event)
 		{
 			if(can_read(event.status))
 			{
@@ -141,7 +141,7 @@ namespace
 		>;
 
 		void handle_event(
-			Pipe::os_services::fd::activity_monitor& monitor,
+			Pipe::os_services::fd::activity_event_handler_store& monitor,
 			event_type const& event
 		)
 		{

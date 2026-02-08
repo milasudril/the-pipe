@@ -43,7 +43,7 @@ Pipe::os_services::io_multiplexer::epoll_instance::do_add(
 }
 
 Pipe::os_services::io_multiplexer::epoll_entry_data::epoll_entry_data(
-	fd::activity_monitor::event_handler_info const& eh_info,
+	fd::activity_event_handler_store::event_handler_info const& eh_info,
 	Pipe::os_services::fd::file_descriptor fd,
 	Pipe::os_services::fd::event_handler_id id
 )
@@ -73,7 +73,7 @@ Pipe::os_services::io_multiplexer::epoll_entry_data::epoll_entry_data(
 	saved_eh_info->id = id;
 
 	eh_info.construct_event_handler_at(
-		fd::activity_monitor::dest_object_location{storage_ptr + sizeof(epoll_entry_data_header)},
+		fd::activity_event_handler_store::dest_object_location{storage_ptr + sizeof(epoll_entry_data_header)},
 		eh_info.object_address
 	);
 }

@@ -3,7 +3,7 @@
 #ifndef PIPE_OS_SERVICES_IO_MULTIPLEXER_EPOLL_INSTANCE_HPP
 #define PIPE_OS_SERVICES_IO_MULTIPLEXER_EPOLL_INSTANCE_HPP
 
-#include "src/os_services/fd/activity_monitor.hpp"
+#include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
 #include "src/os_services/error_handling/error_handling.hpp"
 #include "src/os_services/error_handling/system_error.hpp"
@@ -68,7 +68,7 @@ namespace Pipe::os_services::io_multiplexer
 
 		void (*handle_event)(
 			void* object,
-			fd::activity_monitor& event_source,
+			fd::activity_event_handler_store& event_source,
 			fd::activity_event<void, fd::generic_fd_tag> const& event
 		);
 
@@ -102,7 +102,7 @@ namespace Pipe::os_services::io_multiplexer
 
 
 	explicit epoll_entry_data(
-		fd::activity_monitor::event_handler_info const& eh_info,
+		fd::activity_event_handler_store::event_handler_info const& eh_info,
 		Pipe::os_services::fd::file_descriptor fd,
 		Pipe::os_services::fd::event_handler_id id
 	);
@@ -125,7 +125,7 @@ namespace Pipe::os_services::io_multiplexer
 
 	using epoll_file_descriptor = fd::tagged_file_descriptor<epoll_fd_tag>;
 
-	class epoll_instance:public fd::activity_monitor
+	class epoll_instance:public fd::activity_event_handler_store
 	{
 	public:
 		void wait_for_and_distpatch_events();

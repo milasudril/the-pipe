@@ -3,7 +3,7 @@
 #include "./reader.hpp"
 #include "./item_converter.hpp"
 #include "src/log/log.hpp"
-#include "src/os_services/fd/activity_monitor.hpp"
+#include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/ipc/pipe.hpp"
@@ -33,7 +33,7 @@ namespace
 		{ errmesg.push_back(msg);}
 	};
 
-	class my_activity_monitor:public Pipe::os_services::fd::activity_monitor
+	class my_activity_event_handler_store:public Pipe::os_services::fd::activity_event_handler_store
 	{
 	public:
 		Pipe::os_services::fd::event_handler_id removed_id{};
@@ -60,7 +60,7 @@ namespace
 TESTCASE(Pipe_json_log_reader_cannot_read)
 {
 	my_receiver receiver;
-	my_activity_monitor monitor;
+	my_activity_event_handler_store monitor;
 	Pipe::json_log::reader reader{"foo", std::ref(receiver), 16};
 	Pipe::os_services::ipc::pipe logpipe;
 
@@ -89,7 +89,7 @@ TESTCASE(Pipe_json_log_reader_cannot_read)
 TESTCASE(Pipe_json_log_reader_read_full_read_partial_block_close_try_agian)
 {
 	my_receiver receiver;
-	my_activity_monitor monitor;
+	my_activity_event_handler_store monitor;
 
 	Pipe::json_log::reader reader{"foo", std::ref(receiver)};
 	Pipe::os_services::ipc::pipe logpipe;
@@ -160,7 +160,7 @@ TESTCASE(Pipe_json_log_reader_read_full_read_partial_block_close_try_agian)
 TESTCASE(Pipe_json_log_reader_read_full_read_partial_block_try_agian_close)
 {
 	my_receiver receiver;
-	my_activity_monitor monitor;
+	my_activity_event_handler_store monitor;
 
 	Pipe::json_log::reader reader{"foo", std::ref(receiver)};
 	Pipe::os_services::ipc::pipe logpipe;
@@ -257,7 +257,7 @@ TESTCASE(Pipe_json_log_reader_read_full_read_partial_block_try_agian_close)
 TESTCASE(Pipe_json_log_reader_read_first_item_not_an_object)
 {
 	my_receiver receiver;
-	my_activity_monitor monitor;
+	my_activity_event_handler_store monitor;
 
 	Pipe::json_log::reader reader{"foo", std::ref(receiver)};
 	Pipe::os_services::ipc::pipe logpipe;
@@ -304,7 +304,7 @@ TESTCASE(Pipe_json_log_reader_read_first_item_not_an_object)
 TESTCASE(Pipe_json_log_reader_read_first_item_not_valid)
 {
 	my_receiver receiver;
-	my_activity_monitor monitor;
+	my_activity_event_handler_store monitor;
 
 	Pipe::json_log::reader reader{"foo", std::ref(receiver)};
 	Pipe::os_services::ipc::pipe logpipe;
@@ -354,7 +354,7 @@ TESTCASE(Pipe_json_log_reader_read_first_item_not_valid)
 TESTCASE(Pipe_json_log_reader_read_jammed_parser)
 {
 	my_receiver receiver;
-	my_activity_monitor monitor;
+	my_activity_event_handler_store monitor;
 
 	Pipe::json_log::reader reader{"foo", std::ref(receiver)};
 	Pipe::os_services::ipc::pipe logpipe;

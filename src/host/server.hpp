@@ -3,7 +3,7 @@
 
 #include "./client_process.hpp"
 
-#include "src/os_services/fd/activity_monitor.hpp"
+#include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/ipc/pipe.hpp"
@@ -53,7 +53,7 @@ namespace Pipe::host
 		}
 
 		void handle_event(
-			os_services::fd::activity_monitor& source,
+			os_services::fd::activity_event_handler_store& source,
 			os_services::fd::activity_event<proc_mgmt_tag, os_services::proc_mgmt::pidfd_tag> const& event
 		)
 		{
@@ -62,7 +62,7 @@ namespace Pipe::host
 		}
 
 		void load(
-			os_services::fd::activity_monitor& activity_monitor,
+			os_services::fd::activity_event_handler_store& activity_event_handler_store,
 			std::filesystem::path const& client_binary
 		)
 		{
@@ -93,7 +93,7 @@ namespace Pipe::host
 			);
 
 			auto client_proc = std::make_shared<client_process>();
-			activity_monitor.make_config_transaction()
+			activity_event_handler_store.make_config_transaction()
 				.add<json_log::reader::json_stream_tag>(
 					json_log::reader{client_binary.filename(), std::ref(*this)},
 					logpipe.take_read_end(),

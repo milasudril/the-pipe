@@ -5,7 +5,7 @@
 
 #include "src/log/log.hpp"
 #include "src/os_services/io/io.hpp"
-#include "src/os_services/fd/activity_monitor.hpp"
+#include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/utils/utils.hpp"
 
 #include <jopp/types.hpp>
@@ -76,7 +76,7 @@ namespace Pipe::json_log
 
 	/**
 	 * \brief A reader that decodes log items from a stream of JSON objects
-	 * \note A reader can be used as a listener in os_services::fd::activity_monitor
+	 * \note A reader can be used as a listener in os_services::fd::activity_event_handler_store
 	 */
 	class reader
 	{
@@ -104,10 +104,10 @@ namespace Pipe::json_log
 
 		/**
 		 * \brief Handles file activity events
-		 * \param source The activity_monitor that emitted the event
+		 * \param source The activity_event_handler_store that emitted the event
 		 * \param event The event to handle
 		 */
-		void handle_event(os_services::fd::activity_monitor&, event_type const& event);
+		void handle_event(os_services::fd::activity_event_handler_store&, event_type const& event);
 
 	private:
 		size_t m_buffer_size;

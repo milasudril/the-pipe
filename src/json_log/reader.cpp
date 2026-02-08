@@ -57,7 +57,7 @@ namespace
 }
 
 void Pipe::json_log::reader::handle_event(
-	os_services::fd::activity_monitor& source,
+	os_services::fd::activity_event_handler_store& source,
 	event_type const& event
 )
 {
