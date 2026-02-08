@@ -32,19 +32,30 @@ namespace Pipe::os_services::fd
 
 	/**
 	 * \brief The id for the current event handler
+	 *
+	 * An event_handler_id is a 64 bit running number that can be used to identify an event_handler
 	 */
 	class event_handler_id
 	{
 	public:
 		constexpr event_handler_id() = default;
 
+		/**
+		 * \brief Constructs an event_handler_id from value
+		 */
 		constexpr explicit event_handler_id(uint64_t value):
 			m_value{value}
 		{}
 
+		/**
+		 * \brief Returns the value of the event_handler_id
+		 */
 		constexpr uint64_t value() const
 		{ return m_value; }
 
+		/**
+		 * \brief Gets the current value and increments the current value (post-increment)
+		 */
 		constexpr event_handler_id next()
 		{
 			auto ret = *this;
@@ -60,6 +71,9 @@ namespace Pipe::os_services::fd
 		uint64_t m_value{};
 	};
 
+	/**
+	 * \brief Hash function object for event_handler_id
+	 */
 	struct event_handler_id_hash
 	{
 		static constexpr auto operator()(event_handler_id id) noexcept
@@ -68,11 +82,30 @@ namespace Pipe::os_services::fd
 
 	class activity_event_handler_store;
 
+	/**
+	 * \brief Describes an activity event
+	 *
+	 * \tparam CallbackTag Is used to distinguish between events on different protocols that use the
+	 *                     same type of file descriptor
+	 *
+	 * \tparam FileDescriptorTag Identifies the type of file descriptor that was activated
+	 */
 	template<class CallbackTag, class FileDescriptorTag>
 	struct activity_event
 	{
+		/**
+		 * \brief The file descriptor that was activated
+		 */
 		fd::tagged_file_descriptor_ref<FileDescriptorTag> fd;
+
+		/**
+		 * \brief The current status of fd
+		 */
 		fd::activity_status status;
+
+		/**
+		 * \brief The id of the associated event handler
+		 */
 		fd::event_handler_id event_handler;
 	};
 
@@ -94,43 +127,69 @@ namespace Pipe::os_services::fd
 		{utils::unwrap(obj).handle_event(source, event)} -> std::same_as<void>;
 	};
 
+	/**
+	 * \brief Stores (type-erased) activity_event_handlers
+	 */
 	class activity_event_handler_store
 	{
 	public:
+		/**
+		 * \brief A helper class that can be used to register multiple items, with rollback support
+		 */
 		class config_transaction
 		{
 		public:
-			explicit config_transaction(activity_event_handler_store& monitor):
-				m_monitor{monitor}
+			/**
+			 * \brief Constructs a config_transaction by referencing a particular
+			 *        activity_event_handler_store
+			 */
+			explicit config_transaction(activity_event_handler_store& store) noexcept:
+				m_store{store}
 			{}
 
-			~config_transaction()
+			/**
+			 * \brief Object destructor
+			 *
+			 * If the transaction was not committed, all entries successfully stored will be removed
+			 */
+			~config_transaction() noexcept
 			{
 				for(auto item : m_added_ids)
-				{ m_monitor.get().remove(item); }
+				{ m_store.get().remove(item); }
 			}
 
+			/**
+			 * \brief Adds an item to the associated activity_event_handler_store
+			 * \see activity_event_handler_store::add
+			 */
 			template<class Tag, class ... Args>
 			auto& add(Args&&... args)
 			{
-				auto const id = m_monitor.get().add<Tag>(std::forward<Args>(args)...);
+				auto const id = m_store.get().add<Tag>(std::forward<Args>(args)...);
 				m_added_ids.push_back(id);
 				return *this;
 			}
 
-			void commit()
+			/**
+			 * \brief Commits all additions so they are kept when the transaction goes out of scope
+			 */
+			void commit() noexcept
 			{ m_added_ids.clear(); }
 
 		private:
-			std::reference_wrapper<activity_event_handler_store> m_monitor;
+			std::reference_wrapper<activity_event_handler_store> m_store;
 			std::vector<event_handler_id> m_added_ids;
 		};
 
-		friend class config_transaction;
-
+		/**
+		 * \brief Creates a config_transaction associated with this activity_event_handler_store
+		 */
 		auto make_config_transaction()
 		{ return config_transaction{*this}; }
 
+		/**
+		 * \brief Updates the listening status for fd
+		 */
 		template<class Tag>
 		void update_listening_status(
 			tagged_file_descriptor_ref<Tag> fd,
@@ -138,6 +197,15 @@ namespace Pipe::os_services::fd
 		)
 		{ do_update_listening_status(file_descriptor_ref{fd.native_handle()}, new_status); }
 
+		/**
+		 * \brief Adds a new entry to the activity_event_handler_store
+		 * \tparam CallbackTag See activity_event
+		 * \tparam FileDescriptorTag See activity_event
+		 * \param eh The event handler that will be used for handling events on the file descriptor
+		 * \param fd_to_watch The file descriptor that whose events will be routed to eh
+		 * \param initial_listening_status The status to listen for initially
+		 * \return The id of the added event handler id
+		 */
 		template<
 			class CallbackTag,
 			class FileDescriptorTag,
@@ -179,7 +247,11 @@ namespace Pipe::os_services::fd
 			);
 		}
 
+		/**
+		 * \brief Removes the event handler that corresponds to id
+		 */
 		virtual void remove(event_handler_id id) = 0;
+
 		virtual ~activity_event_handler_store() = default;
 
 		struct source_object_location
