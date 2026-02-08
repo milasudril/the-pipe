@@ -69,7 +69,7 @@ namespace Pipe::os_services::fd
 	class activity_monitor;
 
 	template<class CallbackTag, class FileDescriptorTag>
-	struct new_activity_event
+	struct activity_event
 	{
 		fd::tagged_file_descriptor_ref<FileDescriptorTag> fd;
 		fd::activity_status status;
@@ -82,10 +82,10 @@ namespace Pipe::os_services::fd
 	 * \tparam FileDescriptorTag Identifies the type of file descriptor to be used
 	 */
 	template<class T, class CallbackTag, class FileDescriptorTag>
-	concept new_activity_event_handler = requires(
+	concept activity_event_handler = requires(
 		T& obj,
 		activity_monitor& source,
-		new_activity_event<CallbackTag, FileDescriptorTag> const& event
+		activity_event<CallbackTag, FileDescriptorTag> const& event
 	)
 	{
 		/**
@@ -97,6 +97,40 @@ namespace Pipe::os_services::fd
 	class activity_monitor
 	{
 	public:
+		class config_transaction
+		{
+		public:
+			explicit config_transaction(activity_monitor& monitor):
+				m_monitor{monitor}
+			{}
+
+			~config_transaction()
+			{
+				for(auto item : m_added_ids)
+				{ m_monitor.get().remove(item); }
+			}
+
+			template<class Tag, class ... Args>
+			auto& add(Args&&... args)
+			{
+				auto const id = m_monitor.get().add<Tag>(std::forward<Args>(args)...);
+				m_added_ids.push_back(id);
+				return *this;
+			}
+
+			void commit()
+			{ m_added_ids.clear(); }
+
+		private:
+			std::reference_wrapper<activity_monitor> m_monitor;
+			std::vector<event_handler_id> m_added_ids;
+		};
+
+		friend class config_transaction;
+
+		auto make_config_transaction()
+		{ return config_transaction{*this}; }
+
 		template<class Tag>
 		void update_listening_status(
 			tagged_file_descriptor_ref<Tag> fd,
@@ -107,7 +141,7 @@ namespace Pipe::os_services::fd
 		template<
 			class CallbackTag,
 			class FileDescriptorTag,
-			new_activity_event_handler<CallbackTag, FileDescriptorTag> EventHandler
+			activity_event_handler<CallbackTag, FileDescriptorTag> EventHandler
 		>
 		[[nodiscard]] fd::event_handler_id add(
 			EventHandler eh,
@@ -123,11 +157,11 @@ namespace Pipe::os_services::fd
 					.handle_event = [](
 						void* object,
 						activity_monitor& event_source,
-						new_activity_event<void, generic_fd_tag> const& event
+						activity_event<void, generic_fd_tag> const& event
 					){
 						utils::unwrap(*static_cast<EventHandler*>(object)).handle_event(
 							event_source,
-							std::bit_cast<new_activity_event<CallbackTag, FileDescriptorTag>>(event)
+							std::bit_cast<activity_event<CallbackTag, FileDescriptorTag>>(event)
 						);
 					},
 					.destroy_event_handler_at = [](void* object){
@@ -148,7 +182,6 @@ namespace Pipe::os_services::fd
 		virtual void remove(event_handler_id id) = 0;
 		virtual ~activity_monitor() = default;
 
-	protected:
 		struct source_object_location
 		{ void* address; };
 
@@ -163,7 +196,7 @@ namespace Pipe::os_services::fd
 			void (*handle_event)(
 				void* object,
 				activity_monitor& event_source,
-				new_activity_event<void, generic_fd_tag> const& event
+				activity_event<void, generic_fd_tag> const& event
 			);
 			void (*destroy_event_handler_at)(void* object);
 			void (*construct_event_handler_at)(
@@ -180,46 +213,6 @@ namespace Pipe::os_services::fd
 		) = 0;
 
 		virtual void do_update_listening_status(file_descriptor_ref fd, activity_status new_status) = 0;
-	};
-
-	/**
-	 * \brief Describes an activity event (possibly fired by activity_monitor)
-	 */
-	class activity_event
-	{
-	public:
-		/**
-		 * \brief Gets the activity_status for this event
-		 */
-		virtual activity_status get_activity_status() const noexcept = 0;
-
-		/**
-		 * \brief Updates the listening status for the resource that fired this event
-		 */
-		virtual void update_listening_status(activity_status new_status) const = 0;
-
-		/**
-		 * \brief Stops listening and cleans up resources associated with this event
-		 */
-		virtual void stop_listening() const noexcept = 0;
-	};
-
-	/**
-	 * \brief An entity to be used to observe the state of a file descriptor
-	 * \tparam T The type to query
-	 * \tparam FileDescriptorTag Identifies the type of file descriptor to be used
-	 */
-	template<class T, class FileDescriptorTag>
-	concept activity_event_handler = requires(
-		T& obj,
-		activity_event const& e,
-		tagged_file_descriptor_ref<FileDescriptorTag> fd
-	)
-	{
-		/**
-		 * \brief Will be called when the state of the file descriptor needs to be checked
-		 */
-		{utils::unwrap(obj).handle_event(e, fd)} -> std::same_as<void>;
 	};
 }
 

@@ -81,6 +81,12 @@ namespace Pipe::json_log
 	class reader
 	{
 	public:
+		struct json_stream_tag{};
+		using event_type = os_services::fd::activity_event<
+			json_stream_tag,
+			os_services::io::input_file_descriptor_tag
+		>;
+
 		/**
 		 * \brief Constructs a reader
 		 * \param name The name of this reader. Used for identifying the events passed to receiver
@@ -98,13 +104,10 @@ namespace Pipe::json_log
 
 		/**
 		 * \brief Handles file activity events
+		 * \param source The activity_monitor that emitted the event
 		 * \param event The event to handle
-		 * \param fd The file descriptor that has activity
 		 */
-		void handle_event(
-			os_services::fd::activity_event const& event,
-			os_services::io::input_file_descriptor_ref fd
-		);
+		void handle_event(os_services::fd::activity_monitor&, event_type const& event);
 
 	private:
 		size_t m_buffer_size;

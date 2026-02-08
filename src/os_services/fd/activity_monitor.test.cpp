@@ -43,7 +43,7 @@ namespace
 			void (*handle_event)(
 				void* object,
 				activity_monitor& event_source,
-				Pipe::os_services::fd::new_activity_event<void, Pipe::os_services::fd::generic_fd_tag> const& event
+				Pipe::os_services::fd::activity_event<void, Pipe::os_services::fd::generic_fd_tag> const& event
 			);
 			Pipe::os_services::fd::file_descriptor_ref fd;
 			Pipe::os_services::fd::activity_status status;  // Not used in real version
@@ -78,7 +78,8 @@ namespace
 						}
 					}
 				);
-				static_assert(sizeof(saved_event_handler_info)%alignof(std::max_align_t) == 0);	assert(eh_info.object_alignment <= alignof(std::max_align_t));
+				static_assert(sizeof(saved_event_handler_info)%alignof(std::max_align_t) == 0);
+				assert(eh_info.object_alignment <= alignof(std::max_align_t));
 
 				data = std::make_unique<std::byte[]>(struct_info.total_size);
 				auto saved_eh_info = new(data.get())saved_event_handler_info;
@@ -156,7 +157,7 @@ namespace
 			ehi->handle_event(
 				obj.get_event_handler_ptr(),
 				*this,
-				Pipe::os_services::fd::new_activity_event<void, Pipe::os_services::fd::generic_fd_tag>{
+				Pipe::os_services::fd::activity_event<void, Pipe::os_services::fd::generic_fd_tag>{
 					.fd = ehi->fd,
 					.status = ehi->status,
 					.event_handler = ehi->id
@@ -171,14 +172,14 @@ namespace
 	{
 		Pipe::os_services::fd::activity_monitor* expected_activity_monitor = nullptr;
 		Pipe::os_services::fd::activity_monitor* called_with_activity_monitor = nullptr;
-		Pipe::os_services::fd::new_activity_event<
+		Pipe::os_services::fd::activity_event<
 			my_tag,
 			Pipe::os_services::io::input_file_descriptor_tag
 		> saved_event{};
 
 		void handle_event(
 			Pipe::os_services::fd::activity_monitor& activity_monitor,
-			Pipe::os_services::fd::new_activity_event<
+			Pipe::os_services::fd::activity_event<
 				my_tag,
 				Pipe::os_services::io::input_file_descriptor_tag
 			> const& event

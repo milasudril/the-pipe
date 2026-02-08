@@ -50,30 +50,71 @@ namespace Pipe::os_services::io_multiplexer
 	}
 
 	/**
-	 * \brief Abstract base class used for data within an epoll event
+	 * \brief Storage for less frequently used function pointers in epoll_entry_data_header
+	 */
+	struct epoll_entry_data_vtable
+	{
+		fd::file_descriptor_deleter<fd::generic_fd_tag> fd_deleter;
+		void (*destroy_event_handler_at)(void* object);
+	};
+
+	/**
+	 * \brief The header used stored in front of the event handler in the epoll_entry_data
+	 */
+	struct epoll_entry_data_header
+	{
+		epoll_entry_data_header():vtable{std::make_unique<epoll_entry_data_vtable>()}
+		{}
+
+		void (*handle_event)(
+			void* object,
+			fd::activity_monitor& event_source,
+			fd::activity_event<void, fd::generic_fd_tag> const& event
+		);
+
+		fd::file_descriptor_ref fd;
+		fd::event_handler_id id;
+		std::unique_ptr<epoll_entry_data_vtable> vtable;
+	};
+
+	/**
+	 * \brief Class containing data associated with an epoll registration
 	 */
 	class epoll_entry_data
 	{
 	public:
-		/**
-		 * \brief This function should return the file descriptor associated with the event
-		 */
-		virtual int get_fd_native_handle() const noexcept = 0;
+		epoll_entry_data() = default;
+		epoll_entry_data(epoll_entry_data&&) = default;
+		epoll_entry_data& operator=(epoll_entry_data&&) = default;
+		epoll_entry_data(epoll_entry_data const&) = delete;
+		epoll_entry_data& operator=(epoll_entry_data const&) = delete;
 
-		/**
-		 * \brief This function should process an activity_event
-		 */
-		virtual void handle_event(fd::activity_event const& event) = 0;
+		~epoll_entry_data()
+		{
+			if(m_storage != nullptr)
+			{
+				auto header = get_header_ptr();
+				header->vtable->destroy_event_handler_at(get_event_handler_ptr());
+				header->vtable->fd_deleter(header->fd);
+				header->~epoll_entry_data_header();
+			}
+		}
 
-		/**
-		 * \brief This function should return the id of the event handler
-		 */
-		virtual fd::event_handler_id get_id() const noexcept = 0;
 
-		/**
-		 * \brief Add virtual destructor so objects can be destructed polymorphically
-		 */
-		virtual ~epoll_entry_data() noexcept = default;
+	explicit epoll_entry_data(
+		fd::activity_monitor::event_handler_info const& eh_info,
+		Pipe::os_services::fd::file_descriptor fd,
+		Pipe::os_services::fd::event_handler_id id
+	);
+
+	epoll_entry_data_header* get_header_ptr()
+	{ return reinterpret_cast<epoll_entry_data_header*>(m_storage.get()); }
+
+	void* get_event_handler_ptr() const
+	{ return m_storage.get() + sizeof(epoll_entry_data_header); }
+
+	private:
+		std::unique_ptr<std::byte[]> m_storage;
 	};
 
 
@@ -84,250 +125,67 @@ namespace Pipe::os_services::io_multiplexer
 
 	using epoll_file_descriptor = fd::tagged_file_descriptor<epoll_fd_tag>;
 
-	/**
-	 * \brief Epoll specific implementation of activity_event
-	 */
-	class epoll_fd_activity final:public fd::activity_event
+	class epoll_instance:public fd::activity_monitor
 	{
 	public:
-		/**
-		 * \brief Constructs an epoll_fd_activity
-		 * \param epoll_event_data The epoll_entry_data read from epoll_wait
-		 * \param status The current file descriptor activity_status
-		 * \param epoll_fd The epoll instance that issued this activity
-		 */
-		explicit epoll_fd_activity(
-			epoll_entry_data& epoll_event_data,
-			fd::activity_status status,
-			epoll_file_descriptor_ref epoll_fd
-		) noexcept:
-			m_epoll_event_data{epoll_event_data},
-			m_status{status},
-			m_epoll_fd{epoll_fd}
-		{}
+		void wait_for_and_distpatch_events();
 
-		void update_listening_status(fd::activity_status new_status) const override
+		epoll_instance():
+			m_epoll_fd{::epoll_create1(0)}
 		{
+			if(!m_epoll_fd)
+			{ throw error_handling::system_error{"Failed to create a new epoll instance", errno}; }
+		}
+
+	private:
+		void do_update_listening_status(fd::file_descriptor_ref fd, fd::activity_status new_status) override
+		{
+			assert(m_current_event_handler != nullptr);
+
 			::epoll_event event{
 				.events = to_epoll_event(new_status),
 				.data = ::epoll_data{
-					.ptr = &m_epoll_event_data.get()
+					.ptr = m_current_event_handler
 				}
 			};
 			auto const result = ::epoll_ctl(
-				m_epoll_fd.native_handle(),
+				m_epoll_fd.get().native_handle(),
 				EPOLL_CTL_MOD,
-				m_epoll_event_data.get().get_fd_native_handle(),
+				fd.native_handle(),
 				&event
 			);
 			if(result == -1)
 			{ throw error_handling::system_error{"Failed to update epoll event", errno}; }
 		}
 
-		void stop_listening() const noexcept override
-		{ m_item_should_be_removed = true; }
-
-		fd::activity_status get_activity_status() const noexcept override
-		{ return m_status; }
-
-		/**
-		 * \brief Check whether or not the event_data_should_be_deleted should be deleted
-		 */
-		bool item_should_be_removed() const
-		{ return m_item_should_be_removed; }
-
-		/**
-		 * \brief Processes the associated event
-		 */
-		epoll_fd_activity process()
+		void remove(fd::event_handler_id event_handler) override
 		{
-			m_epoll_event_data.get().handle_event(*this);
-			return*this;
-		}
-
-	private:
-		std::reference_wrapper<epoll_entry_data> m_epoll_event_data;
-		fd::activity_status m_status;
-		fd::file_descriptor_ref m_epoll_fd;
-		mutable bool m_item_should_be_removed{false};
-	};
-
-	/**
-	 * \brief A generic implementation of epoll_entry_data
-	 * \tparam EventHandler The type of activity_event_handler to use
-	 * \tparam FileDescriptorTag The tag used to identify the type of file descriptor to use
-	 */
-	template<class EventHandler, class FileDescriptorTag>
-	requires(fd::activity_event_handler<EventHandler, FileDescriptorTag>)
-	class epoll_entry_data_impl final: public epoll_entry_data
-	{
-	public:
-		/**
-		 * \brief Constructs a epoll_entry_data_impl
-		 */
-		template<class T>
-		requires(std::is_same_v<std::remove_cvref_t<T>, EventHandler>)
-		explicit epoll_entry_data_impl(
-			T&& eh,
-			fd::tagged_file_descriptor<FileDescriptorTag> fd,
-			fd::event_handler_id id
-		) noexcept:
-			m_event_handler{std::forward<T>(eh)},
-			m_file_descriptor{std::move(fd)},
-			m_id{id}
-		{}
-
-		explicit epoll_entry_data_impl(
-			EventHandler&& eh,
-			fd::tagged_file_descriptor<FileDescriptorTag> fd,
-			fd::event_handler_id id
-		) noexcept:
-			m_event_handler{std::move(eh)},
-			m_file_descriptor{std::move(fd)},
-			m_id{id}
-		{}
-
-		int get_fd_native_handle() const noexcept override
-		{ return m_file_descriptor.get().native_handle(); }
-
-		void handle_event(fd::activity_event const& event) override
-		{ utils::unwrap(m_event_handler).handle_event(event, m_file_descriptor.get()); }
-
-		fd::event_handler_id get_id() const noexcept override
-		{ return m_id; }
-
-	private:
-		EventHandler m_event_handler;
-		fd::tagged_file_descriptor<FileDescriptorTag> m_file_descriptor;
-		fd::event_handler_id m_id;
-	};
-
-	/**
-	 * \brief Used to monitor activity on file descriptors
-	 */
-	class epoll_instance
-	{
-	public:
-		class config_transaction
-		{
-		public:
-			explicit config_transaction(epoll_instance& monitor):
-				m_monitor{monitor}
-			{}
-
-			~config_transaction()
-			{
-				for(auto item : m_added_ids)
-				{ m_monitor.get().remove(item); }
-			}
-
-			template<class FileDescriptorTag, fd::activity_event_handler<FileDescriptorTag> EventHandler>
-			auto& add(
-				fd::tagged_file_descriptor<FileDescriptorTag> fd_to_watch,
-				fd::activity_status initial_listen_status,
-				EventHandler&& eh
-			)
-			{
-				auto const id = m_monitor.get().add(
-					std::move(fd_to_watch),
-					initial_listen_status,
-					std::forward<EventHandler>(eh)
-				);
-				m_added_ids.push_back(id);
-				return *this;
-			}
-
-			void commit()
-			{ m_added_ids.clear(); }
-
-		private:
-			std::reference_wrapper<epoll_instance> m_monitor;
-			std::vector<fd::event_handler_id> m_added_ids;
-		};
-
-		/**
-		 * \brief Constructs an epoll_instance
-		 */
-		epoll_instance():
-			m_epoll_fd{::epoll_create1(0)}
-		{
-			if(m_epoll_fd == nullptr)
-			{ throw error_handling::system_error{"Failed to an fd activity monitor", errno}; }
-		}
-
-		auto make_config_transaction()
-		{
-			return config_transaction{*this};
-		}
-
-		/**
-		 * \brief Adds fd_to_watch to the epoll_instance, and starts listen for the activity_status
-		 * given by initial_listen_status
-		 */
-		template<class FileDescriptorTag, fd::activity_event_handler<FileDescriptorTag> EventHandler>
-		[[nodiscard]] fd::event_handler_id add(
-			fd::tagged_file_descriptor<FileDescriptorTag> fd_to_watch,
-			fd::activity_status initial_listen_status,
-			EventHandler&& eh
-		)
-		{
-			auto const id = m_current_id.next();
-			auto const raw_fd = fd_to_watch.get().native_handle();
-			auto const ip = m_listeners.emplace(
-				id,
-				std::make_unique<
-					epoll_entry_data_impl<
-						std::remove_cvref_t<EventHandler>,
-						FileDescriptorTag
-					>
-				>(
-					std::forward<EventHandler>(eh),
-					std::move(fd_to_watch),
-					id
-				)
-			);
-			if(!ip.second)
-			{ throw std::runtime_error{"File descriptor already added"}; }
-
-			::epoll_event event{
-				.events = to_epoll_event(initial_listen_status),
-				.data = ::epoll_data{
-					.ptr = ip.first->second.get()
-				}
-			};
-
-			auto const res = ::epoll_ctl(
-				m_epoll_fd.get(),
-				EPOLL_CTL_ADD,
-				raw_fd,
-				&event
-			);
-			if(res == -1)
-			{
-				m_listeners.erase(ip.first);
-				throw error_handling::system_error{"Failed to add file descriptor to epoll instance", errno};
-			}
-			return id;
-		}
-		void remove(fd::event_handler_id id) noexcept
-		{
-			auto i = m_listeners.find(id);
+			auto const i = m_listeners.find(event_handler);
 			if(i == std::end(m_listeners))
 			{ return; }
-			::epoll_ctl(m_epoll_fd.get().native_handle(), EPOLL_CTL_DEL, i->second->get_fd_native_handle(), nullptr);
+
+			::epoll_ctl(
+				m_epoll_fd.get().native_handle(),
+				EPOLL_CTL_DEL,
+				i->second.get_header_ptr()->fd,
+				nullptr
+			);
+
 			m_listeners.erase(i);
 		}
 
-		/**
-		 * \brief Waits for incoming events
-		 */
-		void wait_for_and_distpatch_events();
+		fd::event_handler_id do_add(
+			event_handler_info const& info,
+			fd::file_descriptor fd_to_watch,
+			fd::activity_status initial_listening_status
+		) override;
 
-	private:
+		void* m_current_event_handler;
 		epoll_file_descriptor m_epoll_fd;
-		std::unordered_map<fd::event_handler_id, std::unique_ptr<epoll_entry_data>, fd::event_handler_id_hash> m_listeners;
+		std::unordered_map<fd::event_handler_id, epoll_entry_data, fd::event_handler_id_hash> m_listeners;
 		fd::event_handler_id m_current_id;
 	};
+
 }
 
 #endif

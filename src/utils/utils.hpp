@@ -291,6 +291,26 @@ namespace Pipe::utils
 		)*max_alignment;
 		return ret;
 	}
+
+	template<class Callable>
+	class at_scope_exit
+	{
+	public:
+		explicit at_scope_exit(Callable&& func):
+			m_func{std::move(func)}
+		{}
+
+		at_scope_exit(at_scope_exit const&) = delete;
+		at_scope_exit(at_scope_exit&&) = delete;
+		at_scope_exit& operator=(at_scope_exit const&) = delete;
+		at_scope_exit& operator=(at_scope_exit&&) = delete;
+
+		~at_scope_exit()
+		{ m_func(); }
+
+	private:
+		Callable m_func;
+	};
 };
 
 #endif

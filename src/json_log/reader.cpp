@@ -57,17 +57,17 @@ namespace
 }
 
 void Pipe::json_log::reader::handle_event(
-	os_services::fd::activity_event const& event,
-	os_services::io::input_file_descriptor_ref fd
+	os_services::fd::activity_monitor& source,
+	event_type const& event
 )
 {
-	if(!can_read(event.get_activity_status()))
+	if(!can_read(event.status))
 	{ return; }
 
 	while(true)
 	{
 		std::span input_span{m_input_buffer.get(), m_buffer_size};
-		auto const read_result = read(fd, std::as_writable_bytes(input_span));
+		auto const read_result = read(event.fd, std::as_writable_bytes(input_span));
 
 		if(read_result.operation_would_have_blocked())
 		{ return; }
@@ -77,7 +77,7 @@ void Pipe::json_log::reader::handle_event(
 			if(m_state->parser.current_depth() != 0)
 			{ m_item_receiver->on_parse_error(m_name.c_str(), jopp::parser_error_code::more_data_needed); }
 
-			event.stop_listening();
+			source.remove(event.event_handler);
 			return;
 		}
 
@@ -93,7 +93,7 @@ void Pipe::json_log::reader::handle_event(
 			case parser_state::good:
 				break;
 			case parser_state::jammed:
-				event.stop_listening();
+				source.remove(event.event_handler);
 				return;
 		}
 	}

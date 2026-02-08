@@ -1,3 +1,6 @@
+#ifndef PIPE_HOST_SERVER_HPP
+#define PIPE_HOST_SERVER_HPP
+
 #include "./client_process.hpp"
 
 #include "src/os_services/fd/activity_monitor.hpp"
@@ -7,33 +10,20 @@
 #include "src/os_services/ipc/socket.hpp"
 #include "src/os_services/ipc/unix_domain_socket.hpp"
 #include "src/os_services/ipc/socket_pair.hpp"
-#include "src/os_services/io_multiplexer/epoll_instance.hpp"
 #include "src/os_services/proc_mgmt/proc_mgmt.hpp"
 #include "src/client_ctl/startup_config.hpp"
 #include "src/utils/utils.hpp"
+#include "src/json_log/reader.hpp"
 
+#include <cstdlib>
 #include <ctime>
+#include <jopp/parser.hpp>
 #include <random>
 #include <unordered_map>
 #include <jopp/serializer.hpp>
 
 namespace Pipe::host
 {
-	class log_reader
-	{
-	public:
-		void handle_event(
-			os_services::fd::activity_event const& event,
-			os_services::io::input_file_descriptor_ref
-		)
-		{
-			if(can_read(event.get_activity_status()))
-			{
-				// TODO: Decode log entries and dispatch to listener
-			}
-		}
-	};
-
 	class client_process_repository:std::unordered_map<pid_t, std::shared_ptr<client_process>>
 	{
 	public:
@@ -44,20 +34,36 @@ namespace Pipe::host
 		using base::end;
 		using base::size;
 
+		struct proc_mgmt_tag{};
+
+		void consume(char const*, Pipe::log::item&&)
+		{
+			// TODO: Route message log item to an appropriate place
+		}
+
+		void on_parse_error(char const*, jopp::parser_error_code)
+		{
+			// TODO: Not clear that this function was called from log reader
+			// TODO: Kill child process (need its pid!)
+		}
+
+		void on_invalid_log_item(char const*, char const*)
+		{
+			// TODO Generate an internal log item and rout it to an appropriate place
+		}
+
 		void handle_event(
-			os_services::fd::activity_event const& event,
-			os_services::proc_mgmt::pidfd_ref
+			os_services::fd::activity_monitor& source,
+			os_services::fd::activity_event<proc_mgmt_tag, os_services::proc_mgmt::pidfd_tag> const& event
 		)
 		{
-			if(can_read(event.get_activity_status()))
-			{
-				// TODO: Decode log entries and dispatch to listener
-			}
+			if(can_read(event.status))
+			{ source.remove(event.event_handler); }
 		}
 
 		void load(
-			std::filesystem::path const& client_binary,
-			os_services::io_multiplexer::epoll_instance& activity_monitor
+			os_services::fd::activity_monitor& activity_monitor,
+			std::filesystem::path const& client_binary
 		)
 		{
 			os_services::ipc::pipe logpipe;
@@ -88,46 +94,24 @@ namespace Pipe::host
 
 			auto client_proc = std::make_shared<client_process>();
 			activity_monitor.make_config_transaction()
-				.add(
+				.add<json_log::reader::json_stream_tag>(
+					json_log::reader{client_binary.filename(), std::ref(*this)},
 					logpipe.take_read_end(),
-					os_services::fd::activity_status::read,
-					log_reader{}
+					os_services::fd::activity_status::read
 				)
-				.add(
+				.add<client_process::client_ctl_tag>(
+					client_proc,
 					ctl_sockets.take_socket_a(),
-					os_services::fd::activity_status::write,
-					client_proc
+					os_services::fd::activity_status::write
 				)
-				.add(
+				.add<proc_mgmt_tag>(
+					std::ref(*this),
 					std::move(process.second),
-					os_services::fd::activity_status::read,
-					std::ref(*this)
+					os_services::fd::activity_status::read
 				)
-			.commit();
+				.commit();
 		}
-	};
-
-	class server_activity_handler
-	{
-	public:
-		explicit server_activity_handler(std::string_view server_name):
-			m_server_name{server_name}
-		{}
-
-		void handle_event(
-			os_services::fd::activity_event const& event,
-			os_services::ipc::server_socket_ref<SOCK_STREAM, sockaddr_un> fd
-		)
-		{
-			if(can_read(event.get_activity_status()))
-			{
-				m_clients.emplace(m_client_id, accept(fd));
-			}
-		}
-
-	private:
-		std::string m_server_name;
-		std::unordered_map<uint64_t, os_services::ipc::connected_socket<SOCK_STREAM, sockaddr_un>> m_clients;
-		uint64_t m_client_id{0};
 	};
 }
+
+#endif
