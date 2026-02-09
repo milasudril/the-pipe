@@ -13,7 +13,6 @@
 #include "src/os_services/proc_mgmt/proc_mgmt.hpp"
 #include "src/client_ctl/startup_config.hpp"
 #include "src/utils/utils.hpp"
-#include "src/json_log/reader.hpp"
 
 #include <cstdlib>
 #include <ctime>
@@ -35,22 +34,6 @@ namespace Pipe::host
 		using base::size;
 
 		struct proc_mgmt_tag{};
-
-		void consume(char const*, Pipe::log::item&&)
-		{
-			// TODO: Route message log item to an appropriate place
-		}
-
-		void on_parse_error(char const*, jopp::parser_error_code)
-		{
-			// TODO: Not clear that this function was called from log reader
-			// TODO: Kill child process (need its pid!)
-		}
-
-		void on_invalid_log_item(char const*, char const*)
-		{
-			// TODO Generate an internal log item and rout it to an appropriate place
-		}
 
 		void handle_event(
 			os_services::fd::activity_event_handler_store& source,
@@ -94,8 +77,8 @@ namespace Pipe::host
 
 			auto client_proc = std::make_shared<client_process>();
 			activity_event_handler_store.make_config_transaction()
-				.add<json_log::reader::json_stream_tag>(
-					json_log::reader{client_binary.filename(), std::ref(*this)},
+				.add<json_io::reader::json_stream_tag>(
+					json_io::reader{client_proc},
 					logpipe.take_read_end(),
 					os_services::fd::activity_status::read
 				)
