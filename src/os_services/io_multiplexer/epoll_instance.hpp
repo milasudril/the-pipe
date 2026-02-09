@@ -163,14 +163,6 @@ namespace Pipe::os_services::io_multiplexer
 			auto const i = m_listeners.find(event_handler);
 			if(i == std::end(m_listeners))
 			{ return; }
-
-			::epoll_ctl(
-				m_epoll_fd.get().native_handle(),
-				EPOLL_CTL_DEL,
-				i->second.get_header_ptr()->fd,
-				nullptr
-			);
-
 			m_listeners.erase(i);
 		}
 
