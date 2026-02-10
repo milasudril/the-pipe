@@ -12,6 +12,18 @@
 
 namespace Pipe::json_io
 {
+	template<class Tag>
+	struct container_loaded_event
+	{
+		jopp::container obj;
+	};
+
+	template<class Tag>
+	struct parser_error_event
+	{
+		jopp::parser_error_code ec;
+	};
+
 	/**
 	 * \brief Concept for an entity that can receive log items
 	 *
@@ -19,15 +31,15 @@ namespace Pipe::json_io
 	 * \param item The decoded log item
 	 * \param ec An error code issued by the JSON parser
 	 */
-	template<class T>
+	template<class T, class Tag>
 	concept container_receiver = requires(
 		T obj,
-		jopp::container&& item,
-		jopp::parser_error_code ec
+		container_loaded_event<Tag>&& item,
+		parser_error_event<Tag> ec
 	)
 	{
-		{ utils::unwrap(obj).consume(std::move(item)) } -> std::same_as<void>;
-		{ utils::unwrap(obj).on_parse_error(ec) } -> std::same_as<void>;
+		{ utils::unwrap(obj).handle_event(std::move(item)) } -> std::same_as<void>;
+		{ utils::unwrap(obj).handle_event(ec) } -> std::same_as<void>;
 	};
 
 	/**
@@ -38,14 +50,14 @@ namespace Pipe::json_io
 	public:
 		virtual ~type_erased_container_receiver() = default;
 
-		virtual void consume(jopp::container&& item) = 0;
-		virtual void on_parse_error(jopp::parser_error_code ec) = 0;
+		virtual void handle_event(jopp::container&& item) = 0;
+		virtual void handle_event(jopp::parser_error_code ec) = 0;
 	};
 
 	/**
 	 * \brief A generic implementation of type_erased_container_receiver
 	 */
-	template<container_receiver ContainerReceiver>
+	template<class Tag, container_receiver<Tag> ContainerReceiver>
 	class container_receiver_impl:public type_erased_container_receiver
 	{
 	public:
@@ -53,11 +65,11 @@ namespace Pipe::json_io
 			m_object{std::move(object)}
 		{}
 
-		void consume(jopp::container&& item) override
-		{ utils::unwrap(m_object).consume(std::move(item)); }
+		void handle_event(jopp::container&& item) override
+		{ utils::unwrap(m_object).handle_event(container_loaded_event<Tag>{std::move(item)});}
 
-		void on_parse_error(jopp::parser_error_code ec) override
-		{ utils::unwrap(m_object).on_parse_error(ec); }
+		void handle_event(jopp::parser_error_code ec) override
+		{ utils::unwrap(m_object).handle_event(parser_error_event<Tag>{ec}); }
 
 	private:
 		ContainerReceiver m_object;
@@ -82,11 +94,33 @@ namespace Pipe::json_io
 		 * \param receiver The container_receiver that will receive log items
 		 * \param buffer_size The size of the internal buffer
 		 */
-		template<container_receiver ContainerReceiver>
+		template<container_receiver<void> ContainerReceiver>
 		explicit reader(ContainerReceiver receiver, size_t buffer_size = 65536):
 			m_buffer_size{buffer_size},
 			m_input_buffer{std::make_unique<char[]>(buffer_size)},
-			m_container_receiver{new container_receiver_impl(std::forward<ContainerReceiver>(receiver))},
+			m_container_receiver{
+				new container_receiver_impl<void, ContainerReceiver>(
+					std::forward<ContainerReceiver>(receiver)
+				)
+			},
+			m_state{std::make_unique<state>()}
+		{}
+
+		/**
+		 * \brief Constructs a reader
+		 * \param name The name of this reader. Used for identifying the events passed to receiver
+		 * \param receiver The container_receiver that will receive log items
+		 * \param buffer_size The size of the internal buffer
+		 */
+		template<class Tag, container_receiver<Tag> ContainerReceiver>
+		explicit reader(Tag, ContainerReceiver receiver, size_t buffer_size = 65536):
+			m_buffer_size{buffer_size},
+			m_input_buffer{std::make_unique<char[]>(buffer_size)},
+			m_container_receiver{
+				new container_receiver_impl<Tag, ContainerReceiver>(
+					std::forward<ContainerReceiver>(receiver)
+				)
+			},
 			m_state{std::make_unique<state>()}
 		{}
 

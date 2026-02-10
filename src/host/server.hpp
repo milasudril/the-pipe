@@ -78,7 +78,7 @@ namespace Pipe::host
 			auto client_proc = std::make_shared<client_process>();
 			activity_event_handler_store.make_config_transaction()
 				.add<json_io::reader::json_stream_tag>(
-					json_io::reader{client_proc},
+					json_io::reader{client_process::log_stream_tag{}, client_proc},
 					logpipe.take_read_end(),
 					os_services::fd::activity_status::read
 				)

@@ -26,7 +26,7 @@ namespace
 				case jopp::parser_error_code::completed:
 				{
 					Pipe::utils::at_scope_exit _{[&state](){ state = std::make_unique<State>(); }};
-					item_receiver.consume(std::move(state->container));
+					item_receiver.handle_event(std::move(state->container));
 					break;
 				}
 
@@ -34,7 +34,7 @@ namespace
 					return parser_state::good;
 
 				default:
-					item_receiver.on_parse_error(parse_result.ec);
+					item_receiver.handle_event(parse_result.ec);
 					return parser_state::jammed;
 			}
 		}
@@ -60,7 +60,7 @@ void Pipe::json_io::reader::handle_event(
 		if(read_result.bytes_transferred() == 0)
 		{
 			if(m_state->parser.current_depth() != 0)
-			{ m_container_receiver->on_parse_error(jopp::parser_error_code::more_data_needed); }
+			{ m_container_receiver->handle_event(jopp::parser_error_code::more_data_needed); }
 
 			source.remove(event.event_handler);
 			return;

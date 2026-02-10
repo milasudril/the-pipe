@@ -18,14 +18,14 @@ namespace
 		jopp::container recv_item{};
 		jopp::parser_error_code parser_error = jopp::parser_error_code::completed;
 
-		void consume(jopp::container&& item)
+		void handle_event(Pipe::json_io::container_loaded_event<void>&& event)
 		{
-			recv_item = std::move(item);
+			recv_item = std::move(event.obj);
 			parser_error = jopp::parser_error_code::completed;
 		}
 
-		void on_parse_error(jopp::parser_error_code ec)
-		{ parser_error = ec; }
+		void handle_event(Pipe::json_io::parser_error_event<void> event)
+		{ parser_error = event.ec; }
 	};
 
 	class my_activity_event_handler_store:public Pipe::os_services::fd::activity_event_handler_store

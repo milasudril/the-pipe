@@ -10,10 +10,10 @@ namespace Pipe::host
 	{
 	public:
 		struct client_ctl_tag{};
-		struct json_log_stream_tag{};
+		struct log_stream_tag{};
 
-		void consume(jopp::container&& item);
-		void on_parse_error(jopp::parser_error_code error_code);
+		void handle_event(json_io::container_loaded_event<log_stream_tag>&& event);
+		void handle_event(json_io::parser_error_event<log_stream_tag> event);
 
 		void handle_event(
 			os_services::fd::activity_event_handler_store&,
