@@ -82,6 +82,37 @@ namespace Pipe::os_services::fd
 
 	class activity_event_handler_store;
 
+	class saved_event_handler_ref
+	{
+	public:
+		void* get() const
+		{ return m_ptr; }
+
+		constexpr bool operator==(saved_event_handler_ref const&) const = default;
+
+		constexpr bool operator!=(saved_event_handler_ref const&) const = default;
+
+	protected:
+		explicit saved_event_handler_ref(void* ptr):
+			m_ptr{ptr}
+		{}
+
+	private:
+		void* m_ptr;
+	};
+
+	template<class CallbackTag, class FileDescriptorTag>
+	struct registration_event
+	{
+		fd::tagged_file_descriptor_ref<FileDescriptorTag> fd;
+		saved_event_handler_ref event_handler;
+
+		constexpr bool operator==(registration_event const&) const = default;
+		constexpr bool operator!=(registration_event const&) const = default;
+
+	};
+
+
 	/**
 	 * \brief Describes an activity event
 	 *
@@ -118,13 +149,15 @@ namespace Pipe::os_services::fd
 	concept activity_event_handler = requires(
 		T& obj,
 		activity_event_handler_store& source,
-		activity_event<CallbackTag, FileDescriptorTag> const& event
+		activity_event<CallbackTag, FileDescriptorTag> const& activity_event,
+		registration_event<CallbackTag, FileDescriptorTag> const& registration_event
 	)
 	{
 		/**
 		 * \brief Will be called when the state of the file descriptor needs to be checked
 		 */
-		{utils::unwrap(obj).handle_event(source, event)} -> std::same_as<void>;
+		{utils::unwrap(obj).handle_event(source, activity_event)} -> std::same_as<void>;
+		{utils::unwrap(obj).handle_event(source, registration_event)} -> std::same_as<void>;
 	};
 
 	/**
@@ -222,7 +255,7 @@ namespace Pipe::os_services::fd
 					.object_address = source_object_location{.address = &eh},
 					.object_size = sizeof(EventHandler),
 					.object_alignment = alignof(EventHandler),
-					.handle_event = [](
+					.handle_activity_event = [](
 						void* object,
 						activity_event_handler_store& event_source,
 						activity_event<void, generic_fd_tag> const& event
@@ -240,6 +273,16 @@ namespace Pipe::os_services::fd
 						source_object_location src
 					){
 						::new(dest.address)EventHandler(std::move(*static_cast<EventHandler*>(src.address)));
+					},
+					.handle_registration_event = [](
+						void* object,
+						activity_event_handler_store& event_source,
+						registration_event<void, generic_fd_tag> const& event
+					){
+						utils::unwrap(*static_cast<EventHandler*>(object)).handle_event(
+							event_source,
+							std::bit_cast<registration_event<CallbackTag, FileDescriptorTag>>(event)
+						);
 					}
 				},
 				make_generic_file_descriptor(std::move(fd_to_watch)),
@@ -265,7 +308,7 @@ namespace Pipe::os_services::fd
 			source_object_location object_address;
 			size_t object_size;
 			size_t object_alignment;
-			void (*handle_event)(
+			void (*handle_activity_event)(
 				void* object,
 				activity_event_handler_store& event_source,
 				activity_event<void, generic_fd_tag> const& event
@@ -274,6 +317,11 @@ namespace Pipe::os_services::fd
 			void (*construct_event_handler_at)(
 				dest_object_location dest,
 				source_object_location src
+			);
+			void (*handle_registration_event)(
+				void* object,
+				activity_event_handler_store& event_source,
+				registration_event<void, generic_fd_tag> const& event
 			);
 		};
 

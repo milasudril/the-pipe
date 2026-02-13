@@ -131,6 +131,10 @@ namespace Pipe::json_io
 		 */
 		void handle_event(os_services::fd::activity_event_handler_store&, event_type const& event);
 
+		template<class... Args>
+		void handle_event(os_services::fd::activity_event_handler_store&, Args...)
+		{}
+
 	private:
 		size_t m_buffer_size;
 		std::unique_ptr<char[]> m_input_buffer;

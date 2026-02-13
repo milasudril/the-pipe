@@ -12,6 +12,12 @@ namespace Pipe::host
 		struct client_ctl_tag{};
 		struct log_stream_tag{};
 
+		template<class... Args>
+		void handle_event(os_services::fd::activity_event_handler_store&, Args...)
+		{
+			// TODO: handle registration events
+		}
+
 		void handle_event(json_io::container_loaded_event<log_stream_tag>&& event);
 		void handle_event(json_io::parser_error_event<log_stream_tag> event);
 

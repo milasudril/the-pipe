@@ -2,7 +2,20 @@
 
 #include "./epoll_instance.hpp"
 
+#include "src/os_services/fd/activity_event_handler_store.hpp"
+#include "src/os_services/fd/file_descriptor.hpp"
 #include "src/utils/utils.hpp"
+
+namespace
+{
+	struct saved_event_handler_ref:
+		Pipe::os_services::fd::saved_event_handler_ref
+	{
+		explicit saved_event_handler_ref(void* ptr):
+			Pipe::os_services::fd::saved_event_handler_ref{ptr}
+		{}
+	};
+}
 
 Pipe::os_services::fd::event_handler_id
 Pipe::os_services::io_multiplexer::epoll_instance::do_add(
@@ -38,6 +51,16 @@ Pipe::os_services::io_multiplexer::epoll_instance::do_add(
 		m_listeners.erase(insert_result.first);
 		throw error_handling::system_error{"Failed to update epoll event", errno};
 	}
+
+	event_handler->vtable->handle_registration_event(
+		event_handler + 1,
+		*this,
+		fd::registration_event<void, fd::generic_fd_tag>{
+			event_handler->fd,
+			saved_event_handler_ref{event_handler}
+		}
+	);
+
 	m_current_event_handler = event_handler;
 	return eh_id;
 }
@@ -66,9 +89,10 @@ Pipe::os_services::io_multiplexer::epoll_entry_data::epoll_entry_data(
 	m_storage = std::make_unique<std::byte[]>(struct_info.total_size);
 	auto const storage_ptr = m_storage.get();
 	auto saved_eh_info = new(storage_ptr)epoll_entry_data_header;
-	saved_eh_info->handle_event = eh_info.handle_event;
+	saved_eh_info->handle_event = eh_info.handle_activity_event;
 	saved_eh_info->vtable->fd_deleter = fd.get_deleter();
 	saved_eh_info->vtable->destroy_event_handler_at = eh_info.destroy_event_handler_at;
+	saved_eh_info->vtable->handle_registration_event = eh_info.handle_registration_event;
 	saved_eh_info->fd = fd.release();
 	saved_eh_info->id = id;
 

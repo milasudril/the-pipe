@@ -83,7 +83,7 @@ namespace
 
 				data = std::make_unique<std::byte[]>(struct_info.total_size);
 				auto saved_eh_info = new(data.get())saved_event_handler_info;
-				saved_eh_info->handle_event = eh_info.handle_event;
+				saved_eh_info->handle_event = eh_info.handle_activity_event;
 				saved_eh_info->vtable->fd_deleter = fd.get_deleter();
 				saved_eh_info->vtable->destroy_event_handler_at = eh_info.destroy_event_handler_at;
 				saved_eh_info->fd = fd.release();
@@ -187,6 +187,12 @@ namespace
 		{
 			called_with_activity_event_handler_store = &activity_event_handler_store;
 			saved_event = event;
+		}
+
+		template<class... Args>
+		void handle_event(Pipe::os_services::fd::activity_event_handler_store&, Args...)
+		{
+			// FIXME: Needs testing
 		}
 	};
 }

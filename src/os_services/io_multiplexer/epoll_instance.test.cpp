@@ -78,7 +78,7 @@ TESTCASE(Pipe_os_services_io_multiplexer_epoll_entry_data_create_and_get_props)
 				.object_address = {.address = &my_object},
 				.object_size = 1,
 				.object_alignment = 1,
-				.handle_event = {},
+				.handle_activity_event = {},
 				.destroy_event_handler_at = [](void* obj){
 					object_destroyed_at = obj;
 				},
@@ -88,7 +88,8 @@ TESTCASE(Pipe_os_services_io_multiplexer_epoll_entry_data_create_and_get_props)
 				){
 					object_constructed_from = src.address;
 					object_constructed_at = dest.address;
-				}
+				},
+				.handle_registration_event = {}
 			},
 			Pipe::os_services::fd::make_generic_file_descriptor(pipe.take_read_end()),
 			Pipe::os_services::fd::event_handler_id{54}
@@ -131,18 +132,29 @@ namespace
 			}
 		}
 
+		template<class... Args>
+		void handle_event(Pipe::os_services::fd::activity_event_handler_store&, Args...)
+		{
+			// FIXME: Needs testing
+		}
+
 		std::vector<std::byte> m_data_to_send;
 	};
 	struct my_server_event_handler
 	{
-		using event_type = Pipe::os_services::fd::activity_event<
+		using activity_event = Pipe::os_services::fd::activity_event<
+			void,
+			Pipe::os_services::ipc::server_socket_tag<SOCK_SEQPACKET, sockaddr_un>
+		>;
+
+		using registration_event = Pipe::os_services::fd::registration_event<
 			void,
 			Pipe::os_services::ipc::server_socket_tag<SOCK_SEQPACKET, sockaddr_un>
 		>;
 
 		void handle_event(
 			Pipe::os_services::fd::activity_event_handler_store& monitor,
-			event_type const& event
+			activity_event const& event
 		)
 		{
 			if(can_read(event.status))
@@ -154,6 +166,12 @@ namespace
 				);
 				EXPECT_EQ(id, Pipe::os_services::fd::event_handler_id{1});
 			}
+		}
+
+		template<class... Args>
+		void handle_event(Pipe::os_services::fd::activity_event_handler_store&, Args...)
+		{
+			// FIXME: Needs testing
 		}
 	};
 
