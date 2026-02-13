@@ -142,6 +142,28 @@ namespace Pipe::os_services::io_multiplexer
 			{ throw error_handling::system_error{"Failed to create a new epoll instance", errno}; }
 		}
 
+		void update_listening_status(
+			Pipe::os_services::fd::saved_event_handler_ref handle,
+			Pipe::os_services::fd::activity_status new_status
+		) override
+		{
+			auto const event_handler = static_cast<epoll_entry_data_header const*>(handle.get());
+			::epoll_event event{
+				.events = to_epoll_event(new_status),
+				.data = ::epoll_data{
+					.ptr = handle.get()
+				}
+			};
+			auto const result = ::epoll_ctl(
+				m_epoll_fd.get().native_handle(),
+				EPOLL_CTL_MOD,
+				event_handler->fd.native_handle(),
+				&event
+			);
+			if(result == -1)
+			{ throw error_handling::system_error{"Failed to update epoll event", errno}; }
+		}
+
 	private:
 		void do_update_listening_status(fd::file_descriptor_ref fd, fd::activity_status new_status) override
 		{
