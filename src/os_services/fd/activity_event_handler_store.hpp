@@ -85,6 +85,8 @@ namespace Pipe::os_services::fd
 	class saved_event_handler_ref
 	{
 	public:
+		saved_event_handler_ref() = default;
+
 		void* get() const
 		{ return m_ptr; }
 
@@ -98,7 +100,7 @@ namespace Pipe::os_services::fd
 		{}
 
 	private:
-		void* m_ptr;
+		void* m_ptr{nullptr};
 	};
 
 	template<class CallbackTag, class FileDescriptorTag>

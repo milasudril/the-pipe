@@ -58,17 +58,20 @@ namespace
 	};
 }
 
-
-
 TESTCASE(Pipe_json_io_reader_cannot_read)
 {
 	my_receiver receiver;
 	my_activity_event_handler_store monitor;
 	Pipe::json_io::reader reader{std::ref(receiver), 16};
 	Pipe::os_services::ipc::pipe logpipe;
+	constexpr Pipe::os_services::fd::event_handler_id my_id{2465};
+	reader.handle_event(monitor, Pipe::json_io::reader::registration_event{
+		.fd = logpipe.read_end(),
+		.id = my_id,
+		.event_handler = {}
+	});
 
 	auto listening_status = Pipe::os_services::fd::activity_status::read;
-	constexpr Pipe::os_services::fd::event_handler_id my_id{2465};
 	reader.handle_event(
 		monitor,
 		Pipe::json_io::reader::event_type{
@@ -95,6 +98,12 @@ TESTCASE(Pipe_json_io_reader_read_full_read_partial_block_close_try_agian)
 
 	Pipe::json_io::reader reader{std::ref(receiver)};
 	Pipe::os_services::ipc::pipe logpipe;
+	constexpr Pipe::os_services::fd::event_handler_id my_id{2465};
+	reader.handle_event(monitor, Pipe::json_io::reader::registration_event{
+		.fd = logpipe.read_end(),
+		.id = my_id,
+		.event_handler = {}
+	});
 
 	std::string str{"{\"message\": \"This is the first message\"}\n"};
 	str+="{\"message\": \"This is the second message\"}";
@@ -104,7 +113,6 @@ TESTCASE(Pipe_json_io_reader_read_full_read_partial_block_close_try_agian)
 	fcntl(logpipe.read_end().native_handle(), F_SETFL, O_NONBLOCK);
 	write(logpipe.write_end(), std::as_bytes(std::span{std::data(str), stop_at}));
 
-	constexpr Pipe::os_services::fd::event_handler_id my_id{2465};
 	reader.handle_event(
 		monitor,
 		Pipe::json_io::reader::event_type{
@@ -141,6 +149,12 @@ TESTCASE(Pipe_json_io_reader_read_full_read_partial_block_try_agian_close)
 
 	Pipe::json_io::reader reader{std::ref(receiver)};
 	Pipe::os_services::ipc::pipe logpipe;
+	constexpr Pipe::os_services::fd::event_handler_id my_id{2465};
+	reader.handle_event(monitor, Pipe::json_io::reader::registration_event{
+		.fd = logpipe.read_end(),
+		.id = my_id,
+		.event_handler = {}
+	});
 
 	std::string str{"{\"message\": \"This is the first message\"}\n"};
 	str+="{\"message\": \"This is the second message\"}";
@@ -149,8 +163,6 @@ TESTCASE(Pipe_json_io_reader_read_full_read_partial_block_try_agian_close)
 
 	fcntl(logpipe.read_end().native_handle(), F_SETFL, O_NONBLOCK);
 	write(logpipe.write_end(), std::as_bytes(std::span{std::data(str), stop_at}));
-
-	constexpr Pipe::os_services::fd::event_handler_id my_id{2465};
 
 	reader.handle_event(
 		monitor,
@@ -211,12 +223,15 @@ TESTCASE(Pipe_json_io_reader_read_jammed_parser)
 
 	Pipe::json_io::reader reader{std::ref(receiver)};
 	Pipe::os_services::ipc::pipe logpipe;
+	constexpr Pipe::os_services::fd::event_handler_id my_id{2465};
+	reader.handle_event(monitor, Pipe::json_io::reader::registration_event{
+		.fd = logpipe.read_end(),
+		.id = my_id,
+		.event_handler = {}
+	});
 	std::string str{"This is definitely not valid JSON {}"};
 
 	write(logpipe.write_end(), std::as_bytes(std::span{str}));
-
-	constexpr Pipe::os_services::fd::event_handler_id my_id{2465};
-
 
 	reader.handle_event(
 		monitor,

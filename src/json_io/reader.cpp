@@ -42,7 +42,7 @@ namespace
 }
 
 void Pipe::json_io::reader::handle_event(
-	os_services::fd::activity_event_handler_store& source,
+	os_services::fd::activity_event_handler_store&,
 	event_type const& event
 )
 {
@@ -52,7 +52,7 @@ void Pipe::json_io::reader::handle_event(
 	while(true)
 	{
 		std::span input_span{m_input_buffer.get(), m_buffer_size};
-		auto const read_result = read(event.fd, std::as_writable_bytes(input_span));
+		auto const read_result = read(m_registration.fd, std::as_writable_bytes(input_span));
 
 		if(read_result.operation_would_have_blocked())
 		{ return; }
@@ -62,7 +62,7 @@ void Pipe::json_io::reader::handle_event(
 			if(m_state->parser.current_depth() != 0)
 			{ m_container_receiver->handle_event(jopp::parser_error_code::more_data_needed); }
 
-			source.remove(event.event_handler);
+			m_eh_store->remove(m_registration.id);
 			return;
 		}
 
@@ -77,7 +77,7 @@ void Pipe::json_io::reader::handle_event(
 			case parser_state::good:
 				break;
 			case parser_state::jammed:
-				source.remove(event.event_handler);
+				m_eh_store->remove(m_registration.id);
 				return;
 		}
 	}
