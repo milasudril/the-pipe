@@ -104,7 +104,8 @@ namespace Pipe::os_services::fd
 	template<class CallbackTag, class FileDescriptorTag>
 	struct registration_event
 	{
-		fd::tagged_file_descriptor_ref<FileDescriptorTag> fd;
+		tagged_file_descriptor_ref<FileDescriptorTag> fd;
+		event_handler_id id;
 		saved_event_handler_ref event_handler;
 
 		constexpr bool operator==(registration_event const&) const = default;
@@ -127,17 +128,17 @@ namespace Pipe::os_services::fd
 		/**
 		 * \brief The file descriptor that was activated
 		 */
-		fd::tagged_file_descriptor_ref<FileDescriptorTag> fd;
+		tagged_file_descriptor_ref<FileDescriptorTag> fd;
 
 		/**
 		 * \brief The current status of fd
 		 */
-		fd::activity_status status;
+		activity_status status;
 
 		/**
 		 * \brief The id of the associated event handler
 		 */
-		fd::event_handler_id event_handler;
+		event_handler_id event_handler;
 	};
 
 	/**
