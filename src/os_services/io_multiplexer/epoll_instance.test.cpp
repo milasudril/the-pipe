@@ -91,8 +91,7 @@ TESTCASE(Pipe_os_services_io_multiplexer_epoll_entry_data_create_and_get_props)
 				},
 				.handle_registration_event = {}
 			},
-			Pipe::os_services::fd::make_generic_file_descriptor(pipe.take_read_end()),
-			Pipe::os_services::fd::event_handler_id{54}
+			Pipe::os_services::fd::make_generic_file_descriptor(pipe.take_read_end())
 		};
 		EXPECT_EQ(object_constructed_from, &my_object);
 		EXPECT_NE(object_constructed_at, nullptr);

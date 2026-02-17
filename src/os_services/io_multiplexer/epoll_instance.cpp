@@ -29,7 +29,7 @@ Pipe::os_services::io_multiplexer::epoll_instance::do_add(
 	auto const fd = fd_to_watch.get();
 	auto const insert_result = m_listeners.emplace(
 		eh_id,
-		epoll_entry_data{info, std::move(fd_to_watch), eh_id}
+		epoll_entry_data{info, std::move(fd_to_watch)}
 	);
 	auto const event_handler = insert_result.first->second.get_header_ptr();
 	assert(insert_result.second);
@@ -57,7 +57,7 @@ Pipe::os_services::io_multiplexer::epoll_instance::do_add(
 		*this,
 		fd::registration_event<void, fd::generic_fd_tag>{
 			event_handler->fd,
-			event_handler->id,
+			eh_id,
 			saved_event_handler_ref{event_handler}
 		}
 	);
@@ -68,8 +68,7 @@ Pipe::os_services::io_multiplexer::epoll_instance::do_add(
 
 Pipe::os_services::io_multiplexer::epoll_entry_data::epoll_entry_data(
 	fd::activity_event_handler_store::event_handler_info const& eh_info,
-	Pipe::os_services::fd::file_descriptor fd,
-	Pipe::os_services::fd::event_handler_id id
+	Pipe::os_services::fd::file_descriptor fd
 )
 {
 	auto const struct_info = Pipe::utils::compute_struct_info(
@@ -84,6 +83,7 @@ Pipe::os_services::io_multiplexer::epoll_entry_data::epoll_entry_data(
 			}
 		}
 	);
+
 	static_assert(sizeof(epoll_entry_data_header)%alignof(std::max_align_t) == 0);
 	assert(eh_info.object_alignment <= alignof(std::max_align_t));
 
@@ -95,7 +95,6 @@ Pipe::os_services::io_multiplexer::epoll_entry_data::epoll_entry_data(
 	saved_eh_info->vtable->destroy_event_handler_at = eh_info.destroy_event_handler_at;
 	saved_eh_info->vtable->handle_registration_event = eh_info.handle_registration_event;
 	saved_eh_info->fd = fd.release();
-	saved_eh_info->id = id;
 
 	eh_info.construct_event_handler_at(
 		fd::activity_event_handler_store::dest_object_location{storage_ptr + sizeof(epoll_entry_data_header)},

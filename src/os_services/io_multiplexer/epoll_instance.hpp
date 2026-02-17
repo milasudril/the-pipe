@@ -66,7 +66,7 @@ namespace Pipe::os_services::io_multiplexer
 	/**
 	 * \brief The header used stored in front of the event handler in the epoll_entry_data
 	 */
-	struct epoll_entry_data_header
+	struct alignas(16) epoll_entry_data_header
 	{
 		epoll_entry_data_header():vtable{std::make_unique<epoll_entry_data_vtable>()}
 		{}
@@ -78,7 +78,6 @@ namespace Pipe::os_services::io_multiplexer
 		);
 
 		fd::file_descriptor_ref fd;
-		fd::event_handler_id id;
 		std::unique_ptr<epoll_entry_data_vtable> vtable;
 	};
 
@@ -108,8 +107,7 @@ namespace Pipe::os_services::io_multiplexer
 
 	explicit epoll_entry_data(
 		fd::activity_event_handler_store::event_handler_info const& eh_info,
-		Pipe::os_services::fd::file_descriptor fd,
-		Pipe::os_services::fd::event_handler_id id
+		Pipe::os_services::fd::file_descriptor fd
 	);
 
 	epoll_entry_data_header* get_header_ptr()
