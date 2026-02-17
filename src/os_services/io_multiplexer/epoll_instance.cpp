@@ -126,9 +126,7 @@ void Pipe::os_services::io_multiplexer::epoll_instance::wait_for_and_distpatch_e
 			event_handler + 1,  // Payload follows directly after header
 			*this,
 			fd::activity_event<void, fd::generic_fd_tag>{
-				.fd = event_handler->fd,
 				.status = epoll_event_to_activity_status(item.events),
-				.event_handler = event_handler->id
 			}
 		);
 	}

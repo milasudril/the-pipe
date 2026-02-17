@@ -42,12 +42,13 @@ namespace Pipe::host
 		}
 
 		void handle_event(
-			os_services::fd::activity_event_handler_store& source,
-			os_services::fd::activity_event<proc_mgmt_tag, os_services::proc_mgmt::pidfd_tag> const& event
+			os_services::fd::activity_event_handler_store&,
+			os_services::fd::activity_event<proc_mgmt_tag, os_services::proc_mgmt::pidfd_tag> const&
 		)
 		{
-			if(can_read(event.status))
-			{ source.remove(event.event_handler); }
+	// FIXME:
+	//		if(can_read(event.status))
+	//		{ source.remove(event.event_handler); }
 		}
 
 		void load(

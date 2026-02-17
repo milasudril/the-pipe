@@ -128,19 +128,9 @@ namespace Pipe::os_services::fd
 	struct activity_event
 	{
 		/**
-		 * \brief The file descriptor that was activated
-		 */
-		tagged_file_descriptor_ref<FileDescriptorTag> fd;
-
-		/**
-		 * \brief The current status of fd
+		 * \brief The current status of the associated file descriptor
 		 */
 		activity_status status;
-
-		/**
-		 * \brief The id of the associated event handler
-		 */
-		event_handler_id event_handler;
 	};
 
 	/**

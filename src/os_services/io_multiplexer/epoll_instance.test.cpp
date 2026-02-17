@@ -111,35 +111,46 @@ namespace
 			Pipe::os_services::ipc::connected_socket_tag<SOCK_SEQPACKET, sockaddr_un>
 		>;
 
+		using registration_event = Pipe::os_services::fd::registration_event<
+			void,
+			Pipe::os_services::ipc::connected_socket_tag<SOCK_SEQPACKET, sockaddr_un>
+		>;
+
 		void handle_event(Pipe::os_services::fd::activity_event_handler_store& source, event_type const& event)
 		{
 			if(can_read(event.status))
 			{
 				std::array<std::byte, 1024> buffer;
-				auto res = Pipe::os_services::io::read(event.fd, buffer);
+				auto res = Pipe::os_services::io::read(m_registration.fd, buffer);
 				if(res.bytes_transferred() == 0)
 				{
-					source.remove(event.event_handler);
+					source.remove(m_registration.id);
 					return;
 				}
 				m_data_to_send = std::vector(std::begin(buffer),  std::begin(buffer) + res.bytes_transferred());
-				source.update_listening_status(event.fd, Pipe::os_services::fd::activity_status::write);
+				source.update_listening_status(m_registration.fd, Pipe::os_services::fd::activity_status::write);
 			}
 			else
 			{
-				Pipe::os_services::io::write(event.fd, m_data_to_send);
-				source.update_listening_status(event.fd, Pipe::os_services::fd::activity_status::read);
+				Pipe::os_services::io::write(m_registration.fd, m_data_to_send);
+				source.update_listening_status(m_registration.fd, Pipe::os_services::fd::activity_status::read);
 			}
 		}
 
-		template<class... Args>
-		void handle_event(Pipe::os_services::fd::activity_event_handler_store&, Args...)
+		void handle_event(
+			Pipe::os_services::fd::activity_event_handler_store& eh_store,
+			registration_event const& registration)
 		{
-			// FIXME: Needs testing
+			m_eh_store = &eh_store;
+			m_registration = registration;
 		}
+
+		Pipe::os_services::fd::activity_event_handler_store* m_eh_store{nullptr};
+		registration_event m_registration;
 
 		std::vector<std::byte> m_data_to_send;
 	};
+
 	struct my_server_event_handler
 	{
 		using activity_event = Pipe::os_services::fd::activity_event<
@@ -161,18 +172,23 @@ namespace
 			{
 				auto const id  = monitor.add<void>(
 					my_client{},
-					accept(event.fd),
+					accept(m_registration.fd),
 					Pipe::os_services::fd::activity_status::read
 				);
 				EXPECT_EQ(id, Pipe::os_services::fd::event_handler_id{1});
 			}
 		}
 
-		template<class... Args>
-		void handle_event(Pipe::os_services::fd::activity_event_handler_store&, Args...)
+		void handle_event(
+			Pipe::os_services::fd::activity_event_handler_store& eh_store,
+			registration_event const& registration)
 		{
-			// FIXME: Needs testing
+			m_eh_store = &eh_store;
+			m_registration = registration;
 		}
+
+		Pipe::os_services::fd::activity_event_handler_store* m_eh_store{nullptr};
+		registration_event m_registration;
 	};
 
 	class event

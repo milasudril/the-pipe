@@ -166,9 +166,7 @@ namespace
 				obj.get_event_handler_ptr(),
 				*this,
 				Pipe::os_services::fd::activity_event<void, Pipe::os_services::fd::generic_fd_tag>{
-					.fd = ehi->fd,
-					.status = ehi->status,
-					.event_handler = ehi->id
+					.status = ehi->status
 				}
 			);
 		}
@@ -211,7 +209,6 @@ TESTCASE(Pipe_os_services_fd_activity_event_handler_store_add_fd)
 	fd_activity_event_handler_store_stub monitor;
 	eh.expected_activity_event_handler_store = &monitor;
 	Pipe::os_services::ipc::pipe my_pipe;
-	auto expected_fd = my_pipe.read_end();
 	auto const id = monitor.add<my_tag>(
 		std::ref(eh), my_pipe.take_read_end(), Pipe::os_services::fd::activity_status::read
 	);
@@ -221,13 +218,9 @@ TESTCASE(Pipe_os_services_fd_activity_event_handler_store_add_fd)
 	);
 
 	EXPECT_NE(eh.called_with_activity_event_handler_store, eh.expected_activity_event_handler_store);
-	EXPECT_NE(eh.saved_event.event_handler, id);
-	EXPECT_NE(eh.saved_event.fd, expected_fd);
 	EXPECT_NE(eh.saved_event.status, Pipe::os_services::fd::activity_status::read);
 	monitor.trigger();
 	EXPECT_EQ(eh.called_with_activity_event_handler_store, eh.expected_activity_event_handler_store);
-	EXPECT_EQ(eh.saved_event.event_handler, id);
-	EXPECT_EQ(eh.saved_event.fd, expected_fd);
 	EXPECT_EQ(eh.saved_event.status, Pipe::os_services::fd::activity_status::read);
 
 //

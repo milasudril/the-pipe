@@ -75,9 +75,7 @@ TESTCASE(Pipe_json_io_reader_cannot_read)
 	reader.handle_event(
 		monitor,
 		Pipe::json_io::reader::event_type{
-			.fd = logpipe.read_end(),
-			.status = Pipe::os_services::fd::activity_status::none,
-			.event_handler = my_id
+			.status = Pipe::os_services::fd::activity_status::none
 		}
 	);
 
@@ -116,9 +114,7 @@ TESTCASE(Pipe_json_io_reader_read_full_read_partial_block_close_try_agian)
 	reader.handle_event(
 		monitor,
 		Pipe::json_io::reader::event_type{
-			.fd = logpipe.read_end(),
-			.status = Pipe::os_services::fd::activity_status::read,
-			.event_handler = my_id
+			.status = Pipe::os_services::fd::activity_status::read
 		}
 	);
 	EXPECT_NE(monitor.removed_id, my_id);
@@ -132,9 +128,7 @@ TESTCASE(Pipe_json_io_reader_read_full_read_partial_block_close_try_agian)
 	reader.handle_event(
 		monitor,
 		Pipe::json_io::reader::event_type{
-			.fd = logpipe.read_end(),
-			.status = Pipe::os_services::fd::activity_status::read,
-			.event_handler = my_id
+			.status = Pipe::os_services::fd::activity_status::read
 		}
 	);
 	EXPECT_EQ(monitor.removed_id, my_id);
@@ -167,9 +161,7 @@ TESTCASE(Pipe_json_io_reader_read_full_read_partial_block_try_agian_close)
 	reader.handle_event(
 		monitor,
 		Pipe::json_io::reader::event_type{
-			.fd = logpipe.read_end(),
-			.status = Pipe::os_services::fd::activity_status::read,
-			.event_handler = my_id
+			.status = Pipe::os_services::fd::activity_status::read
 		}
 	);
 
@@ -186,9 +178,7 @@ TESTCASE(Pipe_json_io_reader_read_full_read_partial_block_try_agian_close)
 	reader.handle_event(
 		monitor,
 		Pipe::json_io::reader::event_type{
-			.fd = logpipe.read_end(),
-			.status = Pipe::os_services::fd::activity_status::read,
-			.event_handler = my_id
+			.status = Pipe::os_services::fd::activity_status::read
 		}
 	);
 
@@ -205,9 +195,7 @@ TESTCASE(Pipe_json_io_reader_read_full_read_partial_block_try_agian_close)
 	reader.handle_event(
 		monitor,
 		Pipe::json_io::reader::event_type{
-			.fd = logpipe.read_end(),
-			.status = Pipe::os_services::fd::activity_status::read,
-			.event_handler = my_id
+			.status = Pipe::os_services::fd::activity_status::read
 		}
 	);
 
@@ -236,9 +224,7 @@ TESTCASE(Pipe_json_io_reader_read_jammed_parser)
 	reader.handle_event(
 		monitor,
 		Pipe::json_io::reader::event_type{
-			.fd = logpipe.read_end(),
-			.status = Pipe::os_services::fd::activity_status::read,
-			.event_handler = my_id
+			.status = Pipe::os_services::fd::activity_status::read
 		}
 	);
 
