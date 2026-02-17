@@ -123,14 +123,6 @@ namespace
 
 		blob obj;
 
-		void do_update_listening_status(
-			Pipe::os_services::fd::file_descriptor_ref,
-			Pipe::os_services::fd::activity_status activity_status
-		) override
-		{
-			obj.get_saved_event_handler_info()->status = activity_status;
-		}
-
 		void update_listening_status(
 			Pipe::os_services::fd::saved_event_handler_ref,
 			Pipe::os_services::fd::activity_status new_status

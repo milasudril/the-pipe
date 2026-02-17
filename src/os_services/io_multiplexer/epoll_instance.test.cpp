@@ -127,12 +127,18 @@ namespace
 					return;
 				}
 				m_data_to_send = std::vector(std::begin(buffer),  std::begin(buffer) + res.bytes_transferred());
-				source.update_listening_status(m_registration.fd, Pipe::os_services::fd::activity_status::write);
+				source.update_listening_status(
+					m_registration.event_handler,
+					Pipe::os_services::fd::activity_status::write
+				);
 			}
 			else
 			{
 				Pipe::os_services::io::write(m_registration.fd, m_data_to_send);
-				source.update_listening_status(m_registration.fd, Pipe::os_services::fd::activity_status::read);
+				source.update_listening_status(
+					m_registration.event_handler,
+					Pipe::os_services::fd::activity_status::read
+				);
 			}
 		}
 

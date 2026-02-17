@@ -43,12 +43,6 @@ namespace
 		void remove(Pipe::os_services::fd::event_handler_id id) override
 		{ removed_id = id; }
 
-		void do_update_listening_status(
-			Pipe::os_services::fd::file_descriptor_ref,
-			Pipe::os_services::fd::activity_status
-		) override
-		{ throw std::runtime_error{"Unexpected call do_update_listening_status"}; }
-
 		Pipe::os_services::fd::event_handler_id do_add(
 			event_handler_info const&,
 			Pipe::os_services::fd::file_descriptor,

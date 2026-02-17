@@ -214,16 +214,6 @@ namespace Pipe::os_services::fd
 		{ return config_transaction{*this}; }
 
 		/**
-		 * \brief Updates the listening status for fd
-		 */
-		template<class Tag>
-		void update_listening_status(
-			tagged_file_descriptor_ref<Tag> fd,
-			activity_status new_status
-		)
-		{ do_update_listening_status(file_descriptor_ref{fd.native_handle()}, new_status); }
-
-		/**
 		 * \brief Adds a new entry to the activity_event_handler_store
 		 * \tparam CallbackTag See activity_event
 		 * \tparam FileDescriptorTag See activity_event
@@ -326,8 +316,6 @@ namespace Pipe::os_services::fd
 			fd::file_descriptor fd_to_watch,
 			activity_status initial_listening_status
 		) = 0;
-
-		virtual void do_update_listening_status(file_descriptor_ref fd, activity_status new_status) = 0;
 	};
 }
 

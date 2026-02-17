@@ -163,26 +163,6 @@ namespace Pipe::os_services::io_multiplexer
 		}
 
 	private:
-		void do_update_listening_status(fd::file_descriptor_ref fd, fd::activity_status new_status) override
-		{
-			assert(m_current_event_handler != nullptr);
-
-			::epoll_event event{
-				.events = to_epoll_event(new_status),
-				.data = ::epoll_data{
-					.ptr = m_current_event_handler
-				}
-			};
-			auto const result = ::epoll_ctl(
-				m_epoll_fd.get().native_handle(),
-				EPOLL_CTL_MOD,
-				fd.native_handle(),
-				&event
-			);
-			if(result == -1)
-			{ throw error_handling::system_error{"Failed to update epoll event", errno}; }
-		}
-
 		void remove(fd::event_handler_id event_handler) override
 		{
 			auto const i = m_listeners.find(event_handler);

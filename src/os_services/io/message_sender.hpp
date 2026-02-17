@@ -31,7 +31,7 @@ namespace Pipe::os_services::io
 				if(result.operation_would_have_blocked())
 				{
 					// FIXME: This is not possible, since the complete event handler object is not available
-					m_event_handler_store.get().update_listening_status(m_fd, fd::activity_status::read_or_write);
+					// m_event_handler_store.get().update_listening_status(m_fd, fd::activity_status::read_or_write);
 					return m_write_ptr - std::begin(m_output_buffer);
 				}
 
