@@ -59,7 +59,7 @@ TESTCASE(Pipe_json_io_reader_cannot_read)
 	Pipe::json_io::reader reader{std::ref(receiver), 16};
 	Pipe::os_services::ipc::pipe logpipe;
 	constexpr Pipe::os_services::fd::event_handler_id my_id{2465};
-	reader.handle_event(monitor, Pipe::json_io::reader::registration_event{
+	reader.handle_event(monitor, Pipe::json_io::reader::event_handler_registered_event{
 		.fd = logpipe.read_end(),
 		.id = my_id,
 		.event_handler = {}
@@ -91,7 +91,7 @@ TESTCASE(Pipe_json_io_reader_read_full_read_partial_block_close_try_agian)
 	Pipe::json_io::reader reader{std::ref(receiver)};
 	Pipe::os_services::ipc::pipe logpipe;
 	constexpr Pipe::os_services::fd::event_handler_id my_id{2465};
-	reader.handle_event(monitor, Pipe::json_io::reader::registration_event{
+	reader.handle_event(monitor, Pipe::json_io::reader::event_handler_registered_event{
 		.fd = logpipe.read_end(),
 		.id = my_id,
 		.event_handler = {}
@@ -138,7 +138,7 @@ TESTCASE(Pipe_json_io_reader_read_full_read_partial_block_try_agian_close)
 	Pipe::json_io::reader reader{std::ref(receiver)};
 	Pipe::os_services::ipc::pipe logpipe;
 	constexpr Pipe::os_services::fd::event_handler_id my_id{2465};
-	reader.handle_event(monitor, Pipe::json_io::reader::registration_event{
+	reader.handle_event(monitor, Pipe::json_io::reader::event_handler_registered_event{
 		.fd = logpipe.read_end(),
 		.id = my_id,
 		.event_handler = {}
@@ -206,7 +206,7 @@ TESTCASE(Pipe_json_io_reader_read_jammed_parser)
 	Pipe::json_io::reader reader{std::ref(receiver)};
 	Pipe::os_services::ipc::pipe logpipe;
 	constexpr Pipe::os_services::fd::event_handler_id my_id{2465};
-	reader.handle_event(monitor, Pipe::json_io::reader::registration_event{
+	reader.handle_event(monitor, Pipe::json_io::reader::event_handler_registered_event{
 		.fd = logpipe.read_end(),
 		.id = my_id,
 		.event_handler = {}

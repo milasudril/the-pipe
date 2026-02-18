@@ -56,10 +56,10 @@ namespace Pipe::os_services::io_multiplexer
 	{
 		fd::file_descriptor_deleter<fd::generic_fd_tag> fd_deleter;
 		void (*destroy_event_handler_at)(void* object);
-		void (*handle_registration_event)(
+		void (*handle_event_handler_registered_event)(
 			void* object,
 			fd::activity_event_handler_store& event_source,
-			fd::registration_event<void, fd::generic_fd_tag> const& event
+			fd::event_handler_registered_event<void, fd::generic_fd_tag> const& event
 		);
 	};
 

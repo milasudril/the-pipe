@@ -89,7 +89,7 @@ TESTCASE(Pipe_os_services_io_multiplexer_epoll_entry_data_create_and_get_props)
 					object_constructed_from = src.address;
 					object_constructed_at = dest.address;
 				},
-				.handle_registration_event = {}
+				.handle_event_handler_registered_event = {}
 			},
 			Pipe::os_services::fd::make_generic_file_descriptor(pipe.take_read_end())
 		};
@@ -110,7 +110,7 @@ namespace
 			Pipe::os_services::ipc::connected_socket_tag<SOCK_SEQPACKET, sockaddr_un>
 		>;
 
-		using registration_event = Pipe::os_services::fd::registration_event<
+		using event_handler_registered_event = Pipe::os_services::fd::event_handler_registered_event<
 			void,
 			Pipe::os_services::ipc::connected_socket_tag<SOCK_SEQPACKET, sockaddr_un>
 		>;
@@ -144,14 +144,14 @@ namespace
 
 		void handle_event(
 			Pipe::os_services::fd::activity_event_handler_store& eh_store,
-			registration_event const& registration)
+			event_handler_registered_event const& registration)
 		{
 			m_eh_store = &eh_store;
 			m_registration = registration;
 		}
 
 		Pipe::os_services::fd::activity_event_handler_store* m_eh_store{nullptr};
-		registration_event m_registration;
+		event_handler_registered_event m_registration;
 
 		std::vector<std::byte> m_data_to_send;
 	};
@@ -163,7 +163,7 @@ namespace
 			Pipe::os_services::ipc::server_socket_tag<SOCK_SEQPACKET, sockaddr_un>
 		>;
 
-		using registration_event = Pipe::os_services::fd::registration_event<
+		using event_handler_registered_event = Pipe::os_services::fd::event_handler_registered_event<
 			void,
 			Pipe::os_services::ipc::server_socket_tag<SOCK_SEQPACKET, sockaddr_un>
 		>;
@@ -186,14 +186,14 @@ namespace
 
 		void handle_event(
 			Pipe::os_services::fd::activity_event_handler_store& eh_store,
-			registration_event const& registration)
+			event_handler_registered_event const& registration)
 		{
 			m_eh_store = &eh_store;
 			m_registration = registration;
 		}
 
 		Pipe::os_services::fd::activity_event_handler_store* m_eh_store{nullptr};
-		registration_event m_registration;
+		event_handler_registered_event m_registration;
 	};
 
 	class event

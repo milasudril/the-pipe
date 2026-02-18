@@ -52,10 +52,10 @@ Pipe::os_services::io_multiplexer::epoll_instance::do_add(
 		throw error_handling::system_error{"Failed to update epoll event", errno};
 	}
 
-	event_handler->vtable->handle_registration_event(
+	event_handler->vtable->handle_event_handler_registered_event(
 		event_handler + 1,
 		*this,
-		fd::registration_event<void, fd::generic_fd_tag>{
+		fd::event_handler_registered_event<void, fd::generic_fd_tag>{
 			event_handler->fd,
 			eh_id,
 			saved_event_handler_ref{event_handler}
@@ -93,7 +93,7 @@ Pipe::os_services::io_multiplexer::epoll_entry_data::epoll_entry_data(
 	saved_eh_info->handle_event = eh_info.handle_activity_event;
 	saved_eh_info->vtable->fd_deleter = fd.get_deleter();
 	saved_eh_info->vtable->destroy_event_handler_at = eh_info.destroy_event_handler_at;
-	saved_eh_info->vtable->handle_registration_event = eh_info.handle_registration_event;
+	saved_eh_info->vtable->handle_event_handler_registered_event = eh_info.handle_event_handler_registered_event;
 	saved_eh_info->fd = fd.release();
 
 	eh_info.construct_event_handler_at(
