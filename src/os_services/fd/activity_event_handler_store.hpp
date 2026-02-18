@@ -104,17 +104,7 @@ namespace Pipe::os_services::fd
 	};
 
 	template<class CallbackTag, class FileDescriptorTag>
-	struct event_handler_registered_event
-	{
-		tagged_file_descriptor_ref<FileDescriptorTag> fd;
-		event_handler_id id;
-		saved_event_handler_ref event_handler;
-
-		constexpr bool operator==(event_handler_registered_event const&) const = default;
-		constexpr bool operator!=(event_handler_registered_event const&) const = default;
-
-	};
-
+	struct event_handler_registered_event;
 
 	/**
 	 * \brief Describes an activity event
@@ -125,13 +115,7 @@ namespace Pipe::os_services::fd
 	 * \tparam FileDescriptorTag Identifies the type of file descriptor that was activated
 	 */
 	template<class CallbackTag, class FileDescriptorTag>
-	struct activity_event
-	{
-		/**
-		 * \brief The current status of the associated file descriptor
-		 */
-		activity_status status;
-	};
+	struct activity_event;
 
 	/**
 	 * \brief An entity to be used to observe the state of a file descriptor
@@ -316,6 +300,26 @@ namespace Pipe::os_services::fd
 			fd::file_descriptor fd_to_watch,
 			activity_status initial_listening_status
 		) = 0;
+	};
+
+	template<class CallbackTag, class FileDescriptorTag>
+	struct event_handler_registered_event
+	{
+		tagged_file_descriptor_ref<FileDescriptorTag> fd;
+		event_handler_id id;
+		saved_event_handler_ref event_handler;
+
+		constexpr bool operator==(event_handler_registered_event const&) const = default;
+		constexpr bool operator!=(event_handler_registered_event const&) const = default;
+	};
+
+	template<class CallbackTag, class FileDescriptorTag>
+	struct activity_event
+	{
+		/**
+		 * \brief The current status of the associated file descriptor
+		 */
+		activity_status status;
 	};
 }
 
