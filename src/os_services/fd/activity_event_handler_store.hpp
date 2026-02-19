@@ -104,7 +104,7 @@ namespace Pipe::os_services::fd
 	};
 
 	template<class CallbackTag, class FileDescriptorTag>
-	struct event_handler_registered_event;
+	struct activity_event_handler_registered_event;
 
 	/**
 	 * \brief Describes an activity event
@@ -127,14 +127,14 @@ namespace Pipe::os_services::fd
 		T& obj,
 		activity_event_handler_store& source,
 		activity_event<CallbackTag, FileDescriptorTag> const& activity_event,
-		event_handler_registered_event<CallbackTag, FileDescriptorTag> const& event_handler_registered_event
+		activity_event_handler_registered_event<CallbackTag, FileDescriptorTag> const& activity_event_handler_registered_event
 	)
 	{
 		/**
 		 * \brief Will be called when the state of the file descriptor needs to be checked
 		 */
 		{utils::unwrap(obj).handle_event(source, activity_event)} -> std::same_as<void>;
-		{utils::unwrap(obj).handle_event(event_handler_registered_event)} -> std::same_as<void>;
+		{utils::unwrap(obj).handle_event(activity_event_handler_registered_event)} -> std::same_as<void>;
 	};
 
 	/**
@@ -241,12 +241,12 @@ namespace Pipe::os_services::fd
 					){
 						::new(dest.address)EventHandler(std::move(*static_cast<EventHandler*>(src.address)));
 					},
-					.handle_event_handler_registered_event = [](
+					.handle_activity_event_handler_registered_event = [](
 						void* object,
-						event_handler_registered_event<void, generic_fd_tag> const& event
+						activity_event_handler_registered_event<void, generic_fd_tag> const& event
 					){
 						utils::unwrap(*static_cast<EventHandler*>(object)).handle_event(
-							std::bit_cast<event_handler_registered_event<CallbackTag, FileDescriptorTag>>(event)
+							std::bit_cast<activity_event_handler_registered_event<CallbackTag, FileDescriptorTag>>(event)
 						);
 					}
 				},
@@ -285,9 +285,9 @@ namespace Pipe::os_services::fd
 				dest_object_location dest,
 				source_object_location src
 			);
-			void (*handle_event_handler_registered_event)(
+			void (*handle_activity_event_handler_registered_event)(
 				void* object,
-				event_handler_registered_event<void, generic_fd_tag> const& event
+				activity_event_handler_registered_event<void, generic_fd_tag> const& event
 			);
 		};
 
@@ -300,15 +300,15 @@ namespace Pipe::os_services::fd
 	};
 
 	template<class CallbackTag, class FileDescriptorTag>
-	struct event_handler_registered_event
+	struct activity_event_handler_registered_event
 	{
 		tagged_file_descriptor_ref<FileDescriptorTag> fd;
 		event_handler_id id;
 		saved_event_handler_ref event_handler;
 		activity_event_handler_store* event_handler_store{nullptr};
 
-		constexpr bool operator==(event_handler_registered_event const&) const = default;
-		constexpr bool operator!=(event_handler_registered_event const&) const = default;
+		constexpr bool operator==(activity_event_handler_registered_event const&) const = default;
+		constexpr bool operator!=(activity_event_handler_registered_event const&) const = default;
 	};
 
 	template<class CallbackTag, class FileDescriptorTag>

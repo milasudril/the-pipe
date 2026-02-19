@@ -89,7 +89,7 @@ TESTCASE(Pipe_os_services_io_multiplexer_epoll_entry_data_create_and_get_props)
 					object_constructed_from = src.address;
 					object_constructed_at = dest.address;
 				},
-				.handle_event_handler_registered_event = {}
+				.handle_activity_event_handler_registered_event = {}
 			},
 			Pipe::os_services::fd::make_generic_file_descriptor(pipe.take_read_end())
 		};
@@ -110,7 +110,7 @@ namespace
 			Pipe::os_services::ipc::connected_socket_tag<SOCK_SEQPACKET, sockaddr_un>
 		>;
 
-		using event_handler_registered_event = Pipe::os_services::fd::event_handler_registered_event<
+		using activity_event_handler_registered_event = Pipe::os_services::fd::activity_event_handler_registered_event<
 			void,
 			Pipe::os_services::ipc::connected_socket_tag<SOCK_SEQPACKET, sockaddr_un>
 		>;
@@ -143,12 +143,12 @@ namespace
 		}
 
 		void handle_event(
-			event_handler_registered_event const& registration)
+			activity_event_handler_registered_event const& registration)
 		{
 			m_registration = registration;
 		}
 
-		event_handler_registered_event m_registration;
+		activity_event_handler_registered_event m_registration;
 
 		std::vector<std::byte> m_data_to_send;
 	};
@@ -160,7 +160,7 @@ namespace
 			Pipe::os_services::ipc::server_socket_tag<SOCK_SEQPACKET, sockaddr_un>
 		>;
 
-		using event_handler_registered_event = Pipe::os_services::fd::event_handler_registered_event<
+		using activity_event_handler_registered_event = Pipe::os_services::fd::activity_event_handler_registered_event<
 			void,
 			Pipe::os_services::ipc::server_socket_tag<SOCK_SEQPACKET, sockaddr_un>
 		>;
@@ -182,12 +182,12 @@ namespace
 		}
 
 		void handle_event(
-			event_handler_registered_event const& registration)
+			activity_event_handler_registered_event const& registration)
 		{
 			m_registration = registration;
 		}
 
-		event_handler_registered_event m_registration;
+		activity_event_handler_registered_event m_registration;
 	};
 
 	class event

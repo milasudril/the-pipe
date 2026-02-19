@@ -88,7 +88,7 @@ namespace Pipe::json_io
 			os_services::io::input_file_descriptor_tag
 		>;
 
-		using event_handler_registered_event = os_services::fd::event_handler_registered_event<
+		using activity_event_handler_registered_event = os_services::fd::activity_event_handler_registered_event<
 			json_stream_tag,
 			os_services::io::input_file_descriptor_tag
 		>;
@@ -137,7 +137,7 @@ namespace Pipe::json_io
 		void handle_event(os_services::fd::activity_event_handler_store&, event_type const& event);
 
 		void handle_event(
-			event_handler_registered_event const& event
+			activity_event_handler_registered_event const& event
 		)
 		{
 			m_registration = event;
@@ -147,7 +147,7 @@ namespace Pipe::json_io
 		size_t m_buffer_size;
 		std::unique_ptr<char[]> m_input_buffer;
 		std::unique_ptr<type_erased_container_receiver> m_container_receiver;
-		event_handler_registered_event m_registration;
+		activity_event_handler_registered_event m_registration;
 
 		struct state
 		{

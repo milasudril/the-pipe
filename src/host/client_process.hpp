@@ -13,7 +13,7 @@ namespace Pipe::host
 		struct log_stream_tag{};
 
 		template<class T, class U>
-		void handle_event(os_services::fd::event_handler_registered_event<T, U> const&)
+		void handle_event(os_services::fd::activity_event_handler_registered_event<T, U> const&)
 		{
 			// TODO: handle registration events
 		}

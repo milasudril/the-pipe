@@ -187,7 +187,7 @@ namespace
 			saved_event = event;
 		}
 
-		void handle_event(Pipe::os_services::fd::event_handler_registered_event<my_tag, Pipe::os_services::io::input_file_descriptor_tag> const&)
+		void handle_event(Pipe::os_services::fd::activity_event_handler_registered_event<my_tag, Pipe::os_services::io::input_file_descriptor_tag> const&)
 		{
 			// FIXME: Needs testing
 		}
