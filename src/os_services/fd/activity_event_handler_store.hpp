@@ -134,7 +134,7 @@ namespace Pipe::os_services::fd
 		 * \brief Will be called when the state of the file descriptor needs to be checked
 		 */
 		{utils::unwrap(obj).handle_event(source, activity_event)} -> std::same_as<void>;
-		{utils::unwrap(obj).handle_event(source, event_handler_registered_event)} -> std::same_as<void>;
+		{utils::unwrap(obj).handle_event(event_handler_registered_event)} -> std::same_as<void>;
 	};
 
 	/**
@@ -243,11 +243,9 @@ namespace Pipe::os_services::fd
 					},
 					.handle_event_handler_registered_event = [](
 						void* object,
-						activity_event_handler_store& event_source,
 						event_handler_registered_event<void, generic_fd_tag> const& event
 					){
 						utils::unwrap(*static_cast<EventHandler*>(object)).handle_event(
-							event_source,
 							std::bit_cast<event_handler_registered_event<CallbackTag, FileDescriptorTag>>(event)
 						);
 					}
@@ -289,7 +287,6 @@ namespace Pipe::os_services::fd
 			);
 			void (*handle_event_handler_registered_event)(
 				void* object,
-				activity_event_handler_store& event_source,
 				event_handler_registered_event<void, generic_fd_tag> const& event
 			);
 		};

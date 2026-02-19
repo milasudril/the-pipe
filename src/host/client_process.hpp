@@ -12,8 +12,8 @@ namespace Pipe::host
 		struct client_ctl_tag{};
 		struct log_stream_tag{};
 
-		template<class... Args>
-		void handle_event(os_services::fd::activity_event_handler_store&, Args...)
+		template<class T, class U>
+		void handle_event(os_services::fd::event_handler_registered_event<T, U> const&)
 		{
 			// TODO: handle registration events
 		}

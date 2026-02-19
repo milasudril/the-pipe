@@ -58,7 +58,6 @@ namespace Pipe::os_services::io_multiplexer
 		void (*destroy_event_handler_at)(void* object);
 		void (*handle_event_handler_registered_event)(
 			void* object,
-			fd::activity_event_handler_store& event_source,
 			fd::event_handler_registered_event<void, fd::generic_fd_tag> const& event
 		);
 	};

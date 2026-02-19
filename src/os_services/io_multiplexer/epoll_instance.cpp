@@ -54,7 +54,6 @@ Pipe::os_services::io_multiplexer::epoll_instance::do_add(
 
 	event_handler->vtable->handle_event_handler_registered_event(
 		event_handler + 1,
-		*this,
 		fd::event_handler_registered_event<void, fd::generic_fd_tag>{
 			event_handler->fd,
 			eh_id,

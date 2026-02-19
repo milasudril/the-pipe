@@ -36,7 +36,7 @@ namespace Pipe::host
 		struct proc_mgmt_tag{};
 
 		template<class... Args>
-		void handle_event(os_services::fd::activity_event_handler_store&, Args...)
+		void handle_event(Args...)
 		{
 			// TODO: handle registration events
 		}

@@ -62,7 +62,7 @@ void Pipe::json_io::reader::handle_event(
 			if(m_state->parser.current_depth() != 0)
 			{ m_container_receiver->handle_event(jopp::parser_error_code::more_data_needed); }
 
-			m_eh_store->remove(m_registration.id);
+			m_registration.event_handler_store->remove(m_registration.id);
 			return;
 		}
 
@@ -77,7 +77,7 @@ void Pipe::json_io::reader::handle_event(
 			case parser_state::good:
 				break;
 			case parser_state::jammed:
-				m_eh_store->remove(m_registration.id);
+				m_registration.event_handler_store->remove(m_registration.id);
 				return;
 		}
 	}

@@ -143,14 +143,11 @@ namespace
 		}
 
 		void handle_event(
-			Pipe::os_services::fd::activity_event_handler_store& eh_store,
 			event_handler_registered_event const& registration)
 		{
-			m_eh_store = &eh_store;
 			m_registration = registration;
 		}
 
-		Pipe::os_services::fd::activity_event_handler_store* m_eh_store{nullptr};
 		event_handler_registered_event m_registration;
 
 		std::vector<std::byte> m_data_to_send;
@@ -185,14 +182,11 @@ namespace
 		}
 
 		void handle_event(
-			Pipe::os_services::fd::activity_event_handler_store& eh_store,
 			event_handler_registered_event const& registration)
 		{
-			m_eh_store = &eh_store;
 			m_registration = registration;
 		}
 
-		Pipe::os_services::fd::activity_event_handler_store* m_eh_store{nullptr};
 		event_handler_registered_event m_registration;
 	};
 
