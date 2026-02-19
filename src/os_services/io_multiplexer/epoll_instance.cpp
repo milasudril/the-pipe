@@ -58,7 +58,8 @@ Pipe::os_services::io_multiplexer::epoll_instance::do_add(
 		fd::event_handler_registered_event<void, fd::generic_fd_tag>{
 			event_handler->fd,
 			eh_id,
-			saved_event_handler_ref{event_handler}
+			saved_event_handler_ref{event_handler},
+			this
 		}
 	);
 

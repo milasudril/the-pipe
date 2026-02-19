@@ -308,6 +308,7 @@ namespace Pipe::os_services::fd
 		tagged_file_descriptor_ref<FileDescriptorTag> fd;
 		event_handler_id id;
 		saved_event_handler_ref event_handler;
+		activity_event_handler_store* event_handler_store{nullptr};
 
 		constexpr bool operator==(event_handler_registered_event const&) const = default;
 		constexpr bool operator!=(event_handler_registered_event const&) const = default;
