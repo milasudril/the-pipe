@@ -41,10 +41,7 @@ namespace
 	}
 }
 
-void Pipe::json_io::reader::handle_event(
-	os_services::fd::activity_event_handler_store&,
-	event_type const& event
-)
+void Pipe::json_io::reader::handle_event(event_type const& event)
 {
 	if(!can_read(event.status))
 	{ return; }

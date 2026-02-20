@@ -123,7 +123,6 @@ void Pipe::os_services::io_multiplexer::epoll_instance::wait_for_and_distpatch_e
 		m_current_event_handler = event_handler;
 		event_handler->handle_event(
 			event_handler + 1,  // Payload follows directly after header
-			*this,
 			fd::activity_event<void, fd::generic_fd_tag>{
 				.status = epoll_event_to_activity_status(item.events),
 			}

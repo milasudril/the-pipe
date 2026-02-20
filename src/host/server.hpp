@@ -42,7 +42,6 @@ namespace Pipe::host
 		}
 
 		void handle_event(
-			os_services::fd::activity_event_handler_store&,
 			os_services::fd::activity_event<proc_mgmt_tag, os_services::proc_mgmt::pidfd_tag> const&
 		)
 		{

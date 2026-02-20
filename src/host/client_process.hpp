@@ -22,7 +22,6 @@ namespace Pipe::host
 		void handle_event(json_io::parser_error_event<log_stream_tag> event);
 
 		void handle_event(
-			os_services::fd::activity_event_handler_store&,
 			os_services::fd::activity_event<
 				client_ctl_tag,
 				os_services::ipc::connected_socket_tag<SOCK_STREAM, sockaddr_un>

@@ -131,10 +131,9 @@ namespace Pipe::json_io
 
 		/**
 		 * \brief Handles file activity events
-		 * \param source The activity_event_handler_store that emitted the event
 		 * \param event The event to handle
 		 */
-		void handle_event(os_services::fd::activity_event_handler_store&, event_type const& event);
+		void handle_event(event_type const& event);
 
 		void handle_event(
 			activity_event_handler_registered_event const& event

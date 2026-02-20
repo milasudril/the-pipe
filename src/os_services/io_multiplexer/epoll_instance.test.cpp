@@ -115,7 +115,7 @@ namespace
 			Pipe::os_services::ipc::connected_socket_tag<SOCK_SEQPACKET, sockaddr_un>
 		>;
 
-		void handle_event(Pipe::os_services::fd::activity_event_handler_store& source, event_type const& event)
+		void handle_event(event_type const& event)
 		{
 			if(can_read(event.status))
 			{
@@ -123,11 +123,11 @@ namespace
 				auto res = Pipe::os_services::io::read(m_registration.fd, buffer);
 				if(res.bytes_transferred() == 0)
 				{
-					source.remove(m_registration.id);
+					m_registration.event_handler_store->remove(m_registration.id);
 					return;
 				}
 				m_data_to_send = std::vector(std::begin(buffer),  std::begin(buffer) + res.bytes_transferred());
-				source.update_listening_status(
+				m_registration.event_handler_store->update_listening_status(
 					m_registration.event_handler,
 					Pipe::os_services::fd::activity_status::write
 				);
@@ -135,15 +135,14 @@ namespace
 			else
 			{
 				Pipe::os_services::io::write(m_registration.fd, m_data_to_send);
-				source.update_listening_status(
+				m_registration.event_handler_store->update_listening_status(
 					m_registration.event_handler,
 					Pipe::os_services::fd::activity_status::read
 				);
 			}
 		}
 
-		void handle_event(
-			activity_event_handler_registered_event const& registration)
+		void handle_event(activity_event_handler_registered_event const& registration)
 		{
 			m_registration = registration;
 		}
@@ -165,14 +164,11 @@ namespace
 			Pipe::os_services::ipc::server_socket_tag<SOCK_SEQPACKET, sockaddr_un>
 		>;
 
-		void handle_event(
-			Pipe::os_services::fd::activity_event_handler_store& monitor,
-			activity_event const& event
-		)
+		void handle_event(activity_event const& event)
 		{
 			if(can_read(event.status))
 			{
-				auto const id  = monitor.add<void>(
+				auto const id  = m_registration.event_handler_store->add<void>(
 					my_client{},
 					accept(m_registration.fd),
 					Pipe::os_services::fd::activity_status::read

@@ -125,7 +125,6 @@ namespace Pipe::os_services::fd
 	template<class T, class CallbackTag, class FileDescriptorTag>
 	concept activity_event_handler = requires(
 		T& obj,
-		activity_event_handler_store& source,
 		activity_event<CallbackTag, FileDescriptorTag> const& activity_event,
 		activity_event_handler_registered_event<CallbackTag, FileDescriptorTag> const& activity_event_handler_registered_event
 	)
@@ -133,7 +132,7 @@ namespace Pipe::os_services::fd
 		/**
 		 * \brief Will be called when the state of the file descriptor needs to be checked
 		 */
-		{utils::unwrap(obj).handle_event(source, activity_event)} -> std::same_as<void>;
+		{utils::unwrap(obj).handle_event(activity_event)} -> std::same_as<void>;
 		{utils::unwrap(obj).handle_event(activity_event_handler_registered_event)} -> std::same_as<void>;
 	};
 
@@ -224,11 +223,9 @@ namespace Pipe::os_services::fd
 					.object_alignment = alignof(EventHandler),
 					.handle_activity_event = [](
 						void* object,
-						activity_event_handler_store& event_source,
 						activity_event<void, generic_fd_tag> const& event
 					){
 						utils::unwrap(*static_cast<EventHandler*>(object)).handle_event(
-							event_source,
 							std::bit_cast<activity_event<CallbackTag, FileDescriptorTag>>(event)
 						);
 					},
@@ -277,7 +274,6 @@ namespace Pipe::os_services::fd
 			size_t object_alignment;
 			void (*handle_activity_event)(
 				void* object,
-				activity_event_handler_store& event_source,
 				activity_event<void, generic_fd_tag> const& event
 			);
 			void (*destroy_event_handler_at)(void* object);
