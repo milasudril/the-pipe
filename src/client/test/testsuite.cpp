@@ -5,7 +5,6 @@
 #include "src/os_services/proc_mgmt/proc_mgmt.hpp"
 #include "src/os_services/ipc/pipe.hpp"
 #include "src/json_log/item_converter.hpp"
-#include "src/client_ctl/startup_config.hpp"
 
 #include <jopp/parser.hpp>
 #include <jopp/serializer.hpp>
@@ -47,84 +46,21 @@ namespace
 	}
 }
 
-TESTCASE(Pipe_client_main_to_few_args)
-{
-	auto const exe_file = testclient_exe();
-	Pipe::os_services::ipc::pipe proc_output;
-
-	auto const res = Pipe::os_services::proc_mgmt::spawn(
-		exe_file.c_str(),
-		std::span<char const*>{},
-		std::span<char const*>{},
-		Pipe::os_services::proc_mgmt::io_redirection{
-			.sysin = {},
-			.sysout = {},
-			.syserr = proc_output.take_write_end()
-		}
-	);
-
-	auto const log_item = fetch_log_item(proc_output.read_end());
-	EXPECT_EQ(log_item.severity, Pipe::log::item::severity::error);
-	EXPECT_EQ(log_item.message, "Wrong number of command line arguments. Got 1 expected 2");
-
-	auto const proc_res = Pipe::os_services::proc_mgmt::wait(res.second.get());
-	EXPECT_EQ(std::get<Pipe::os_services::proc_mgmt::process_exited>(proc_res).return_value, 255);
-}
-
-TESTCASE(Pipe_client_main_to_many_args)
-{
-	auto const exe_file = testclient_exe();
-	Pipe::os_services::ipc::pipe proc_output;
-
-	std::array<char const*, 2> args{"foo", "bar"};
-	auto const res = Pipe::os_services::proc_mgmt::spawn(
-		exe_file.c_str(),
-		std::span<char const*>{args},
-		std::span<char const*>{},
-		Pipe::os_services::proc_mgmt::io_redirection{
-			.sysin = {},
-			.sysout = {},
-			.syserr = proc_output.take_write_end()
-		}
-	);
-
-	auto const log_item = fetch_log_item(proc_output.read_end());
-	EXPECT_EQ(log_item.severity, Pipe::log::item::severity::error);
-	EXPECT_EQ(log_item.message, "Wrong number of command line arguments. Got 3 expected 2");
-
-	auto const proc_res = Pipe::os_services::proc_mgmt::wait(res.second.get());
-	EXPECT_EQ(std::get<Pipe::os_services::proc_mgmt::process_exited>(proc_res).return_value, 255);
-}
-
 TESTCASE(Pipe_client_main_sucessful_start)
 {
 	auto const exe_file = testclient_exe();
 	Pipe::os_services::ipc::pipe proc_output;
-	Pipe::os_services::ipc::socket_pair<SOCK_STREAM> sockets;
-
-	auto const startup_config = to_string(
-		Pipe::client_ctl::to_jopp_object(
-			Pipe::client_ctl::startup_config{
-				Pipe::client_ctl::host_info{
-					.address = sockets.socket_b()
-				}
-			}
-		)
-	);
-
-	std::array fds_to_keep{Pipe::os_services::fd::make_generic_file_descriptor(sockets.take_socket_b())};
-	std::array args_cstr{startup_config.c_str()};
 
 	auto const res = Pipe::os_services::proc_mgmt::spawn(
 		exe_file.c_str(),
-		std::span<char const*>{args_cstr},
+		std::span<char const*>{},
 		std::span<char const*>{},
 		Pipe::os_services::proc_mgmt::io_redirection{
 			.sysin = {},
 			.sysout = {},
 			.syserr = proc_output.take_write_end()
 		},
-		std::span{fds_to_keep}
+		std::span<Pipe::os_services::fd::file_descriptor>{}
 	);
 
 	auto const log_item = fetch_log_item(proc_output.read_end());

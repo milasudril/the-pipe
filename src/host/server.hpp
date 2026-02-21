@@ -11,7 +11,6 @@
 #include "src/os_services/ipc/unix_domain_socket.hpp"
 #include "src/os_services/ipc/socket_pair.hpp"
 #include "src/os_services/proc_mgmt/proc_mgmt.hpp"
-#include "src/client_ctl/startup_config.hpp"
 #include "src/utils/utils.hpp"
 
 #include <cstdlib>
@@ -56,29 +55,19 @@ namespace Pipe::host
 		)
 		{
 			os_services::ipc::pipe logpipe;
-			os_services::ipc::socket_pair<SOCK_STREAM> ctl_sockets;
-			auto const startup_config = to_string(
-				client_ctl::to_jopp_object(
-					client_ctl::startup_config{
-						client_ctl::host_info{
-							.address = ctl_sockets.socket_b()
-						}
-					}
-				)
-			);
-			std::array args_cstr{startup_config.c_str()};
-			std::array fds_to_keep{Pipe::os_services::fd::make_generic_file_descriptor(ctl_sockets.take_socket_b())};
+			os_services::ipc::pipe request_pipe;
+			os_services::ipc::pipe response_pipe;
 
 			auto process = os_services::proc_mgmt::spawn(
 				client_binary.c_str(),
-				std::span{std::data(args_cstr), 1},
+				std::span<char const*>{},
 				std::span<char const*>{},
 				os_services::proc_mgmt::io_redirection{
-					.sysin = {},
-					.sysout = {},
+					.sysin = request_pipe.take_read_end(),
+					.sysout = response_pipe.take_write_end(),
 					.syserr = logpipe.take_write_end()
 				},
-				std::span{fds_to_keep}
+				std::span<os_services::fd::file_descriptor>{}
 			);
 
 			auto client_proc = std::make_shared<client_process>();
@@ -90,7 +79,12 @@ namespace Pipe::host
 				)
 				.add<client_process::client_ctl_tag>(
 					client_proc,
-					ctl_sockets.take_socket_a(),
+					request_pipe.take_write_end(),
+					os_services::fd::activity_status::write
+				)
+				.add<client_process::client_ctl_tag>(
+					client_proc,
+					response_pipe.take_read_end(),
 					os_services::fd::activity_status::write
 				)
 				.add<proc_mgmt_tag>(
