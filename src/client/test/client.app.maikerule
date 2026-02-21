@@ -1,4 +1,7 @@
 {
 	"target":{"name": "client"},
-	"dependencies":[{"ref":"src/client/main.o", "rel":"implementation"}]
+	"dependencies":[
+		{"ref":"src/client/test/app.o", "rel":"implementation"},
+		{"ref":"src/client/main.o", "rel":"implementation"}
+	]
 }
