@@ -160,12 +160,21 @@ namespace Pipe::os_services::io_multiplexer
 			{ throw error_handling::system_error{"Failed to update epoll event", errno}; }
 		}
 
+		bool is_empty() const
+		{ return m_listeners.empty(); }
+
 	private:
 		void remove(fd::event_handler_id event_handler) override
 		{
 			auto const i = m_listeners.find(event_handler);
 			if(i == std::end(m_listeners))
 			{ return; }
+			::epoll_ctl(
+				m_epoll_fd.get().native_handle(),
+				EPOLL_CTL_DEL,
+				i->second.get_header_ptr()->fd,
+				nullptr
+			);
 			m_listeners.erase(i);
 		}
 
@@ -175,7 +184,6 @@ namespace Pipe::os_services::io_multiplexer
 			fd::activity_status initial_listening_status
 		) override;
 
-		void* m_current_event_handler;
 		epoll_file_descriptor m_epoll_fd;
 		std::unordered_map<fd::event_handler_id, epoll_entry_data, fd::event_handler_id_hash> m_listeners;
 		fd::event_handler_id m_current_id;

@@ -30,6 +30,25 @@ namespace Pipe::os_services::fd
 	inline constexpr bool can_write(activity_status status)
 	{ return static_cast<int>(status) & static_cast<int>(activity_status::write); }
 
+	inline constexpr char const* to_string(activity_status status)
+	{
+		switch (status)
+		{
+			case activity_status::none:
+				return "none";
+
+			case activity_status::read:
+				return "read";
+
+			case activity_status::write:
+				return "write";
+
+			case activity_status::read_or_write:
+				return "read_or_write";
+		}
+		return "<Unknown>";
+	}
+
 	/**
 	 * \brief The id for the current event handler
 	 *

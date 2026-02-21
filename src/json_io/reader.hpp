@@ -83,7 +83,7 @@ namespace Pipe::json_io
 	{
 	public:
 		struct json_stream_tag{};
-		using event_type = os_services::fd::activity_event<
+		using data_available_event = os_services::fd::activity_event<
 			json_stream_tag,
 			os_services::io::input_file_descriptor_tag
 		>;
@@ -133,7 +133,7 @@ namespace Pipe::json_io
 		 * \brief Handles file activity events
 		 * \param event The event to handle
 		 */
-		void handle_event(event_type const& event);
+		void handle_event(data_available_event const& event);
 
 		void handle_event(
 			activity_event_handler_registered_event const& event

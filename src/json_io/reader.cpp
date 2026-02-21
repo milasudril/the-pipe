@@ -41,18 +41,17 @@ namespace
 	}
 }
 
-void Pipe::json_io::reader::handle_event(event_type const& event)
+void Pipe::json_io::reader::handle_event(data_available_event const&)
 {
-	if(!can_read(event.status))
-	{ return; }
-
 	while(true)
 	{
 		std::span input_span{m_input_buffer.get(), m_buffer_size};
 		auto const read_result = read(m_registration.fd, std::as_writable_bytes(input_span));
 
 		if(read_result.operation_would_have_blocked())
-		{ return; }
+		{
+			return;
+		}
 
 		if(read_result.bytes_transferred() == 0)
 		{

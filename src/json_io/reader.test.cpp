@@ -58,6 +58,7 @@ TESTCASE(Pipe_json_io_reader_cannot_read)
 	my_activity_event_handler_store monitor;
 	Pipe::json_io::reader reader{std::ref(receiver), 16};
 	Pipe::os_services::ipc::pipe logpipe;
+	fcntl(logpipe.read_end().native_handle(), F_SETFL, O_NONBLOCK);
 	constexpr Pipe::os_services::fd::event_handler_id my_id{2465};
 	reader.handle_event(Pipe::json_io::reader::activity_event_handler_registered_event{
 		.fd = logpipe.read_end(),
@@ -68,7 +69,7 @@ TESTCASE(Pipe_json_io_reader_cannot_read)
 
 	auto listening_status = Pipe::os_services::fd::activity_status::read;
 	reader.handle_event(
-		Pipe::json_io::reader::event_type{
+		Pipe::json_io::reader::data_available_event{
 			.status = Pipe::os_services::fd::activity_status::none
 		}
 	);
@@ -107,7 +108,7 @@ TESTCASE(Pipe_json_io_reader_read_full_read_partial_block_close_try_agian)
 	write(logpipe.write_end(), std::as_bytes(std::span{std::data(str), stop_at}));
 
 	reader.handle_event(
-		Pipe::json_io::reader::event_type{
+		Pipe::json_io::reader::data_available_event{
 			.status = Pipe::os_services::fd::activity_status::read
 		}
 	);
@@ -120,7 +121,7 @@ TESTCASE(Pipe_json_io_reader_read_full_read_partial_block_close_try_agian)
 	logpipe.close_write_end();
 
 	reader.handle_event(
-		Pipe::json_io::reader::event_type{
+		Pipe::json_io::reader::data_available_event{
 			.status = Pipe::os_services::fd::activity_status::read
 		}
 	);
@@ -153,7 +154,7 @@ TESTCASE(Pipe_json_io_reader_read_full_read_partial_block_try_agian_close)
 	write(logpipe.write_end(), std::as_bytes(std::span{std::data(str), stop_at}));
 
 	reader.handle_event(
-		Pipe::json_io::reader::event_type{
+		Pipe::json_io::reader::data_available_event{
 			.status = Pipe::os_services::fd::activity_status::read
 		}
 	);
@@ -169,7 +170,7 @@ TESTCASE(Pipe_json_io_reader_read_full_read_partial_block_try_agian_close)
 	write(logpipe.write_end(), std::as_bytes(std::span{std::begin(str) + stop_at, std::end(str)}));
 
 	reader.handle_event(
-		Pipe::json_io::reader::event_type{
+		Pipe::json_io::reader::data_available_event{
 			.status = Pipe::os_services::fd::activity_status::read
 		}
 	);
@@ -185,7 +186,7 @@ TESTCASE(Pipe_json_io_reader_read_full_read_partial_block_try_agian_close)
 	logpipe.close_write_end();
 
 	reader.handle_event(
-		Pipe::json_io::reader::event_type{
+		Pipe::json_io::reader::data_available_event{
 			.status = Pipe::os_services::fd::activity_status::read
 		}
 	);
@@ -214,7 +215,7 @@ TESTCASE(Pipe_json_io_reader_read_jammed_parser)
 	write(logpipe.write_end(), std::as_bytes(std::span{str}));
 
 	reader.handle_event(
-		Pipe::json_io::reader::event_type{
+		Pipe::json_io::reader::data_available_event{
 			.status = Pipe::os_services::fd::activity_status::read
 		}
 	);

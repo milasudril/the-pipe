@@ -62,7 +62,6 @@ Pipe::os_services::io_multiplexer::epoll_instance::do_add(
 		}
 	);
 
-	m_current_event_handler = event_handler;
 	return eh_id;
 }
 
@@ -115,12 +114,9 @@ void Pipe::os_services::io_multiplexer::epoll_instance::wait_for_and_distpatch_e
 	if(res == -1)
 	{ throw error_handling::system_error{"Failed to wait for events", errno}; }
 
-	utils::at_scope_exit _{[this](){m_current_event_handler = nullptr;}};
-
 	for(auto const& item : std::span{std::data(events), static_cast<size_t>(res)})
 	{
 		auto const event_handler = static_cast<epoll_entry_data_header*>(item.data.ptr);
-		m_current_event_handler = event_handler;
 		event_handler->handle_event(
 			event_handler + 1,  // Payload follows directly after header
 			fd::activity_event<void, fd::generic_fd_tag>{

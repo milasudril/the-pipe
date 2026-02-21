@@ -50,18 +50,24 @@ TESTCASE(Pipe_client_main_sucessful_start)
 {
 	auto const exe_file = testclient_exe();
 	Pipe::os_services::ipc::pipe proc_output;
+	Pipe::os_services::ipc::pipe req_pipe;
+	Pipe::os_services::ipc::pipe resp_pipe;
 
 	auto const res = Pipe::os_services::proc_mgmt::spawn(
 		exe_file.c_str(),
 		std::span<char const*>{},
 		std::span<char const*>{},
 		Pipe::os_services::proc_mgmt::io_redirection{
-			.sysin = {},
-			.sysout = {},
+			.sysin = req_pipe.take_read_end(),
+			.sysout = resp_pipe.take_write_end(),
 			.syserr = proc_output.take_write_end()
 		},
 		std::span<Pipe::os_services::fd::file_descriptor>{}
 	);
+
+	// For now...
+	req_pipe.close_write_end();
+	resp_pipe.close_read_end();
 
 	auto const log_item = fetch_log_item(proc_output.read_end());
 	EXPECT_EQ(log_item.severity, Pipe::log::item::severity::info);
