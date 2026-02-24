@@ -72,7 +72,6 @@ namespace Pipe::log
 		if(str == "error")
 		{ return item::severity::error; }
 
-		// Maybe better to use some other error handling
 		throw std::runtime_error{"Unknown severity"};
 	}
 

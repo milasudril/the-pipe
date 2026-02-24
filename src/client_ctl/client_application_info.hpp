@@ -8,6 +8,45 @@
 namespace Pipe::client_ctl
 {
 	/**
+	 * \brief Determines how data in a frame is delivered
+	 */
+	enum class data_framing{
+		/**
+		 * \brief Each frame is encoded as a json object
+		 */
+		json,
+
+		/**
+		 * \brief Each frame is a binary blob, which begins with a 64-bit number, indicating its size
+		 */
+		sized_binary
+	};
+
+	inline constexpr char const* to_string(data_framing val)
+	{
+		switch(val)
+		{
+			case data_framing::json:
+				return "json";
+			case data_framing::sized_binary:
+				return "sized_binary";
+			default:
+				return "<unknown>";
+		}
+	}
+
+	inline constexpr data_framing make_data_framing(std::string_view str)
+	{
+		if(str == "json")
+		{ return data_framing::json; }
+		else
+		if(str == "sized_binary")
+		{ return data_framing::sized_binary; }
+
+		throw std::runtime_error{"Unknown data framing"};
+	}
+
+	/**
 	 * \brief Contains information about a port
 	 */
 	struct port_info
@@ -18,6 +57,12 @@ namespace Pipe::client_ctl
 		 * particular system
 		 */
 		std::string stream_content_type;
+
+		/**
+		 * \brief The framing used for this port
+		 * \note Framing does not have any effect when the port is connected to a disk file
+		 */
+		data_framing framing = data_framing::json;
 	};
 
 	/**
@@ -27,6 +72,7 @@ namespace Pipe::client_ctl
 	{
 		jopp::object ret;
 		ret.insert("stream_content_type", obj.stream_content_type);
+		ret.insert("framing", to_string(obj.framing));
 		return ret;
 	}
 
