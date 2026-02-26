@@ -82,6 +82,33 @@ namespace Pipe::os_services::io
 	}
 
 	/**
+	 * \brief Reads as much as possible into buffer
+	 * \return An io_result, containing the number of bytes transferred during the operation
+	 */
+	inline io_result read_full(input_file_descriptor_ref fd, std::span<std::byte> buffer)
+	{
+		auto const start_at = std::begin(buffer);
+		while(!buffer.empty())
+		{
+			auto read_result = read(fd, buffer);
+			if(read_result.bytes_transferred() == 0)
+			{
+				return io_result{
+					std::begin(buffer) - start_at,
+					read_result.operation_would_have_blocked()? EAGAIN: 0
+				};
+			}
+
+			buffer = std::span{
+				std::begin(buffer) + read_result.bytes_transferred(),
+				std::end(buffer)
+			};
+		}
+
+		return io_result{std::begin(buffer) - start_at, 0};
+	}
+
+	/**
 	 * \brief Tag used to identify a file descriptor that can be written to
 	 */
 	struct output_file_descriptor_tag
