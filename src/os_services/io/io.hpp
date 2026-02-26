@@ -90,7 +90,7 @@ namespace Pipe::os_services::io
 		auto const start_at = std::begin(buffer);
 		while(!buffer.empty())
 		{
-			auto read_result = read(fd, buffer);
+			const auto read_result = read(fd, buffer);
 			if(read_result.bytes_transferred() == 0)
 			{
 				return io_result{
@@ -140,6 +140,33 @@ namespace Pipe::os_services::io
 			write_while_eintr(fd.native_handle(), std::data(buffer), std::size(buffer)),
 			errno
 		};
+	}
+
+		/**
+	 * \brief Writes as much as to fd
+	 * \return An io_result, containing the number of bytes transferred during the operation
+	 */
+	inline io_result write_full(output_file_descriptor_ref fd, std::span<std::byte const> buffer)
+	{
+		auto const start_at = std::begin(buffer);
+		while(!buffer.empty())
+		{
+			auto const write_result = write(fd, buffer);
+			if(write_result.bytes_transferred() == 0)
+			{
+				return io_result{
+					std::begin(buffer) - start_at,
+					write_result.operation_would_have_blocked()? EAGAIN: 0
+				};
+			}
+
+			buffer = std::span{
+				std::begin(buffer) + write_result.bytes_transferred(),
+				std::end(buffer)
+			};
+		}
+
+		return io_result{std::begin(buffer) - start_at, 0};
 	}
 }
 

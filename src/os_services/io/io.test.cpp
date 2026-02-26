@@ -2,11 +2,13 @@
 
 #include "./io.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
+#include "testfwk/validation.hpp"
 
 #include <cerrno>
 #include <testfwk/testfwk.hpp>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 namespace
 {
@@ -26,7 +28,11 @@ extern "C"
 
 	ssize_t write(int fd, void const* buffer, size_t count)
 	{
-		return syscall(SYS_write, fd, buffer, std::min(max_ío_size, count));
+		auto ret =  syscall(SYS_write, fd, buffer, std::min(max_ío_size, count));
+		// HACK: Makes it possible to fake EAGAIN by setting a seal
+		if(ret == -1 && errno == EPERM)
+		{ errno = EAGAIN; }
+		return ret;
 	}
 }
 
@@ -127,6 +133,7 @@ TESTCASE(Pipe_io_read_full_end_before_buffer_end)
 
 	max_ío_size = 4096;
 }
+
 TESTCASE(Pipe_io_read_full_complete_block)
 {
 	Pipe::os_services::fd::tagged_file_descriptor<memfd_tag> fd{memfd_create("foo", 0)};
@@ -151,6 +158,43 @@ TESTCASE(Pipe_io_read_full_complete_block)
 	auto const read_result = Pipe::os_services::io::read_full(fd.get(), std::as_writable_bytes(std::span{buffer}));
 	EXPECT_EQ(read_result.operation_would_have_blocked(), false);
 	EXPECT_EQ(read_result.bytes_transferred(), std::size(value_to_write));
+
+	max_ío_size = 4096;
+}
+
+TESTCASE(Pipe_io_write_full_end_before_buffer_end)
+{
+	Pipe::os_services::fd::tagged_file_descriptor<memfd_tag> fd{memfd_create("foo", MFD_ALLOW_SEALING)};
+	static constexpr std::string_view value_to_write{"Hello, World"};
+	auto const res = ftruncate(fd.get().native_handle(), std::size(value_to_write) - 1);
+	REQUIRE_NE(res, -1);
+	fcntl(fd.get().native_handle(), F_ADD_SEALS, F_SEAL_GROW);
+	REQUIRE_NE(fd, nullptr);
+	REQUIRE_NE(fd.get().native_handle(), STDOUT_FILENO);
+	REQUIRE_NE(fd.get().native_handle(), STDIN_FILENO);
+	REQUIRE_NE(fd.get().native_handle(), STDERR_FILENO);
+
+	max_ío_size = 7;
+	auto const write_result = Pipe::os_services::io::write_full(fd.get(), std::as_bytes(std::span{value_to_write}));
+	EXPECT_EQ(write_result.operation_would_have_blocked(), false);
+	EXPECT_EQ(write_result.bytes_transferred(), max_ío_size);
+
+	max_ío_size = 4096;
+}
+
+TESTCASE(Pipe_io_write_full_complete_block)
+{
+	Pipe::os_services::fd::tagged_file_descriptor<memfd_tag> fd{memfd_create("foo", MFD_ALLOW_SEALING)};
+	static constexpr std::string_view value_to_write{"Hello, World"};
+	REQUIRE_NE(fd, nullptr);
+	REQUIRE_NE(fd.get().native_handle(), STDOUT_FILENO);
+	REQUIRE_NE(fd.get().native_handle(), STDIN_FILENO);
+	REQUIRE_NE(fd.get().native_handle(), STDERR_FILENO);
+
+	max_ío_size = 7;
+	auto const write_result = Pipe::os_services::io::write_full(fd.get(), std::as_bytes(std::span{value_to_write}));
+	EXPECT_EQ(write_result.operation_would_have_blocked(), false);
+	EXPECT_EQ(write_result.bytes_transferred(), std::size(value_to_write));
 
 	max_ío_size = 4096;
 }
