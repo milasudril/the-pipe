@@ -4,75 +4,43 @@
 
 #include <jopp/parser.hpp>
 
-namespace
-{
-	enum class parser_state{good, jammed};
-
-	template<class State, class Receiver>
-	parser_state parse_buffer(
-		std::span<char const> input_span,
-		std::unique_ptr<State>& state,
-		Receiver& item_receiver
-	)
-	{
-		while(true)
-		{
-			auto const parse_result = state->parser.parse(input_span);
-			auto const bytes_parsed = parse_result.ptr - std::begin(input_span);
-			input_span = std::span{parse_result.ptr, std::size(input_span) - bytes_parsed};
-
-			switch(parse_result.ec)
-			{
-				case jopp::parser_error_code::completed:
-				{
-					Pipe::utils::at_scope_exit _{[&state](){ state = std::make_unique<State>(); }};
-					item_receiver.handle_event(std::move(state->container));
-					break;
-				}
-
-				case jopp::parser_error_code::more_data_needed:
-					return parser_state::good;
-
-				default:
-					item_receiver.handle_event(parse_result.ec);
-					return parser_state::jammed;
-			}
-		}
-	}
-}
-
 void Pipe::json_io::reader::handle_event(data_available_event const&)
 {
-	while(true)
+	std::span input_span{m_input_buffer.get(), m_buffer_size};
+	auto const read_result = read_full(m_registration.fd, std::as_writable_bytes(input_span));
+
+	if(read_result.bytes_transferred() == 0)
 	{
-		std::span input_span{m_input_buffer.get(), m_buffer_size};
-		auto const read_result = read(m_registration.fd, std::as_writable_bytes(input_span));
-
-		if(read_result.operation_would_have_blocked())
-		{
-			return;
-		}
-
-		if(read_result.bytes_transferred() == 0)
+		if(!read_result.operation_would_have_blocked())
 		{
 			if(m_state->parser.current_depth() != 0)
 			{ m_container_receiver->handle_event(jopp::parser_error_code::more_data_needed); }
 
 			m_registration.event_handler_store->remove(m_registration.id);
-			return;
 		}
+		return;
+	}
 
-		switch(
-			parse_buffer(
-				std::span{std::begin(input_span), read_result.bytes_transferred()},
-				m_state,
-				*m_container_receiver
-			)
-		)
+	input_span = std::span{std::begin(input_span), read_result.bytes_transferred()};
+	while(!input_span.empty())
+	{
+		auto const parse_result = m_state->parser.parse(input_span);
+		input_span = std::span{parse_result.ptr, std::end(input_span)};
+		switch(parse_result.ec)
 		{
-			case parser_state::good:
+			case jopp::parser_error_code::completed:
+			{
+				utils::at_scope_exit _{[this](){ m_state = std::make_unique<state>(); }};
+				m_container_receiver->handle_event(std::move(m_state->container));
 				break;
-			case parser_state::jammed:
+			}
+
+			case jopp::parser_error_code::more_data_needed:
+				assert(input_span.empty());
+				break;
+
+			default:
+				m_container_receiver->handle_event(parse_result.ec);
 				m_registration.event_handler_store->remove(m_registration.id);
 				return;
 		}

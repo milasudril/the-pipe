@@ -213,6 +213,7 @@ TESTCASE(Pipe_json_io_reader_read_jammed_parser)
 	std::string str{"This is definitely not valid JSON {}"};
 
 	write(logpipe.write_end(), std::as_bytes(std::span{str}));
+	fcntl(logpipe.read_end().native_handle(), F_SETFL, O_NONBLOCK);
 
 	reader.handle_event(
 		Pipe::json_io::reader::data_available_event{
