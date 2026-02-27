@@ -19,7 +19,10 @@ namespace Pipe::os_services::error_handling
 		errno = EINTR;
 		std::invoke_result_t<Callable, Args...> result = -1;
 		while(errno == EINTR && result == -1)
-		{ result = func(args...); }
+		{
+			errno = 0;
+			result = func(args...);
+		}
 		return result;
 	}
 }
