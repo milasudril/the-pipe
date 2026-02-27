@@ -26,7 +26,9 @@ namespace Pipe::os_services::io
 		 * \note If `value` < 0 and `err` indicates something other than EAGAIN or EWOULDBLOCK
 		 * an exception is thrown
 		 */
-		explicit io_result(ssize_t value, int err): m_value{value}
+		explicit io_result(ssize_t value, int err):
+			m_value{value},
+			m_operation_would_have_blocked{err == EAGAIN || err == EWOULDBLOCK}
 		{
 			if(m_value < 0 && err != EAGAIN && err != EWOULDBLOCK)
 			{ throw error_handling::system_error{"I/O operation failed", err}; }
@@ -36,7 +38,7 @@ namespace Pipe::os_services::io
 		 * \brief Indicates whether or not the I/O operation would have blocked the calling thread
 		 */
 		[[nodiscard]] bool operation_would_have_blocked() const noexcept
-		{ return m_value == -1; }
+		{ return m_operation_would_have_blocked; }
 
 		/**
 		 * \brief Returns the number of bytes transferred during the I/O operation
@@ -46,6 +48,7 @@ namespace Pipe::os_services::io
 
 	private:
 		ssize_t m_value;
+		bool m_operation_would_have_blocked;
 	};
 
 	/**

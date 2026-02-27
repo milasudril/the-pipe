@@ -176,7 +176,7 @@ TESTCASE(Pipe_io_write_full_end_before_buffer_end)
 
 	max_ío_size = 7;
 	auto const write_result = Pipe::os_services::io::write_full(fd.get(), std::as_bytes(std::span{value_to_write}));
-	EXPECT_EQ(write_result.operation_would_have_blocked(), false);
+	EXPECT_EQ(write_result.operation_would_have_blocked(), true);
 	EXPECT_EQ(write_result.bytes_transferred(), max_ío_size);
 
 	max_ío_size = 4096;
