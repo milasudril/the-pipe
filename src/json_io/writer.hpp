@@ -30,57 +30,16 @@ namespace Pipe::json_io
 		explicit writer(size_t buffer_size = 65536):
 			m_buffer_size{buffer_size},
 			m_output_buffer{std::make_unique<char[]>(buffer_size)},
-			m_pending_range{m_output_buffer.get(), buffer_size},
-			m_range_to_write{}
+			m_reminder{},
+			m_is_listening(false)
 		{}
 
-		void handle_event(fd_ready_event const&)
-		{
-			if(m_pending_range.empty())
-			{
-				if(!drain_range_to_write())
-				{ return; }
-
-				auto const ptr = m_output_buffer.get();
-				m_pending_range = std::span{ptr, static_cast<size_t>(std::data(m_range_to_write) - ptr)};
-			}
-
-			while(!m_to_serialize.empty())
-			{
-				auto& item = *m_to_serialize.front();
-				auto const serialization_result = item.serialize_to(m_pending_range);
-				m_pending_range = std::span{
-					serialization_result.ptr, std::data(m_pending_range) + std::size(m_pending_range)
-				};
-				switch(serialization_result.ec)
-				{
-					case jopp::serializer_error_code::completed:
-						m_to_serialize.pop();
-						break;
-
-					case jopp::serializer_error_code::buffer_is_full:
-						if(!drain_range_to_write())
-						{ return; }
-						break;
-
-					case jopp::serializer_error_code::illegal_char_in_string:
-						abort();
-						break;
-				}
-			}
-
-			m_registration.event_handler_store->update_listening_status(
-				m_registration.event_handler,
-				os_services::fd::activity_status::read
-			);
-		}
+		void handle_event(fd_ready_event const&);
 
 		void write(jopp::container&& item_to_write)
 		{
 			m_to_serialize.push(std::make_unique<serialization_ctxt>(std::move(item_to_write)));
-			handle_event(fd_ready_event{
-				.status = os_services::fd::activity_status::write
-			});
+			handle_event(fd_ready_event{});
 		}
 
 		void handle_event(
@@ -88,37 +47,25 @@ namespace Pipe::json_io
 		)
 		{ m_registration = event; }
 
+		auto get_buffer_size() const
+		{ return m_buffer_size; }
+
+		auto get_reminder_size() const
+		{ return std::size(m_reminder); }
+
+		auto serialization_queue_is_empty() const
+		{ return m_to_serialize.empty(); }
+
 	private:
 		size_t m_buffer_size;
 		std::unique_ptr<char[]> m_output_buffer;
+		std::span<char const> m_reminder;
 		activity_event_handler_registered_event m_registration;
-		std::span<char> m_pending_range;
-		std::span<char const> m_range_to_write;
+		bool m_is_listening;
 
-		bool drain_range_to_write()
-		{
-			while(!m_range_to_write.empty())
-			{
-				auto const write_result = os_services::io::write(
-					m_registration.fd, std::as_bytes(m_range_to_write)
-				);
-				auto const bytes_transferred = write_result.bytes_transferred();
-				if(bytes_transferred == 0)
-				{
-					if(write_result.operation_would_have_blocked())
-					{ return true; }
-					else
-					{
-						m_registration.event_handler_store->remove(m_registration.id);
-						return false;
-					}
-				}
+		void enable_listening();
 
-
-				m_range_to_write = std::span{std::data(m_range_to_write) + bytes_transferred, bytes_transferred};
-			}
-			return true;
-		}
+		void disable_listening();
 
 		class serialization_ctxt
 		{

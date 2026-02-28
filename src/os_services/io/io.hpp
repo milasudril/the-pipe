@@ -30,7 +30,7 @@ namespace Pipe::os_services::io
 			m_value{value},
 			m_operation_would_have_blocked{err == EAGAIN || err == EWOULDBLOCK}
 		{
-			if(err != 0 && !operation_would_have_blocked())
+			if(err != 0 && err != EPIPE && !operation_would_have_blocked())
 			{ throw error_handling::system_error{"I/O operation failed", err}; }
 		}
 

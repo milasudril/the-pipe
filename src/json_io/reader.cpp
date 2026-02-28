@@ -1,6 +1,7 @@
 //@	{"target": {"name": "reader.o"}}
 
 #include "./reader.hpp"
+#include "src/os_services/fd/activity_event_handler_store.hpp"
 
 #include <jopp/parser.hpp>
 
