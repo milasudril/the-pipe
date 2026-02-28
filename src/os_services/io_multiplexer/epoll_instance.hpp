@@ -29,8 +29,9 @@ namespace Pipe::os_services::io_multiplexer
 				return EPOLLOUT;
 			case fd::activity_status::read_or_write:
 				return EPOLLIN|EPOLLOUT;
+			default:
+				throw std::runtime_error{"Bad activity status"};
 		}
-
 		throw std::runtime_error{"Bad activity status"};
 	}
 
@@ -39,10 +40,15 @@ namespace Pipe::os_services::io_multiplexer
 	 */
 	constexpr fd::activity_status epoll_event_to_activity_status(unsigned int event)
 	{
+		if((event&EPOLLERR) || (event&EPOLLHUP) || (event&EPOLLRDHUP))
+		{ return fd::activity_status::error; }
+
 		if((event & EPOLLIN) && (event & EPOLLOUT))
 		{ return fd::activity_status::read_or_write; }
+
 		if(event & EPOLLIN)
 		{ return fd::activity_status::read; }
+
 		if(event & EPOLLOUT)
 		{ return fd::activity_status::write; }
 

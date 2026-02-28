@@ -10,12 +10,13 @@ namespace Pipe::os_services::fd
 	/**
 	 * \brief Describes the type of activity that is currently possible on a file descriptor
 	 */
-	enum class activity_status
+	enum class activity_status:uint32_t
 	{
-		none = 0x0,         /**< No activity available */
-		read = 0x1,         /**< Read is available */
-		write = 0x2,        /**< Write is available */
-		read_or_write = 0x3 /**< Read and write is available */
+		none = 0x0,          /**< No activity available */
+		read = 0x1,          /**< Read is available */
+		write = 0x2,         /**< Write is available */
+		read_or_write = 0x3, /**< Read and write is available */
+		error = 0x8000'0000  /**< An error has occurred on the file descriptor */
 	};
 
 	/**
@@ -29,6 +30,9 @@ namespace Pipe::os_services::fd
 	 */
 	inline constexpr bool can_write(activity_status status)
 	{ return static_cast<int>(status) & static_cast<int>(activity_status::write); }
+
+	inline constexpr bool has_error(activity_status status)
+	{ return static_cast<int>(status) & static_cast<int>(activity_status::error); }
 
 	inline constexpr char const* to_string(activity_status status)
 	{
@@ -45,6 +49,9 @@ namespace Pipe::os_services::fd
 
 			case activity_status::read_or_write:
 				return "read_or_write";
+
+			case activity_status::error:
+				return "error";
 		}
 		return "<Unknown>";
 	}

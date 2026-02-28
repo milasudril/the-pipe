@@ -73,7 +73,10 @@ namespace Pipe::json_io
 		void handle_event(
 			activity_event_handler_registered_event const& event
 		)
-		{ m_registration = event; }
+		{
+			m_registration = event;
+			handle_event(fd_ready_event{});
+		}
 
 		/**
 		 * \brief Returns the number of bytes that could not be written during fd_ready_event

@@ -27,8 +27,14 @@ void Pipe::json_io::writer::disable_listening()
 	}
 }
 
-void Pipe::json_io::writer::handle_event(fd_ready_event const&)
+void Pipe::json_io::writer::handle_event(fd_ready_event const& event)
 {
+	if(has_error(event.status))
+	{
+		m_registration.event_handler_store->remove(m_registration.id);
+		return;
+	}
+
 	if(!m_reminder.empty())
 	{
 		auto const write_result = write_full(m_registration.fd, std::as_bytes(m_reminder));
