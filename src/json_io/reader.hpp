@@ -151,6 +151,11 @@ namespace Pipe::json_io
 		struct state
 		{
 			state():parser{container}{}
+			state(state&&) = delete;
+			state(state const&) = delete;
+			state& operator=(state&&) = delete;
+			state& operator=(state const&) = delete;
+			~state() = default;
 
 			jopp::container container;
 			jopp::parser parser;
