@@ -13,20 +13,34 @@
 
 namespace Pipe::json_io
 {
+	/**
+	 * \brief A writer that encodes JSON containers
+	 * \note A writer can be used as a listener in os_services::fd::activity_event_handler_store
+	 */
 	class writer
 	{
 	public:
 		struct json_stream_tag{};
+
+		/**
+		 * \brief The type of event that indicates that the file descriptor is ready
+		 */
 		using fd_ready_event = os_services::fd::activity_event<
 			json_stream_tag,
 			os_services::io::output_file_descriptor_tag
 		>;
 
+		/**
+		 * \brief The type of event that is used for event handler registration
+		 */
 		using activity_event_handler_registered_event = os_services::fd::activity_event_handler_registered_event<
 			json_stream_tag,
 			os_services::io::output_file_descriptor_tag
 		>;
 
+		/**
+		 * \brief Constructs a writer
+		 */
 		explicit writer(size_t buffer_size = 65536):
 			m_buffer_size{buffer_size},
 			m_output_buffer{std::make_unique<char[]>(buffer_size)},
@@ -34,25 +48,42 @@ namespace Pipe::json_io
 			m_is_listening(false)
 		{}
 
+		/**
+		 * \brief Processes a "ready" event
+		 *
+		 * The processing of a ready event will try to flush any data that has not yet been written,
+		 * then it will continue to serialize queued JSON containers.
+		 *
+		 */
 		void handle_event(fd_ready_event const&);
 
+		/**
+		 * \brief Writes item_to_write to the stream
+		 */
 		void write(jopp::container&& item_to_write)
 		{
 			m_to_serialize.push(std::make_unique<serialization_ctxt>(std::move(item_to_write)));
-			handle_event(fd_ready_event{});
+			if(m_registration.fd.is_valid())
+			{ handle_event(fd_ready_event{}); }
 		}
 
+		/**
+		 * \brief Handles registration events
+		 */
 		void handle_event(
 			activity_event_handler_registered_event const& event
 		)
 		{ m_registration = event; }
 
-		auto get_buffer_size() const
-		{ return m_buffer_size; }
-
+		/**
+		 * \brief Returns the number of bytes that could not be written during fd_ready_event
+		 */
 		auto get_reminder_size() const
 		{ return std::size(m_reminder); }
 
+		/**
+		 * \brief Checks that the of JSON containers is empty
+		 */
 		auto serialization_queue_is_empty() const
 		{ return m_to_serialize.empty(); }
 

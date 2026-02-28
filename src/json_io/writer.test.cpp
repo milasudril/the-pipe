@@ -59,13 +59,10 @@ TESTCASE(Pipe_json_io_writer_buffer_full_before_queue_empty_no_pending_data_to_w
 	);
 	fcntl(io_channel.read_end().native_handle(), F_SETFL, O_NONBLOCK);
 
-	EXPECT_EQ(writer.get_buffer_size(), 16);
-
 	jopp::object stuff_to_write{};
 	stuff_to_write.insert("my_property", "This will be longer than 16 bytes");
 	writer.write(jopp::container{std::move(stuff_to_write)});
 
-	EXPECT_EQ(writer.get_buffer_size(), 16);
 	EXPECT_EQ(writer.get_reminder_size(), 0);
 
 	std::array<char, 16> bytes_written{};
@@ -91,7 +88,6 @@ TESTCASE(Pipe_json_io_writer_buffer_full_before_queue_empty_no_pending_data_to_w
 			.event_handler_store = &eh_store
 		}
 	);
-	EXPECT_EQ(writer.get_buffer_size(), 6144);
 
 	// Set pipe size and mark file descriptors as non-blocking
 	fcntl(io_channel.write_end(), F_SETPIPE_SZ, 8192);
@@ -118,12 +114,10 @@ TESTCASE(Pipe_json_io_writer_buffer_full_before_queue_empty_no_pending_data_to_w
 	// First write will trigger state change, since the I/O operation would have blocked
 	eh_store.expected_new_listening_status = Pipe::os_services::fd::activity_status::read_or_write;
 	writer.write(jopp::container{std::move(stuff_to_write)});
-	EXPECT_EQ(writer.get_buffer_size(), 6144);
 	EXPECT_EQ(writer.get_reminder_size(), 2048);
 
 	// Try to read again will fail since operation is still blocked
 	writer.handle_event(Pipe::json_io::writer::fd_ready_event{});
-	EXPECT_EQ(writer.get_buffer_size(), 6144);
 	EXPECT_EQ(writer.get_reminder_size(), 2048);
 
 	// Read the extra data written to fill up the pipe
@@ -148,7 +142,6 @@ TESTCASE(Pipe_json_io_writer_buffer_full_before_queue_empty_no_pending_data_to_w
 	// Now it should be possible to put more data into the pipe. Since we have read all content of
 	// the pipe, and the buffer size is less than the pipe, there should be no remaining bytes left.
 	writer.handle_event(Pipe::json_io::writer::fd_ready_event{});
-	EXPECT_EQ(writer.get_buffer_size(), 6144);
 	EXPECT_EQ(writer.get_reminder_size(), 0);
 
 	// Read more data
@@ -165,7 +158,6 @@ TESTCASE(Pipe_json_io_writer_buffer_full_before_queue_empty_no_pending_data_to_w
 
 	// Keep pumping data
 	writer.handle_event(Pipe::json_io::writer::fd_ready_event{});
-	EXPECT_EQ(writer.get_buffer_size(), 6144);
 	EXPECT_EQ(writer.get_reminder_size(), 19);
 
 	{
@@ -182,13 +174,11 @@ TESTCASE(Pipe_json_io_writer_buffer_full_before_queue_empty_no_pending_data_to_w
 	// Now, we have processed all data
 	eh_store.expected_new_listening_status = Pipe::os_services::fd::activity_status::read;
 	writer.handle_event(Pipe::json_io::writer::fd_ready_event{});
-	EXPECT_EQ(writer.get_buffer_size(), 6144);
 	EXPECT_EQ(writer.get_reminder_size(), 0);
 	EXPECT_EQ(writer.serialization_queue_is_empty(), true);
 
 	// Nothing happens when queue is empty
 	writer.handle_event(Pipe::json_io::writer::fd_ready_event{});
-	EXPECT_EQ(writer.get_buffer_size(), 6144);
 	EXPECT_EQ(writer.get_reminder_size(), 0);
 
 	// Fetch remaining data
@@ -243,7 +233,6 @@ TESTCASE(Pipe_json_io_writer_remote_fd_closed_when_trying_to_write_reminder)
 			.event_handler_store = &eh_store
 		}
 	);
-	EXPECT_EQ(writer.get_buffer_size(), 6144);
 
 	// Set pipe size and mark file descriptors as non-blocking
 	fcntl(io_channel.write_end(), F_SETPIPE_SZ, 8192);
@@ -270,7 +259,6 @@ TESTCASE(Pipe_json_io_writer_remote_fd_closed_when_trying_to_write_reminder)
 	// First write will trigger state change, since the I/O operation would have blocked
 	eh_store.expected_new_listening_status = Pipe::os_services::fd::activity_status::read_or_write;
 	writer.write(jopp::container{std::move(stuff_to_write)});
-	EXPECT_EQ(writer.get_buffer_size(), 6144);
 	EXPECT_EQ(writer.get_reminder_size(), 2048);
 
 	io_channel.close_read_end();
@@ -294,8 +282,6 @@ TESTCASE(Pipe_json_io_writer_remote_fd_closed_when_trying_to_write_new_data)
 		}
 	);
 	fcntl(io_channel.read_end().native_handle(), F_SETFL, O_NONBLOCK);
-
-	EXPECT_EQ(writer.get_buffer_size(), 16);
 
 	jopp::object stuff_to_write{};
 	stuff_to_write.insert("my_property", "This will be longer than 16 bytes");

@@ -135,6 +135,9 @@ namespace Pipe::json_io
 		 */
 		void handle_event(data_available_event const& event);
 
+		/**
+		 * \brief Handles registration events
+		 */
 		void handle_event(
 			activity_event_handler_registered_event const& event
 		)
