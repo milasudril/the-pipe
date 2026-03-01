@@ -99,6 +99,9 @@ namespace Pipe::json_rpc
 		jopp::object&& take_value()
 		{ return std::move(m_value); }
 
+		/**
+		 * \brief Gets the method of the request
+		 */
 		std::string_view method() const
 		{ return m_value.get_field_as<jopp::string>("method"); }
 
@@ -114,6 +117,9 @@ namespace Pipe::json_rpc
 	class context
 	{
 	public:
+		/**
+		 * \brief Creates a new request, given method and params
+		 */
 		std::pair<transaction_id, request> make_request(std::string&& method, jopp::object&& params)
 		{
 			auto const tx_id = m_transaction_id.next();
