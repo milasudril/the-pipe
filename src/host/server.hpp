@@ -16,16 +16,15 @@
 #include <cstdlib>
 #include <ctime>
 #include <jopp/parser.hpp>
-#include <random>
 #include <unordered_map>
 #include <jopp/serializer.hpp>
 
 namespace Pipe::host
 {
-	class client_process_repository:std::unordered_map<pid_t, std::unique_ptr<client_process>>
+	class client_process_repository:std::unordered_map<pid_t, std::shared_ptr<client_process>>
 	{
 	public:
-		using base = std::unordered_map<pid_t, std::unique_ptr<client_process>>;
+		using base = std::unordered_map<pid_t, std::shared_ptr<client_process>>;
 		using base::find;
 		using base::contains;
 		using base::begin;
@@ -70,7 +69,7 @@ namespace Pipe::host
 				std::span<os_services::fd::file_descriptor>{}
 			);
 
-			auto client_proc = std::make_unqiue<client_process>();
+			auto client_proc = std::make_shared<client_process>();
 
 			auto cfg_transaction = activity_event_handler_store.make_config_transaction()
 				.add<json_io::writer::json_stream_tag>(
@@ -79,12 +78,12 @@ namespace Pipe::host
 					os_services::fd::activity_status::none
 				)
 				.add<json_io::reader::json_stream_tag>(
-					json_io::reader{client_process::client_ctl_tag{}, std::ref(*client_proc)},
+					json_io::reader{client_process::client_ctl_tag{}, client_proc},
 					response_pipe.take_read_end(),
 					os_services::fd::activity_status::read
 				)
 				.add<json_io::reader::json_stream_tag>(
-					json_io::reader{client_process::log_stream_tag{}, std::ref(*client_proc)},
+					json_io::reader{client_process::log_stream_tag{}, client_proc},
 					logpipe.take_read_end(),
 					os_services::fd::activity_status::read
 				)
