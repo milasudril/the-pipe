@@ -10,10 +10,20 @@
  */
 namespace Pipe::json_rpc
 {
+	/**
+	 * \brief A transaction_id can be to identify a transaction (a request with a pending response)
+	 */
 	class transaction_id
 	{
 	public:
+		/**
+		 * \brief Default constructor
+		 */
 		constexpr transaction_id() = default;
+
+		/**
+		 * \brief Constructs a transaction_id from value
+		 */
 		constexpr explicit transaction_id(int64_t value):
 			m_value{value}
 		{
@@ -21,22 +31,36 @@ namespace Pipe::json_rpc
 			{ throw std::runtime_error{"JSON-RPC transaction id out of range"}; }
 		}
 
-		constexpr double value() const
-		{ return static_cast<double>(m_value); }
+		/**
+		 * \brief Returns the value as jopp::number, so it can be written to JSON
+		 */
+		constexpr jopp::number value() const
+		{ return static_cast<jopp::number>(m_value); }
 
-		constexpr transaction_id next()
+		/**
+		 * \brief Post-increments the transaction_id
+		 * \note This is useful for generating transaction_id:s
+		 */
+		[[nodiscard]] constexpr transaction_id next()
 		{
 			auto ret = *this;
 			*this = transaction_id{m_value + 1};
 			return ret;
 		}
 
+		/**
+		 * \brief A transaction_id supports all possible comparisons
+		 */
 		constexpr auto operator<=>(transaction_id const&) const = default;
 
 	private:
 		int64_t m_value{};
 	};
 
+	/**
+	 * \brief Ensures that obj has all fields required by this JSON-RPC implementation, and throws
+	 * and exception if it does not
+	 */
 	inline jopp::object ensure_required_fields(jopp::object&& obj)
 	{
 		if(!obj.contains("method"))
@@ -45,13 +69,23 @@ namespace Pipe::json_rpc
 		return std::move(obj);
 	}
 
+	/**
+	 * \brief A representation of a JSON-RPC request
+	 */
 	class request
 	{
 	public:
+		/**
+		 * \brief Constructs a request from a jopp::object, which is assumed to contain the entire
+		 *        request
+		 */
 		explicit request(jopp::object&& obj):
 			m_value{ensure_required_fields(std::move(obj))}
 		{}
 
+		/**
+		 * \brief Constructs a request from an id, a method name, and a set of parameters
+		 */
 		explicit request(transaction_id id, std::string_view method, jopp::object&& params):
 		{
 			m_value.insert("jsonrpc", "2.0");
@@ -60,6 +94,9 @@ namespace Pipe::json_rpc
 			m_value.insert("params", std::move(obj));
 		}
 
+		/**
+		 * \brief Moves the value out from the request
+		 */
 		jopp::object&& take_value()
 		{ return std::move(m_value); }
 
@@ -68,6 +105,10 @@ namespace Pipe::json_rpc
 		jopp::object m_value;
 	};
 
+	/**
+	 * \brief A context holds a transaction_id, that is used to generate requests. Thus, a context
+	 *        can act as a request factory
+	 */
 	class context
 	{
 	public:
@@ -81,7 +122,13 @@ namespace Pipe::json_rpc
 		transaction_id m_transaction_id;
 	};
 
-	jopp::object make_response(request&& req)
+	/**
+	 * \brief Creates a response object, given a request
+	 *
+	 * Using this function ensures that the response inherits the transaction_id from the request.
+	 * Also, the field "jsonrpc" is added for better conformance.
+	 */
+	inline jopp::object make_response(request&& req)
 	{
 		auto req_value = req.take_value();
 		jopp::object response;
@@ -91,7 +138,10 @@ namespace Pipe::json_rpc
 		return response;
 	}
 
-	jopp::object make_response(request&& req, jopp::object&& result)
+	/**
+	 * \brief Creates a response object, given a request and its result
+	 */
+	inline jopp::object make_response(request&& req, jopp::object&& result)
 	{
 		auto response = make_response(std::move(req));
 		response.insert("result", std::move(result));
@@ -104,8 +154,11 @@ namespace Pipe::json_rpc
 		{ obj.what() } -> std::same_as<char const*>;
 	};
 
-	template<class ExceptionLike>
-	jopp::object make_response(request&& req, ExceptionLike const& exception, int code = -32000)
+	/**
+	 * \brief Creates a response object, given a request and some exception-like object
+	 */
+	template<exception_like T>
+	inline jopp::object make_response(request&& req, T const& exception, int code = -32000)
 	{
 		auto response = make_response(std::move(req));
 		response.insert("code", code);
