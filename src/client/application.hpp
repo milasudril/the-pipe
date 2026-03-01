@@ -41,6 +41,10 @@ namespace Pipe::client
 				set_jsonrpc_fields(std::move(object), response);
 				m_ctl_output.write(jopp::container{std::move(response)});
 			}
+			else
+			{
+				throw std::runtime_error{"Unsupported method"};
+			}
 		}
 
 		json_io::writer& get_ctl_output()
@@ -51,12 +55,18 @@ namespace Pipe::client
 
 		void handle_request(jopp::array&& reqs)
 		{
-					for(jopp::value& item: std::move(reqs))
+			for(jopp::value& item: std::move(reqs))
 			{ handle_request(std::move(item.get<jopp::object>())); }
 		}
 
 		void handle_event(json_io::parser_error_event<ctl_request_tag>)
 		{}
+
+		void handle_event(json_io::input_closed_event<ctl_request_tag>)
+		{ m_should_exit = true; }
+
+		bool should_exit() const
+		{ return m_should_exit; }
 
 		static std::unique_ptr<application> create();
 
@@ -65,6 +75,7 @@ namespace Pipe::client
 	private:
 		json_io::writer m_ctl_output;
 		virtual client_ctl::client_application_info get_client_application_info() const = 0;
+		bool m_should_exit{false};
 	};
 }
 

@@ -112,7 +112,7 @@ TESTCASE(Pipe_json_io_writer_buffer_full_before_queue_empty_no_pending_data_to_w
 	std::string received_data;
 
 	// First write will trigger state change, since the I/O operation would have blocked
-	eh_store.expected_new_listening_status = Pipe::os_services::fd::activity_status::read_or_write;
+	eh_store.expected_new_listening_status = Pipe::os_services::fd::activity_status::write;
 	writer.write(jopp::container{std::move(stuff_to_write)});
 	EXPECT_EQ(writer.get_reminder_size(), 2048);
 
@@ -172,7 +172,7 @@ TESTCASE(Pipe_json_io_writer_buffer_full_before_queue_empty_no_pending_data_to_w
 	}
 
 	// Now, we have processed all data
-	eh_store.expected_new_listening_status = Pipe::os_services::fd::activity_status::read;
+	eh_store.expected_new_listening_status = Pipe::os_services::fd::activity_status::none;
 	writer.handle_event(Pipe::json_io::writer::fd_ready_event{});
 	EXPECT_EQ(writer.get_reminder_size(), 0);
 	EXPECT_EQ(writer.serialization_queue_is_empty(), true);
@@ -257,7 +257,7 @@ TESTCASE(Pipe_json_io_writer_remote_fd_closed_when_trying_to_write_reminder)
 	std::string received_data;
 
 	// First write will trigger state change, since the I/O operation would have blocked
-	eh_store.expected_new_listening_status = Pipe::os_services::fd::activity_status::read_or_write;
+	eh_store.expected_new_listening_status = Pipe::os_services::fd::activity_status::write;
 	writer.write(jopp::container{std::move(stuff_to_write)});
 	EXPECT_EQ(writer.get_reminder_size(), 2048);
 

@@ -1,6 +1,7 @@
 //@	{"target":{"name":"writer.o"}}
 
 #include "./writer.hpp"
+#include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/os_services/io/io.hpp"
 
 void Pipe::json_io::writer::enable_listening()
@@ -9,7 +10,7 @@ void Pipe::json_io::writer::enable_listening()
 	{
 		m_registration.event_handler_store->update_listening_status(
 			m_registration.event_handler,
-			os_services::fd::activity_status::read_or_write
+			os_services::fd::activity_status::write
 		);
 		m_is_listening = true;
 	}
@@ -21,7 +22,7 @@ void Pipe::json_io::writer::disable_listening()
 	{
 		m_registration.event_handler_store->update_listening_status(
 			m_registration.event_handler,
-			os_services::fd::activity_status::read
+			os_services::fd::activity_status::none
 		);
 		m_is_listening = false;
 	}

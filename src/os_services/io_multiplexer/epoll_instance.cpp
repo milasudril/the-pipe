@@ -132,15 +132,15 @@ void Pipe::os_services::io_multiplexer::epoll_instance::wait_for_and_distpatch_e
 
 	for(auto const& item : std::span{std::data(events), static_cast<size_t>(res)})
 	{
+		auto const event_handler = static_cast<epoll_entry_data_header*>(item.data.ptr);
 #ifdef DEBUG_RUNAWAY_EPOLL
 		if(callcount == 10000)
 		{
 			fclose(debug);
 			abort();
 		}
-		fprintf(debug, "Status = %08x\n", item.events);
+		fprintf(debug, "%d Status = %08x\n", event_handler->fd.native_handle(), item.events);
 #endif
-		auto const event_handler = static_cast<epoll_entry_data_header*>(item.data.ptr);
 		event_handler->handle_event(
 			event_handler + 1,  // Payload follows directly after header
 			fd::activity_event<void, fd::generic_fd_tag>{

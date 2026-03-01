@@ -24,6 +24,9 @@ namespace
 			parser_error = jopp::parser_error_code::completed;
 		}
 
+		void handle_event(Pipe::json_io::input_closed_event<void>)
+		{}
+
 		void handle_event(Pipe::json_io::parser_error_event<void> event)
 		{ parser_error = event.ec; }
 	};

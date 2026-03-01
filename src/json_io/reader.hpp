@@ -5,6 +5,7 @@
 
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/fd/activity_event_handler_store.hpp"
+#include "src/utils/utils.hpp"
 
 #include <jopp/types.hpp>
 #include <jopp/parser.hpp>
@@ -24,6 +25,10 @@ namespace Pipe::json_io
 		jopp::parser_error_code ec;
 	};
 
+	template<class Tag>
+	struct input_closed_event
+	{};
+
 	/**
 	 * \brief Concept for an entity that can receive log items
 	 *
@@ -35,11 +40,13 @@ namespace Pipe::json_io
 	concept container_receiver = requires(
 		T obj,
 		container_loaded_event<Tag>&& item,
-		parser_error_event<Tag> ec
+		parser_error_event<Tag> ec,
+		input_closed_event<Tag> ice
 	)
 	{
 		{ utils::unwrap(obj).handle_event(std::move(item)) } -> std::same_as<void>;
 		{ utils::unwrap(obj).handle_event(ec) } -> std::same_as<void>;
+		{ utils::unwrap(obj).handle_event(ice) } -> std::same_as<void>;
 	};
 
 	/**
@@ -52,6 +59,7 @@ namespace Pipe::json_io
 
 		virtual void handle_event(jopp::container&& item) = 0;
 		virtual void handle_event(jopp::parser_error_code ec) = 0;
+		virtual void input_closed() = 0;
 	};
 
 	/**
@@ -70,6 +78,9 @@ namespace Pipe::json_io
 
 		void handle_event(jopp::parser_error_code ec) override
 		{ utils::unwrap(m_object).handle_event(parser_error_event<Tag>{ec}); }
+
+		void input_closed() override
+		{ utils::unwrap(m_object).handle_event(input_closed_event<Tag>{}); }
 
 	private:
 		ContainerReceiver m_object;

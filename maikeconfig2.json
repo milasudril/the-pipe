@@ -32,7 +32,6 @@
         "compiler": {
           "config": {
             "cflags": [
-              "-DGEOSIMD_MAX_BUILTIN_VECTOR_BYTE_SIZE=32",
               "-Wall",
               "-march=native",
               "-Wextra",
@@ -67,7 +66,6 @@
               "run"
             ],
             "cflags": [
-              "-DGEOSIMD_MAX_BUILTIN_VECTOR_BYTE_SIZE=32",
               "-I.",
               "-march=native",
               "-Wall",

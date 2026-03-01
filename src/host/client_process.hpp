@@ -29,6 +29,7 @@ namespace Pipe::host
 
 		void handle_event(json_io::container_loaded_event<log_stream_tag>&& event);
 		void handle_event(json_io::parser_error_event<log_stream_tag> event);
+		void handle_event(json_io::input_closed_event<log_stream_tag>);
 
 		void handle_event(ctl_response_event const&)
 		{
@@ -37,5 +38,6 @@ namespace Pipe::host
 		void handle_event(ctl_request_event const&)
 		{
 		}
+
 	};
 }

@@ -48,10 +48,10 @@ int main()
 			Pipe::os_services::io::output_file_descriptor{
 				Pipe::os_services::io::output_file_descriptor_ref{STDOUT_FILENO}
 			},
-			Pipe::os_services::fd::activity_status::read
+			Pipe::os_services::fd::activity_status::none
 		);
 
-		while(!fd_activity_monitor.is_empty())
+		while(!app->should_exit())
 		{
 			fd_activity_monitor.wait_for_and_distpatch_events();
 		}
