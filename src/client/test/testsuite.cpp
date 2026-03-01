@@ -70,7 +70,7 @@ TESTCASE(Pipe_client_main_sucessful_start)
 	resp_pipe.close_read_end();
 
 	auto const log_item = fetch_log_item(proc_output.read_end());
-	EXPECT_EQ(log_item.severity, Pipe::log::item::severity::info);
+	EXPECT_EQ(log_item.level, Pipe::log::item::level::info);
 	EXPECT_EQ(log_item.message, "Process exited normally");
 
 	auto const proc_res = Pipe::os_services::proc_mgmt::wait(res.second.get());

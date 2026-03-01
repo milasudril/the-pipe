@@ -19,14 +19,14 @@ namespace Pipe::json_log
 			std::chrono::duration<double>(item.when.time_since_epoch()).count()
 		);
 		ret.insert("message", item.message);
-		ret.insert("severity", to_string(item.severity));
+		ret.insert("level", to_string(item.level));
 		return ret;
 	}
 
 	/**
 	 * \brief Converts a jopp::object into an item
 	 * \note If conversion fails, a message wrapped in an std::unexpected is returned
-	 * \note If the severity conveyed by obj is unknown, it is mapped to log::item::severity::info
+	 * \note If the level conveyed by obj is unknown, it is mapped to log::item::level::info
 	 */
 	inline std::expected<log::item, char const*> make_log_item(jopp::object const& obj)
 	{
@@ -34,18 +34,18 @@ namespace Pipe::json_log
 		if(when == nullptr)
 		{ return std::unexpected{"Failed to extract mandatory field `when` from received log item"}; }
 
-		auto const severity = obj.try_get_field_as<std::string>("severity");
-		if(severity == nullptr)
-		{ return std::unexpected{"Failed to extract mandatory field `severity` from received log item"}; }
+		auto const level = obj.try_get_field_as<std::string>("level");
+		if(level == nullptr)
+		{ return std::unexpected{"Failed to extract mandatory field `level` from received log item"}; }
 
 		auto const message = obj.try_get_field_as<std::string>("message");
 		if(message == nullptr)
-		{ return std::unexpected{"Failed to extract mandatory field `severity` from received log item"}; }
+		{ return std::unexpected{"Failed to extract mandatory field `level` from received log item"}; }
 
 		return log::item{
 			.when = log::clock::time_point{}
 				+ duration_cast<log::clock::duration>(std::chrono::duration<double>{*when}),
-			.severity = log::make_severity_with_fallback(*severity, log::item::severity::info),
+			.level = log::make_level_with_fallback(*level, log::item::level::info),
 			.message = std::move(*message)
 		};
 	}

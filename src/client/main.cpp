@@ -58,11 +58,11 @@ int main()
 	}
 	catch(std::exception const& err)
 	{
-		write_message(Pipe::log::item::severity::error, err.what());
+		write_message(Pipe::log::item::level::error, err.what());
 		return -1;
 	}
 
-	write_message(Pipe::log::item::severity::info, "Process exited normally");
+	write_message(Pipe::log::item::level::info, "Process exited normally");
 
 	return 0;
 }

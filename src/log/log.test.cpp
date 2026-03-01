@@ -7,7 +7,7 @@
 
 TESTCASE(Pipe_log_write_message_null_cfg_is_noop)
 {
-	write_message(Pipe::log::item::severity::warning, "Foo {}", 1243);
+	write_message(Pipe::log::item::level::warning, "Foo {}", 1243);
 }
 
 namespace
@@ -49,9 +49,9 @@ TESTCASE(Pipe_log_configure_and_write_message)
 			}
 		};
 
-		write_message(Pipe::log::item::severity::info, "This is an info message {}", 1);
-		write_message(Pipe::log::item::severity::warning, "This is a warning message {}", 2);
-		write_message(Pipe::log::item::severity::error, "This is an error message {}", 3);
+		write_message(Pipe::log::item::level::info, "This is an info message {}", 1);
+		write_message(Pipe::log::item::level::warning, "This is a warning message {}", 2);
+		write_message(Pipe::log::item::level::error, "This is an error message {}", 3);
 
 		EXPECT_EQ(writer.written_items.size(), 3);
 
@@ -60,7 +60,7 @@ TESTCASE(Pipe_log_configure_and_write_message)
 			auto& item = writer.written_items[0];
 			EXPECT_EQ(item.when,  Pipe::log::clock::time_point{});
 			EXPECT_EQ(item.message, "This is an info message 1");
-			EXPECT_EQ(item.severity, Pipe::log::item::severity::info);
+			EXPECT_EQ(item.level, Pipe::log::item::level::info);
 		}
 
 		{
@@ -68,7 +68,7 @@ TESTCASE(Pipe_log_configure_and_write_message)
 			auto& item = writer.written_items[1];
 			EXPECT_EQ(item.when,  Pipe::log::clock::time_point{} + std::chrono::seconds{1});
 			EXPECT_EQ(item.message, "This is a warning message 2");
-			EXPECT_EQ(item.severity, Pipe::log::item::severity::warning);
+			EXPECT_EQ(item.level, Pipe::log::item::level::warning);
 		}
 
 		{
@@ -76,25 +76,25 @@ TESTCASE(Pipe_log_configure_and_write_message)
 			auto& item = writer.written_items[2];
 			EXPECT_EQ(item.when,  Pipe::log::clock::time_point{} + std::chrono::seconds{2});
 			EXPECT_EQ(item.message, "This is an error message 3");
-			EXPECT_EQ(item.severity, Pipe::log::item::severity::error);
+			EXPECT_EQ(item.level, Pipe::log::item::level::error);
 		}
 	}
 
 	auto written_items = writer.written_items;
-	write_message(Pipe::log::item::severity::info, "This is an info message {}", 1);
+	write_message(Pipe::log::item::level::info, "This is an info message {}", 1);
 	EXPECT_EQ(writer.written_items, written_items);
 }
 
-TESTCASE(Pipe_log_severity_to_string)
+TESTCASE(Pipe_log_level_to_string)
 {
-	EXPECT_EQ(to_string(Pipe::log::item::severity::info), std::string_view{"info"});
-	EXPECT_EQ(to_string(Pipe::log::item::severity::warning), std::string_view{"warning"});
-	EXPECT_EQ(to_string(Pipe::log::item::severity::error), std::string_view{"error"});
+	EXPECT_EQ(to_string(Pipe::log::item::level::info), std::string_view{"info"});
+	EXPECT_EQ(to_string(Pipe::log::item::level::warning), std::string_view{"warning"});
+	EXPECT_EQ(to_string(Pipe::log::item::level::error), std::string_view{"error"});
 }
 
-TESTCASE(Pipe_log_severity_from_string)
+TESTCASE(Pipe_log_level_from_string)
 {
-	EXPECT_EQ(Pipe::log::make_severity("info"), Pipe::log::item::severity::info);
-	EXPECT_EQ(Pipe::log::make_severity("warning"), Pipe::log::item::severity::warning);
-	EXPECT_EQ(Pipe::log::make_severity("error"), Pipe::log::item::severity::error);
+	EXPECT_EQ(Pipe::log::make_level("info"), Pipe::log::item::level::info);
+	EXPECT_EQ(Pipe::log::make_level("warning"), Pipe::log::item::level::warning);
+	EXPECT_EQ(Pipe::log::make_level("error"), Pipe::log::item::level::error);
 }

@@ -26,12 +26,12 @@ namespace Pipe::log
 	struct item
 	{
 		/**
-		 * \brief The severity of a log message
+		 * \brief The level of a log message
 		 */
-		enum class severity{info, warning, error};
+		enum class level{info, warning, error};
 
 		clock::time_point when;
-		enum severity severity;
+		enum level level;
 		std::string message;
 
 		bool operator==(item const&) const = default;
@@ -39,19 +39,19 @@ namespace Pipe::log
 	};
 
 		/**
-	 * \brief Converts the severity value to a string
+	 * \brief Converts the level value to a string
 	 */
-	constexpr char const* to_string(enum item::severity value)
+	constexpr char const* to_string(enum item::level value)
 	{
 		switch(value)
 		{
-			case item::severity::info:
+			case item::level::info:
 				return "info";
 
-			case item::severity::warning:
+			case item::level::warning:
 				return "warning";
 
-			case item::severity::error:
+			case item::level::error:
 				return "error";
 		}
 
@@ -59,38 +59,38 @@ namespace Pipe::log
 	}
 
 	/**
-	 * \brief Converts str to a severity value
+	 * \brief Converts str to a level value
 	 */
-	constexpr enum item::severity make_severity(std::string_view str)
+	constexpr enum item::level make_level(std::string_view str)
 	{
 		if(str == "info")
-		{ return item::severity::info; }
+		{ return item::level::info; }
 		else
 		if(str == "warning")
-		{ return item::severity::warning; }
+		{ return item::level::warning; }
 		else
 		if(str == "error")
-		{ return item::severity::error; }
+		{ return item::level::error; }
 
-		throw std::runtime_error{"Unknown severity"};
+		throw std::runtime_error{"Unknown level"};
 	}
 
 	/**
-	 * \brief Converts str to a severity value, with a fallback
+	 * \brief Converts str to a level value, with a fallback
 	 */
-	constexpr enum item::severity make_severity_with_fallback(
+	constexpr enum item::level make_level_with_fallback(
 		std::string_view str,
-		enum item::severity fallback
+		enum item::level fallback
 	)
 	{
 		if(str == "info")
-		{ return item::severity::info; }
+		{ return item::level::info; }
 		else
 		if(str == "warning")
-		{ return item::severity::warning; }
+		{ return item::level::warning; }
 		else
 		if(str == "error")
-		{ return item::severity::error; }
+		{ return item::level::error; }
 
 		return fallback;
 	}
@@ -174,16 +174,16 @@ namespace Pipe::log
 	/**
 	 * \brief Writes a pre-formatted log message using the current writer
 	 */
-	void write_message(enum item::severity severity, std::string&& message);
+	void write_message(enum item::level level, std::string&& message);
 
 	/**
 	 * \brief Formats a log message and writes it using the current writer
 	 */
 	template<class ... Args>
-	void write_message(enum item::severity severity, std::format_string<Args...> fmt, Args... args) noexcept
+	void write_message(enum item::level level, std::format_string<Args...> fmt, Args... args) noexcept
 	{
 		try
-		{ write_message(severity, std::format(fmt, std::forward<Args>(args)...)); }
+		{ write_message(level, std::format(fmt, std::forward<Args>(args)...)); }
 		catch(...)
 		{ abort(); }
 	}
