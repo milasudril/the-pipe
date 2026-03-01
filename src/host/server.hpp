@@ -31,23 +31,6 @@ namespace Pipe::host
 		using base::end;
 		using base::size;
 
-		struct proc_mgmt_tag{};
-
-		template<class... Args>
-		void handle_event(Args...)
-		{
-			// TODO: handle registration events
-		}
-
-		void handle_event(
-			os_services::fd::activity_event<proc_mgmt_tag, os_services::proc_mgmt::pidfd_tag> const&
-		)
-		{
-	// FIXME:
-	//		if(can_read(event.status))
-	//		{ source.remove(event.event_handler); }
-		}
-
 		void load(
 			os_services::fd::activity_event_handler_store& activity_event_handler_store,
 			std::filesystem::path const& client_binary
@@ -87,8 +70,8 @@ namespace Pipe::host
 					logpipe.take_read_end(),
 					os_services::fd::activity_status::read
 				)
-				.add<proc_mgmt_tag>(
-					std::ref(*this),
+				.add<void>(
+					client_proc,
 					std::move(process.second),
 					os_services::fd::activity_status::read
 				);
@@ -98,6 +81,7 @@ namespace Pipe::host
 
 			cfg_transaction.commit();
 		}
+	private:
 	};
 }
 
