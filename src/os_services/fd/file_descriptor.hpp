@@ -57,7 +57,7 @@ namespace Pipe::os_services::fd
 
 		/**
 		 * \brief Constructs a tagged_file_descriptor_ref from nullptr_t
-		 * \post Tis valid will return false
+		 * \post is_valid will return false
 		 */
 		tagged_file_descriptor_ref(std::nullptr_t) noexcept: m_ref{-1} {}
 		//@}

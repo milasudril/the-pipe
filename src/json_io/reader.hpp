@@ -35,6 +35,7 @@ namespace Pipe::json_io
 	 * \param obj The object to test
 	 * \param item The decoded log item
 	 * \param ec An error code issued by the JSON parser
+	 * \param ice An event that indicates that the input file descriptor has been closed
 	 */
 	template<class T, class Tag>
 	concept container_receiver = requires(
