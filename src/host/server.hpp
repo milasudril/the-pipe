@@ -70,7 +70,7 @@ namespace Pipe::host
 				std::span<os_services::fd::file_descriptor>{}
 			);
 
-			auto client_proc = std::unique_ptr<client_process>();
+			auto client_proc = std::make_unqiue<client_process>();
 
 			auto cfg_transaction = activity_event_handler_store.make_config_transaction()
 				.add<json_io::writer::json_stream_tag>(
