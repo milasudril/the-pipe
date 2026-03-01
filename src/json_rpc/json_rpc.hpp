@@ -17,7 +17,7 @@ namespace Pipe::json_rpc
 		constexpr explicit transaction_id(int64_t value):
 			m_value{value}
 		{
-			if(value < 0 || value > 0x1fffffffffffffll)
+			if(value < 0 || value > jopp::max_safe_integer)
 			{ throw std::runtime_error{"JSON-RPC transaction id out of range"}; }
 		}
 
