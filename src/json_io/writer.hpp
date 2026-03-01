@@ -62,7 +62,7 @@ namespace Pipe::json_io
 		 */
 		void write(jopp::container&& item_to_write)
 		{
-			m_to_serialize.push(std::make_unique<serialization_ctxt>(std::move(item_to_write)));
+			m_to_serialize.push(std::make_unique<serialization_ctxt>(std::move(item_to_write), m_do_pretty_print));
 			if(m_registration.fd.is_valid())
 			{ handle_event(fd_ready_event{}); }
 		}
@@ -78,6 +78,7 @@ namespace Pipe::json_io
 		)
 		{
 			m_registration = event;
+			m_do_pretty_print = ::isatty(m_registration.fd.native_handle());
 			handle_event(fd_ready_event{});
 		}
 
@@ -99,6 +100,7 @@ namespace Pipe::json_io
 		std::span<char const> m_reminder;
 		activity_event_handler_registered_event m_registration;
 		bool m_is_listening;
+		bool m_do_pretty_print{false};
 
 		void enable_listening();
 
@@ -113,9 +115,9 @@ namespace Pipe::json_io
 			serialization_ctxt& operator=(serialization_ctxt const&) = delete;
 			~serialization_ctxt() = default;
 
-			explicit serialization_ctxt(jopp::container&& obj):
+			explicit serialization_ctxt(jopp::container&& obj, bool pretty_print):
 				m_object{std::move(obj)},
-				m_serializer{m_object}
+				m_serializer{m_object, pretty_print}
 			{ }
 
 			jopp::serialize_result serialize_to(std::span<char> buffer)
