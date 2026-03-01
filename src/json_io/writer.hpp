@@ -67,6 +67,9 @@ namespace Pipe::json_io
 			{ handle_event(fd_ready_event{}); }
 		}
 
+		void write(jopp::object&& item_to_write)
+		{ write(jopp::container{std::move(item_to_write)}); }
+
 		/**
 		 * \brief Handles registration events
 		 */

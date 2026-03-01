@@ -65,7 +65,6 @@ namespace Pipe::json_rpc
 	{
 		if(!obj.contains("method"))
 		{ throw std::runtime_error{"JSON-RPC object is missing mandatory field `method`"}; }
-
 		return std::move(obj);
 	}
 
@@ -86,12 +85,12 @@ namespace Pipe::json_rpc
 		/**
 		 * \brief Constructs a request from an id, a method name, and a set of parameters
 		 */
-		explicit request(transaction_id id, std::string_view method, jopp::object&& params):
+		explicit request(transaction_id id, std::string&& method, jopp::object&& params)
 		{
 			m_value.insert("jsonrpc", "2.0");
 			m_value.insert("id", id.value());
-			m_value.insert("method", method);
-			m_value.insert("params", std::move(obj));
+			m_value.insert("method", std::move(method));
+			m_value.insert("params", std::move(params));
 		}
 
 		/**
@@ -99,6 +98,9 @@ namespace Pipe::json_rpc
 		 */
 		jopp::object&& take_value()
 		{ return std::move(m_value); }
+
+		std::string_view method() const
+		{ return m_value.get_field_as<jopp::string>("method"); }
 
 	private:
 		transaction_id m_id;
@@ -112,10 +114,10 @@ namespace Pipe::json_rpc
 	class context
 	{
 	public:
-		std::pair<transaction_id, request> make_request(std::string_view method, jopp::object&& params)
+		std::pair<transaction_id, request> make_request(std::string&& method, jopp::object&& params)
 		{
 			auto const tx_id = m_transaction_id.next();
-			return std::pair{tx_id, request{tx_id, method, std::move(params)}};
+			return std::pair{tx_id, request{tx_id, std::move(method), std::move(params)}};
 		}
 
 	private:
@@ -145,7 +147,7 @@ namespace Pipe::json_rpc
 	{
 		auto response = make_response(std::move(req));
 		response.insert("result", std::move(result));
-		return result;
+		return response;
 	}
 
 	template<class T>
@@ -161,7 +163,7 @@ namespace Pipe::json_rpc
 	inline jopp::object make_response(request&& req, T const& exception, int code = -32000)
 	{
 		auto response = make_response(std::move(req));
-		response.insert("code", code);
+		response.insert("code", static_cast<jopp::number>(code));
 		response.insert("message", exception.what());
 		return response;
 	}
