@@ -30,14 +30,14 @@ int main()
 
 	try
 	{
-		std::shared_ptr<Pipe::client::application> app = Pipe::client::application::create();
+		auto app = Pipe::client::application::create();
 		Pipe::os_services::io_multiplexer::epoll_instance fd_activity_monitor{};
 
 		fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
 		fcntl(STDOUT_FILENO, F_SETFL, O_NONBLOCK);
 
 		std::ignore = fd_activity_monitor.add<Pipe::json_io::reader::json_stream_tag>(
-			Pipe::json_io::reader{Pipe::client::application::ctl_request_tag{}, app},
+			Pipe::json_io::reader{Pipe::client::application::ctl_request_tag{}, std::ref(*app)},
 			Pipe::os_services::io::input_file_descriptor{
 				Pipe::os_services::io::input_file_descriptor_ref{STDIN_FILENO}
 			},
