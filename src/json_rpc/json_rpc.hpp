@@ -169,8 +169,10 @@ namespace Pipe::json_rpc
 	inline jopp::object make_response(request&& req, T const& exception, int code = -32000)
 	{
 		auto response = make_response(std::move(req));
-		response.insert("code", static_cast<jopp::number>(code));
-		response.insert("message", exception.what());
+		jopp::object error;
+		error.insert("code", static_cast<jopp::number>(code));
+		error.insert("message", exception.what());
+		response.insert("error", std::move(error));
 		return response;
 	}
 }
