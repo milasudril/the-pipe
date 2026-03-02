@@ -57,7 +57,14 @@ namespace Pipe::host
 		void handle_event(json_io::parser_error_event<log_stream_tag> event);
 		void handle_event(json_io::input_closed_event<log_stream_tag>);
 
-		void handle_event(json_io::container_loaded_event<client_ctl_tag>&& event);
+		void handle_event(json_io::container_loaded_event<client_ctl_tag>&& event)
+		{
+			std::move(event.obj).visit([this]<class T>(T&& obj){
+				handle_ctl_response(std::forward<T>(obj));
+			});
+		}
+
+
 		void handle_event(json_io::parser_error_event<client_ctl_tag> event);
 		void handle_event(json_io::input_closed_event<client_ctl_tag>);
 
@@ -80,6 +87,24 @@ namespace Pipe::host
 		std::filesystem::path m_binary;
 		client_ctl::client_application_info m_appinfo;
 
+		void handle_ctl_response(jopp::object&& obj)
+		{
+			json_rpc::transaction_id id{static_cast<int64_t>(obj.get_field_as<jopp::number>("id"))};
+			auto i = std::ranges::find_if(
+				m_response_callbacks,
+				[id](auto const& item){
+					return item.first == id;
+				}
+			);
+			if(i != std::end(m_response_callbacks))
+			{
+				i->second(std::move(obj.get_field_as<jopp::object>("response")));
+				m_response_callbacks.erase(i);
+			}
+		}
+
+		void handle_ctl_response(jopp::array&&)
+		{}
 
 		template<class Callback>
 		void send_ctl_request(std::string&& method, jopp::object&& params, Callback&& cb)
