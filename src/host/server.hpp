@@ -21,7 +21,9 @@
 
 namespace Pipe::host
 {
-	class client_process_repository:std::unordered_map<pid_t, std::shared_ptr<client_process>>
+	class client_process_repository:
+		public process_manager,
+		private std::unordered_map<pid_t, std::shared_ptr<client_process>>
 	{
 	public:
 		using base = std::unordered_map<pid_t, std::shared_ptr<client_process>>;
@@ -33,7 +35,7 @@ namespace Pipe::host
 
 		void load(
 			os_services::fd::activity_event_handler_store& activity_event_handler_store,
-			std::filesystem::path const& client_binary
+			std::filesystem::path&& client_binary
 		)
 		{
 			os_services::ipc::pipe logpipe;
@@ -52,7 +54,7 @@ namespace Pipe::host
 				std::span<os_services::fd::file_descriptor>{}
 			);
 
-			auto client_proc = std::make_shared<client_process>();
+			auto client_proc = std::make_shared<client_process>(*this, process.first, std::move(client_binary));
 
 			auto cfg_transaction = activity_event_handler_store.make_config_transaction()
 				.add<json_io::writer::json_stream_tag>(

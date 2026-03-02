@@ -3,6 +3,7 @@
 #include "src/json_io/writer.hpp"
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/proc_mgmt/proc_mgmt.hpp"
+#include <filesystem>
 #include <jopp/parser.hpp>
 
 namespace Pipe::host
@@ -31,6 +32,16 @@ namespace Pipe::host
 				os_services::proc_mgmt::pidfd_tag
 			>;
 
+		explicit client_process(
+			process_manager& proc_manager,
+			pid_t pid,
+			std::filesystem::path&& binary
+		):
+			m_proc_manager{proc_manager},
+			m_pid{pid},
+			m_binary{std::move(binary)}
+		{}
+
 		void handle_event(json_io::container_loaded_event<log_stream_tag>&& event);
 		void handle_event(json_io::parser_error_event<log_stream_tag> event);
 		void handle_event(json_io::input_closed_event<log_stream_tag>);
@@ -52,5 +63,9 @@ namespace Pipe::host
 	private:
 		json_io::writer m_ctl_output;
 		proc_activity_event_handler_registered_event m_registration;
+
+		std::reference_wrapper<process_manager> m_proc_manager;
+		pid_t m_pid;
+		std::filesystem::path m_binary;
 	};
 }
