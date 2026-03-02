@@ -1,8 +1,11 @@
 #include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/json_io/reader.hpp"
 #include "src/json_io/writer.hpp"
+#include "src/json_rpc/json_rpc.hpp"
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/proc_mgmt/proc_mgmt.hpp"
+#include "src/client_ctl/client_application_info.hpp"
+
 #include <filesystem>
 #include <jopp/parser.hpp>
 
@@ -40,7 +43,15 @@ namespace Pipe::host
 			m_proc_manager{proc_manager},
 			m_pid{pid},
 			m_binary{std::move(binary)}
-		{}
+		{
+			send_ctl_request(
+				"get_client_application_info",
+				jopp::object{},
+				[this](jopp::object&& response){
+					m_appinfo = client_ctl::make_client_application_info(response);
+				}
+			);
+		}
 
 		void handle_event(json_io::container_loaded_event<log_stream_tag>&& event);
 		void handle_event(json_io::parser_error_event<log_stream_tag> event);
@@ -67,5 +78,19 @@ namespace Pipe::host
 		std::reference_wrapper<process_manager> m_proc_manager;
 		pid_t m_pid;
 		std::filesystem::path m_binary;
+		client_ctl::client_application_info m_appinfo;
+
+
+		template<class Callback>
+		void send_ctl_request(std::string&& method, jopp::object&& params, Callback&& cb)
+		{
+			auto [id, request] = m_json_rpc_ctxt.make_request(std::move(method), std::move(params));
+			m_ctl_output.write(request.take_value());
+			m_response_callbacks.push_back(std::pair{id, std::move(cb)});
+		}
+
+		using response_callback = std::move_only_function<void(jopp::object&&)>;
+		json_rpc::context m_json_rpc_ctxt;
+		std::deque<std::pair<json_rpc::transaction_id, response_callback>> m_response_callbacks;
 	};
 }
