@@ -3,7 +3,8 @@ left to right direction
 component host_application {
 	component client{
 		portin log_in
-		port ctl_host
+		portin ctl_in
+		portout ctl_out
 		portout decoded_log_msg
 	}
 
@@ -19,14 +20,16 @@ component host_application {
 }
 
 component client_application {
-	port ctl_client
-	portout log_out
+	portin stdin
+	portout stdout
+	portout stderr
 	portin data_in
 	portout data_out
 }
 
-log_out -up-> log_in: <<pipe>>
-ctl_client <-up-> ctl_host: <<unix socket>>
+ctl_out -up-> stdin: <<pipe>>
+stdout -up-> ctl_in: <<pipe>>
+stderr -up-> log_in: <<pipe>>
 decoded_log_msg -> log_messages_in
 log_messages_out -right-> log
 @enduml
