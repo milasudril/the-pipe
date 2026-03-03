@@ -3,7 +3,9 @@
 
 #include <jopp/types.hpp>
 #include <cstdint>
+#include <format>
 #include <stdexcept>
+#include <functional>
 
 namespace Pipe::json_rpc
 {
@@ -52,6 +54,37 @@ namespace Pipe::json_rpc
 
 	private:
 		int64_t m_value{};
+	};
+
+	class transaction
+	{
+	public:
+		explicit transaction(std::move_only_function<void(jopp::object&&)>&& on_completed):
+			m_on_completed{std::move(on_completed)}
+		{}
+
+		void finalize(jopp::object&& obj)
+		{
+			if(obj.get_field_as<jopp::string>("jsonrpc") != "2.0")
+			{ throw std::runtime_error{"Unsupported JSON-RPC version"}; }
+
+			auto result = obj.try_get_field_as<jopp::object>("result");
+			auto error = obj.try_get_field_as<jopp::object>("error");
+			if(result != nullptr && error != nullptr)
+			{ throw std::runtime_error{"Ambiguous JSON-RPC response"}; }
+
+			if(result != nullptr)
+			{ m_on_completed(std::move(*result)); }
+			else
+			{
+				auto const code = static_cast<int>(error->get_field_as<jopp::number>("code"));
+				auto const& message = error->get_field_as<jopp::string>("message");
+				throw std::runtime_error{std::format("JSON-RPC remote error {}: {}", code, message)};
+			}
+		}
+
+	private:
+		std::move_only_function<void(jopp::object&&)> m_on_completed;
 	};
 }
 #endif
