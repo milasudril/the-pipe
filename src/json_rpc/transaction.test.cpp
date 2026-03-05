@@ -3,6 +3,7 @@
 #include "./transaction.hpp"
 #include "testfwk/testsuite.hpp"
 
+#include <jopp/types.hpp>
 #include <testfwk/testfwk.hpp>
 
 TESTCASE(Pipe_json_rpc_transaction_id_default_value)
@@ -45,7 +46,7 @@ TESTCASE(Pipe_json_rpc_transaction_id_next)
 
 TESTCASE(Pipe_json_rpc_transaction_finalize_response_with_no_jsonrpc_field)
 {
-	Pipe::json_rpc::transaction transaction{[](jopp::object&&){}};
+	Pipe::json_rpc::transaction transaction{[](jopp::value&&){}};
 	try
 	{
 		transaction.finalize(jopp::object{});
@@ -59,7 +60,7 @@ TESTCASE(Pipe_json_rpc_transaction_finalize_response_with_no_jsonrpc_field)
 
 TESTCASE(Pipe_json_rpc_transaction_finalize_response_with_no_jsonrpc_wrong_type)
 {
-	Pipe::json_rpc::transaction transaction{[](jopp::object&&){}};
+	Pipe::json_rpc::transaction transaction{[](jopp::value&&){}};
 	try
 	{
 		jopp::object response;
@@ -75,7 +76,7 @@ TESTCASE(Pipe_json_rpc_transaction_finalize_response_with_no_jsonrpc_wrong_type)
 
 TESTCASE(Pipe_json_rpc_transaction_finalize_response_with_no_jsonrpc_wrong_value)
 {
-	Pipe::json_rpc::transaction transaction{[](jopp::object&&){}};
+	Pipe::json_rpc::transaction transaction{[](jopp::value&&){}};
 	try
 	{
 		jopp::object response;
@@ -91,7 +92,7 @@ TESTCASE(Pipe_json_rpc_transaction_finalize_response_with_no_jsonrpc_wrong_value
 
 TESTCASE(Pipe_json_rpc_transaction_finalize_response_with_no_payload)
 {
-	Pipe::json_rpc::transaction transaction{[](jopp::object&&){}};
+	Pipe::json_rpc::transaction transaction{[](jopp::value&&){}};
 	try
 	{
 		jopp::object response;
@@ -107,7 +108,7 @@ TESTCASE(Pipe_json_rpc_transaction_finalize_response_with_no_payload)
 
 TESTCASE(Pipe_json_rpc_transaction_finalize_response_with_both_result_and_error)
 {
-	Pipe::json_rpc::transaction transaction{[](jopp::object&&){}};
+	Pipe::json_rpc::transaction transaction{[](jopp::value&&){}};
 	try
 	{
 		jopp::object response;
@@ -126,8 +127,9 @@ TESTCASE(Pipe_json_rpc_transaction_finalize_response_with_both_result_and_error)
 TESTCASE(Pipe_json_rpc_transaction_finalize_response_with_result)
 {
 	bool called = false;
-	Pipe::json_rpc::transaction transaction{[&called](jopp::object const& result){
-		EXPECT_EQ(result.get_field_as<jopp::string>("foo"), "bar");
+	Pipe::json_rpc::transaction transaction{[&called](jopp::value const& result){
+		auto const& obj = result.get<jopp::object>();
+		EXPECT_EQ(obj.get_field_as<jopp::string>("foo"), "bar");
 		called = true;
 	}};
 
@@ -140,11 +142,26 @@ TESTCASE(Pipe_json_rpc_transaction_finalize_response_with_result)
 	EXPECT_EQ(called, true);
 }
 
+TESTCASE(Pipe_json_rpc_transaction_finalize_response_with_result_nullptr)
+{
+	bool called = false;
+	Pipe::json_rpc::transaction transaction{[&called](jopp::value const& result){
+		EXPECT_NE(result.get_if<jopp::null>(), nullptr);
+		called = true;
+	}};
+
+	jopp::object response;
+	response.insert("jsonrpc", "2.0");
+	response.insert("result", jopp::null{});
+	transaction.finalize(std::move(response));
+	EXPECT_EQ(called, true);
+}
+
 TESTCASE(Pipe_json_rpc_transaction_finalize_response_with_error_missing_fields)
 {
 	try
 	{
-		Pipe::json_rpc::transaction transaction{[](jopp::object&&){}};
+		Pipe::json_rpc::transaction transaction{[](jopp::value&&){}};
 		jopp::object response;
 		response.insert("jsonrpc", "2.0");
 		response.insert("error", jopp::object{});
@@ -165,7 +182,7 @@ TESTCASE(Pipe_json_rpc_transaction_finalize_response_with_error_missing_message)
 {
 	try
 	{
-		Pipe::json_rpc::transaction transaction{[](jopp::object&&){}};
+		Pipe::json_rpc::transaction transaction{[](jopp::value&&){}};
 		jopp::object response;
 		response.insert("jsonrpc", "2.0");
 		jopp::object error;
@@ -189,7 +206,7 @@ TESTCASE(Pipe_json_rpc_transaction_finalize_response_with_error_missing_code)
 {
 	try
 	{
-		Pipe::json_rpc::transaction transaction{[](jopp::object&&){}};
+		Pipe::json_rpc::transaction transaction{[](jopp::value&&){}};
 		jopp::object response;
 		response.insert("jsonrpc", "2.0");
 		jopp::object error;
@@ -213,7 +230,7 @@ TESTCASE(Pipe_json_rpc_transaction_finalize_response_with_error)
 {
 	try
 	{
-		Pipe::json_rpc::transaction transaction{[](jopp::object&&){}};
+		Pipe::json_rpc::transaction transaction{[](jopp::value&&){}};
 		jopp::object response;
 		response.insert("jsonrpc", "2.0");
 		jopp::object error;

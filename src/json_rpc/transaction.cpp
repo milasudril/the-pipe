@@ -9,18 +9,21 @@ void Pipe::json_rpc::transaction::finalize(jopp::object&& response)
 	{ throw std::runtime_error{"Unsupported JSON-RPC version"}; }
 
 	// TODO: According to JSON-RPC 2.0, the result does not have to be an object
-	auto result = response.try_get_field_as<jopp::object>("result");
+	auto result = response.find("result");
 	auto error = response.try_get_field_as<jopp::object>("error");
 
-	if((result == nullptr && error == nullptr) || (result != nullptr && error != nullptr))
+	if(
+		   (result == std::end(response) && error == nullptr)
+		|| (result != std::end(response) && error != nullptr)
+	)
 	{
 		throw std::runtime_error{
 			"A JSON-RPC response must contain either a `result` or an `error` object"
 		};
 	}
 
-	if(result != nullptr)
-	{ m_on_completed(std::move(*result)); }
+	if(result != std::end(response)) [[likely]]
+	{ m_on_completed(std::move(result->second)); }
 	else
 	{
 		auto const code = error->try_get_field_as<jopp::number>("code");
