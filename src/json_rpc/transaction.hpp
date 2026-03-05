@@ -65,11 +65,13 @@ namespace Pipe::json_rpc
 	class transaction
 	{
 	public:
+		using finalization_callback = std::move_only_function<void(jopp::value&&)>;
+
 		/**
 		 * \brief Constructs a transaction, given a callback that will be called at when the transaction
 		 *        is finalized
 		 */
-		explicit transaction(std::move_only_function<void(jopp::value&&)>&& on_completed):
+		explicit transaction(finalization_callback&& on_completed):
 			m_on_completed{std::move(on_completed)}
 		{}
 
@@ -79,7 +81,7 @@ namespace Pipe::json_rpc
 		void finalize(jopp::object&& response);
 
 	private:
-		std::move_only_function<void(jopp::value&&)> m_on_completed;
+		finalization_callback m_on_completed;
 	};
 }
 #endif
