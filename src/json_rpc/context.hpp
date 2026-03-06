@@ -9,6 +9,7 @@
 #include "src/utils/utils.hpp"
 
 #include <deque>
+#include <jopp/types.hpp>
 
 namespace Pipe::json_rpc
 {
@@ -41,11 +42,16 @@ namespace Pipe::json_rpc
 			request_has_been_sent = true;
 		}
 
-		bool handle_response(jopp::object&& object)
+		template<class NotificationHandler>
+		void handle_response(jopp::object&& object, NotificationHandler&& notification_handler)
 		{
 			auto const id_pos = object.find("id");
 			if(id_pos == std::end(object))
-			{ return false; }
+			{
+				utils::unwrap(std::forward<NotificationHandler>(notification_handler))
+					.handle_json_rpc_notification(std::move(object));
+				return;
+			}
 
 			if(m_transactions.empty())
 			{ throw std::runtime_error{"No JSON-RPC response expected"}; }
@@ -56,11 +62,31 @@ namespace Pipe::json_rpc
 			{
 				utils::at_scope_exit _{[&](){ m_transactions.pop_front(); } };
 				front.transaction.finalize(std::move(object));
-				return true;
 			}
+			else
+			{ handle_response_from_queue(id, std::move(object)); }
+		}
 
-			handle_response_from_queue(id, std::move(object));
-			return true;
+		template<class NotificationHandler>
+		void handle_response(jopp::array&& object, NotificationHandler notification_handler)
+		{
+			for(auto&& item : object)
+			{
+				handle_response(std::move(item).get<jopp::object>(), std::ref(notification_handler));
+			}
+		}
+
+		template<class NotificationHandler>
+		void process_messages(jopp::container&& obj, NotificationHandler&& notification_handler)
+		{
+			std::move(obj).visit(
+				[
+					this,
+					notification_handler = std::forward<NotificationHandler>(notification_handler)
+				](auto&& item) {
+					handle_response(std::move(item));
+				}
+			);
 		}
 
 	private:
