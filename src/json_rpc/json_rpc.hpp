@@ -2,6 +2,7 @@
 #define PIPE_JSON_RPC_HPP
 
 #include "./transaction.hpp"
+#include "./request.hpp"
 #include "src/utils/utils.hpp"
 
 #include <deque>
@@ -13,59 +14,6 @@
  */
 namespace Pipe::json_rpc
 {
-	/**
-	 * \brief Ensures that obj has all fields required by this JSON-RPC implementation, and throws
-	 * and exception if it does not
-	 */
-	inline jopp::object ensure_required_fields(jopp::object&& obj)
-	{
-		if(!obj.contains("method"))
-		{ throw std::runtime_error{"JSON-RPC object is missing mandatory field `method`"}; }
-		return std::move(obj);
-	}
-
-	/**
-	 * \brief A representation of a JSON-RPC request
-	 */
-	class request
-	{
-	public:
-		/**
-		 * \brief Constructs a request from a jopp::object, which is assumed to contain the entire
-		 *        request
-		 */
-		explicit request(jopp::object&& obj):
-			m_value{ensure_required_fields(std::move(obj))}
-		{}
-
-		/**
-		 * \brief Constructs a request from an id, a method name, and a set of parameters
-		 */
-		explicit request(transaction_id id, std::string&& method, jopp::object&& params)
-		{
-			m_value.insert("jsonrpc", "2.0");
-			m_value.insert("id", id.value());
-			m_value.insert("method", std::move(method));
-			m_value.insert("params", std::move(params));
-		}
-
-		/**
-		 * \brief Moves the value out from the request
-		 */
-		jopp::object&& take_value()
-		{ return std::move(m_value); }
-
-		/**
-		 * \brief Gets the method of the request
-		 */
-		std::string_view method() const
-		{ return m_value.get_field_as<jopp::string>("method"); }
-
-	private:
-		transaction_id m_id;
-		jopp::object m_value;
-	};
-
 	/**
 	 * \brief A context holds a transaction_id, that is used to generate requests. Thus, a context
 	 *        can act as a request factory
@@ -120,6 +68,9 @@ namespace Pipe::json_rpc
 			auto const id_pos = object.find("id");
 			if(id_pos == std::end(object))
 			{ return false; }
+
+			if(m_transactions.empty())
+			{ throw std::runtime_error{"No JSON-RPC response expected"}; }
 
 			transaction_id const id{static_cast<int>(id_pos->second.get<jopp::number>())};
 			auto& front = m_transactions.front();
