@@ -63,7 +63,7 @@ TESTCASE(Pipe_json_rpc_context_context_send_request_and_handle_good_response_fir
 		response.insert("id", 0.0);
 		response.insert("result", 42.0);
 		response.insert("jsonrpc", "2.0");
-		ctxt.handle_response(std::move(response), std::ref(notification_handler));
+		ctxt.handle_message(std::move(response), std::ref(notification_handler));
 		EXPECT_EQ(response_handled, true);
 	}
 
@@ -138,7 +138,7 @@ TESTCASE(Pipe_json_rpc_context_context_send_request_and_handle_good_response_thr
 		response.insert("id", 0.0);
 		response.insert("result", 42.0);
 		response.insert("jsonrpc", "2.0");
-		ctxt.handle_response(std::move(response), std::ref(notification_handler));
+		ctxt.handle_message(std::move(response), std::ref(notification_handler));
 		abort();
 	}
 	catch(std::runtime_error const& err)
@@ -159,7 +159,7 @@ TESTCASE(Pipe_json_rpc_context_context_handle_notification)
 	notification.insert("params", std::move(params));
 
 	notification_handler.should_be_called = true;
-	ctxt.handle_response(std::move(notification), std::ref(notification_handler));
+	ctxt.handle_message(std::move(notification), std::ref(notification_handler));
 	EXPECT_EQ(
 		notification_handler.saved_notification.get_field_as<jopp::string>("method"),
 		"my_notification"
@@ -168,7 +168,7 @@ TESTCASE(Pipe_json_rpc_context_context_handle_notification)
 	EXPECT_EQ(recv_params.get_field_as<jopp::number>("a_param"), 0.2);
 }
 
-TESTCASE(Pipe_json_rpc_context_context_handle_response_not_expected)
+TESTCASE(Pipe_json_rpc_context_context_handle_message_not_expected)
 {
 	Pipe::json_rpc::context ctxt;
 	my_notification_handler notification_handler;
@@ -179,7 +179,7 @@ TESTCASE(Pipe_json_rpc_context_context_handle_response_not_expected)
 
 	try
 	{
-		ctxt.handle_response(std::move(response), std::ref(notification_handler));
+		ctxt.handle_message(std::move(response), std::ref(notification_handler));
 		abort();
 	}
 	catch(std::exception const& err)
@@ -188,7 +188,7 @@ TESTCASE(Pipe_json_rpc_context_context_handle_response_not_expected)
 	}
 }
 
-TESTCASE(Pipe_json_rpc_context_context_send_request_and_handle_response_with_unknown_id)
+TESTCASE(Pipe_json_rpc_context_context_send_request_and_handle_message_with_unknown_id)
 {
 	Pipe::json_rpc::context ctxt;
 	jopp::object params;
@@ -219,7 +219,7 @@ TESTCASE(Pipe_json_rpc_context_context_send_request_and_handle_response_with_unk
 		response.insert("id", 45.0);
 		response.insert("result", 42.0);
 		response.insert("jsonrpc", "2.0");
-		ctxt.handle_response(std::move(response), std::ref(notification_handler));
+		ctxt.handle_message(std::move(response), std::ref(notification_handler));
 		abort();
 	}
 	catch(std::exception const& err)
@@ -284,7 +284,7 @@ TESTCASE(Pipe_json_rpc_context_context_send_request_and_handle_good_responses_oo
 		response.insert("id", 1.0);
 		response.insert("result", 42.0);
 		response.insert("jsonrpc", "2.0");
-		ctxt.handle_response(std::move(response), std::ref(notification_handler));
+		ctxt.handle_message(std::move(response), std::ref(notification_handler));
 		EXPECT_EQ(last_response, 1);
 		EXPECT_EQ(ctxt.num_pending_responses(), 1);
 	}
@@ -294,7 +294,7 @@ TESTCASE(Pipe_json_rpc_context_context_send_request_and_handle_good_responses_oo
 		response.insert("id", 0.0);
 		response.insert("result", 43.0);
 		response.insert("jsonrpc", "2.0");
-		ctxt.handle_response(std::move(response), std::ref(notification_handler));
+		ctxt.handle_message(std::move(response), std::ref(notification_handler));
 		EXPECT_EQ(last_response, 0);
 		EXPECT_EQ(ctxt.num_pending_responses(), 0);
 	}
@@ -355,7 +355,7 @@ TESTCASE(Pipe_json_rpc_context_context_send_request_and_handle_good_responses_oo
 		response.insert("id", 1.0);
 		response.insert("result", 42.0);
 		response.insert("jsonrpc", "2.0");
-		ctxt.handle_response(std::move(response), std::ref(notification_handler));
+		ctxt.handle_message(std::move(response), std::ref(notification_handler));
 		abort();
 	}
 	catch(std::exception const& err)
@@ -370,7 +370,7 @@ TESTCASE(Pipe_json_rpc_context_context_send_request_and_handle_good_responses_oo
 		response.insert("id", 0.0);
 		response.insert("result", 43.0);
 		response.insert("jsonrpc", "2.0");
-		ctxt.handle_response(std::move(response), std::ref(notification_handler));
+		ctxt.handle_message(std::move(response), std::ref(notification_handler));
 		EXPECT_EQ(last_response, 0);
 		EXPECT_EQ(ctxt.num_pending_responses(), 0);
 	}

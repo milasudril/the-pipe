@@ -44,7 +44,7 @@ namespace Pipe::json_rpc
 		}
 
 		template<class NotificationHandler>
-		void handle_response(jopp::object&& object, NotificationHandler&& notification_handler)
+		void handle_message(jopp::object&& object, NotificationHandler&& notification_handler)
 		{
 			auto const id_pos = object.find("id");
 			if(id_pos == std::end(object))
@@ -69,11 +69,11 @@ namespace Pipe::json_rpc
 		}
 
 		template<class NotificationHandler>
-		void handle_response(jopp::array&& object, NotificationHandler notification_handler)
+		void handle_message(jopp::array&& object, NotificationHandler notification_handler)
 		{
 			for(auto&& item : object)
 			{
-				handle_response(std::move(item).get<jopp::object>(), std::ref(notification_handler));
+				handle_message(std::move(item).get<jopp::object>(), std::ref(notification_handler));
 			}
 		}
 
