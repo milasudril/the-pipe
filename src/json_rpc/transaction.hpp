@@ -26,7 +26,25 @@ namespace Pipe::json_rpc
 		/**
 		 * \brief Constructs a transaction_id from value
 		 */
-		constexpr explicit transaction_id(int64_t value):
+		template<class T>
+		requires(std::is_floating_point_v<T>)
+		constexpr explicit transaction_id(T value):
+			m_value{static_cast<int64_t>(value)}
+		{
+			if(
+				value < 0.0 ||
+				value > static_cast<T>(jopp::max_safe_integer) ||
+				static_cast<T>(m_value) != value
+			)
+			{ throw std::runtime_error{"JSON-RPC transaction id out of range"}; }
+		}
+
+		/**
+		 * \brief Constructs a transaction_id from value
+		 */
+		template<class T>
+		requires(std::is_integral_v<T> && std::is_signed_v<T> && sizeof(T) <= sizeof(int64_t))
+		constexpr explicit transaction_id(T value):
 			m_value{value}
 		{
 			if(value < 0 || value > jopp::max_safe_integer)

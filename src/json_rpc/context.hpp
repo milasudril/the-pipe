@@ -1,4 +1,4 @@
-//@	{"dependencies_extra":[{"ref":"./context.o"}]}
+//@	{"dependencies_extra":[{"ref":"./context.o", "rel":"implementation"}]}
 
 #ifndef PIPE_JSON_RPC_CONTEXT_HPP
 #define PIPE_JSON_RPC_CONTEXT_HPP
@@ -38,7 +38,8 @@ namespace Pipe::json_rpc
 					{ m_transactions.pop_back(); }
 				}
 			};
-			receiver.write(request{tx_id, std::move(method), std::move(params)}.take_value());
+			utils::unwrap(std::forward<Receiver>(receiver))
+				.write(request{tx_id, std::move(method), std::move(params)}.take_value());
 			request_has_been_sent = true;
 		}
 
@@ -56,7 +57,7 @@ namespace Pipe::json_rpc
 			if(m_transactions.empty())
 			{ throw std::runtime_error{"No JSON-RPC response expected"}; }
 
-			transaction_id const id{static_cast<int>(id_pos->second.get<jopp::number>())};
+			transaction_id const id{id_pos->second.get<jopp::number>()};
 			auto& front = m_transactions.front();
 			if(front.id == id) [[likely]]
 			{
@@ -88,6 +89,9 @@ namespace Pipe::json_rpc
 				}
 			);
 		}
+
+		size_t num_pending_responses() const
+		{ return m_transactions.size(); }
 
 	private:
 		void handle_response_from_queue(transaction_id id, jopp::object&& object);

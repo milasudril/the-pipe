@@ -11,11 +11,8 @@ void Pipe::json_rpc::context::handle_response_from_queue(
 		return id == item.id;
 	});
 	if(i == std::end(m_transactions))
-	{ throw std::runtime_error{"JSON-RPC unexpected transaction id"}; }
-	utils::at_scope_exit _{
-		[&](){
-			m_transactions.erase(i);
-		}
-	};
+	{ throw std::runtime_error{"JSON-RPC response has an unexpected transaction id"}; }
+
+	utils::at_scope_exit _{[&](){ m_transactions.erase(i); }};
 	i->transaction.finalize(std::move(object));
 }
