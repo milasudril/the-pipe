@@ -1,5 +1,5 @@
-#ifndef PIPE_JSON_RPC_REQUEST_HPP
-#define PIPE_JSON_RPC_REQUEST_HPP
+#ifndef PIPE_JSON_RPC_WRAPPED_REQUEST_HPP
+#define PIPE_JSON_RPC_WRAPPED_REQUEST_HPP
 
 #include "./transaction.hpp"
 
@@ -21,21 +21,21 @@ namespace Pipe::json_rpc
 	/**
 	 * \brief A representation of a JSON-RPC request
 	 */
-	class request
+	class wrapped_request
 	{
 	public:
 		/**
-		 * \brief Constructs a request from a jopp::object, which is assumed to contain the entire
-		 *        request
+		 * \brief Constructs a wrapped_request from a jopp::object, which is assumed to contain the entire
+		 *        wrapped_request
 		 */
-		explicit request(jopp::object&& obj):
+		explicit wrapped_request(jopp::object&& obj):
 			m_value{ensure_required_fields(std::move(obj))}
 		{}
 
 		/**
-		 * \brief Constructs a request from an id, a method name, and a set of parameters
+		 * \brief Constructs a wrapped_request from an id, a method name, and a set of parameters
 		 */
-		explicit request(transaction_id id, std::string&& method, jopp::object&& params)
+		explicit wrapped_request(transaction_id id, std::string&& method, jopp::object&& params)
 		{
 			m_value.insert("jsonrpc", "2.0");
 			m_value.insert("id", id.value());
@@ -44,13 +44,13 @@ namespace Pipe::json_rpc
 		}
 
 		/**
-		 * \brief Moves the value out from the request
+		 * \brief Moves the value out from the wrapped_request
 		 */
 		jopp::object&& take_value()
 		{ return std::move(m_value); }
 
 		/**
-		 * \brief Gets the method of the request
+		 * \brief Gets the method of the wrapped_request
 		 */
 		std::string_view method() const
 		{ return m_value.get_field_as<jopp::string>("method"); }

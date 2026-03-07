@@ -2,7 +2,7 @@
 #define PIPE_JSON_RPC_HPP
 
 #include "./transaction.hpp"
-#include "./request.hpp"
+#include "./wrapped_request.hpp"
 #include "src/utils/utils.hpp"
 
 #include <deque>
@@ -15,25 +15,8 @@
 namespace Pipe::json_rpc
 {
 	/**
-	 * \brief A context holds a transaction_id, that is used to generate requests. Thus, a context
-	 *        can act as a request factory
+	 * \brief Creates a JSON-RPC notification given method and object
 	 */
-	class [[deprecated("Have another context")]] context
-	{
-	public:
-		/**
-		 * \brief Creates a new request, given method and params
-		 */
-		std::pair<transaction_id, request> make_request(std::string&& method, jopp::object&& params)
-		{
-			auto const tx_id = m_transaction_id.next();
-			return std::pair{tx_id, request{tx_id, std::move(method), std::move(params)}};
-		}
-
-	private:
-		transaction_id m_transaction_id;
-	};
-
 	inline jopp::object make_notification(std::string&& method, jopp::object&& params)
 	{
 		jopp::object ret;
@@ -43,11 +26,33 @@ namespace Pipe::json_rpc
 		return ret;
 	}
 
+	/**
+	 * \brief Type trait to be specialized for T to be used as a notification
+	 */
 	template<class T>
 	struct notification_traits
 	{};
 
-	template<class Notification>
+	/**
+	 * \brief Defines the requirements of a notification
+	 */
+	template<class T>
+	concept notification = requires(T&& obj){
+		/**
+		 * \brief The name of method that corresponds to T
+		 */
+		{ notification_traits<T>::method } -> std::convertible_to<char const*>;
+
+		/**
+		 * \brief Converts an object of type T into a jopp::object that will be sent as parameters
+		 */
+		{ notification_traits<T>::params(std::forward<T>(obj)) } -> std::same_as<jopp::object>;
+	};
+
+	/**
+	 * \brief Creates a JSON-RPC notification from notification
+	 */
+	template<notification Notification>
 	inline jopp::object make_notification(Notification&& notification)
 	{
 		return make_notification(
@@ -57,12 +62,12 @@ namespace Pipe::json_rpc
 	}
 
 	/**
-	 * \brief Creates a response object, given a request
+	 * \brief Creates a response object, given a wrapped_request
 	 *
-	 * Using this function ensures that the response inherits the transaction_id from the request.
+	 * Using this function ensures that the response inherits the transaction_id from the wrapped_request.
 	 * Also, the field "jsonrpc" is added for better conformance.
 	 */
-	inline jopp::object make_response(request&& req)
+	inline jopp::object make_response(wrapped_request&& req)
 	{
 		auto req_value = req.take_value();
 		jopp::object response;
@@ -73,15 +78,18 @@ namespace Pipe::json_rpc
 	}
 
 	/**
-	 * \brief Creates a response object, given a request and its result
+	 * \brief Creates a response object, given a wrapped_request and its result
 	 */
-	inline jopp::object make_response(request&& req, jopp::object&& result)
+	inline jopp::object make_response(wrapped_request&& req, jopp::object&& result)
 	{
 		auto response = make_response(std::move(req));
 		response.insert("result", std::move(result));
 		return response;
 	}
 
+	/**
+	 * \brief Something that looks like an exception
+	 */
 	template<class T>
 	concept exception_like = requires(T const& obj)
 	{
@@ -89,10 +97,10 @@ namespace Pipe::json_rpc
 	};
 
 	/**
-	 * \brief Creates a response object, given a request and some exception-like object
+	 * \brief Creates a response object, given a wrapped_request and some exception-like object
 	 */
 	template<exception_like T>
-	inline jopp::object make_response(request&& req, T const& exception, int code = -32000)
+	inline jopp::object make_response(wrapped_request&& req, T const& exception, int code = -32000)
 	{
 		auto response = make_response(std::move(req));
 		jopp::object error;

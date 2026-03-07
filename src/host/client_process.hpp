@@ -2,6 +2,7 @@
 #include "src/json_io/reader.hpp"
 #include "src/json_io/writer.hpp"
 #include "src/json_rpc/json_rpc.hpp"
+#include "src/json_rpc/context.hpp"
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/proc_mgmt/proc_mgmt.hpp"
 #include "src/client_ctl/client_application_info.hpp"
@@ -44,11 +45,12 @@ namespace Pipe::host
 			m_pid{pid},
 			m_binary{std::move(binary)}
 		{
-			send_ctl_request(
+			m_json_rpc_ctxt.send_request(
+				std::ref(m_ctl_output),
 				"get_client_application_info",
 				jopp::object{},
-				[this](jopp::object&& response){
-					m_appinfo = client_ctl::make_client_application_info(response);
+				[this](jopp::value&& response){
+					m_appinfo = client_ctl::make_client_application_info(response.get<jopp::object>());
 				}
 			);
 		}
@@ -59,10 +61,12 @@ namespace Pipe::host
 
 		void handle_event(json_io::container_loaded_event<client_ctl_tag>&& event)
 		{
-			std::move(event.obj).visit([this]<class T>(T&& obj){
-				handle_ctl_response(std::forward<T>(obj));
-			});
+			m_json_rpc_ctxt.handle_messages(std::move(event.obj), std::ref(*this));
 		}
+
+		template<class Tag>
+		void handle_json_rpc_notification(jopp::object&&)
+		{}
 
 
 		void handle_event(json_io::parser_error_event<client_ctl_tag> event);
@@ -87,35 +91,8 @@ namespace Pipe::host
 		std::filesystem::path m_binary;
 		client_ctl::client_application_info m_appinfo;
 
-		void handle_ctl_response(jopp::object&& obj)
-		{
-			json_rpc::transaction_id id{static_cast<int64_t>(obj.get_field_as<jopp::number>("id"))};
-			auto i = std::ranges::find_if(
-				m_response_callbacks,
-				[id](auto const& item){
-					return item.first == id;
-				}
-			);
-			if(i != std::end(m_response_callbacks))
-			{
-				i->second(std::move(obj.get_field_as<jopp::object>("response")));
-				m_response_callbacks.erase(i);
-			}
-		}
-
 		void handle_ctl_response(jopp::array&&)
 		{}
-
-		template<class Callback>
-		void send_ctl_request(std::string&& method, jopp::object&& params, Callback&& cb)
-		{
-			auto [id, request] = m_json_rpc_ctxt.make_request(std::move(method), std::move(params));
-			m_ctl_output.write(request.take_value());
-			m_response_callbacks.push_back(std::pair{id, std::move(cb)});
-		}
-
-		using response_callback = std::move_only_function<void(jopp::object&&)>;
 		json_rpc::context m_json_rpc_ctxt;
-		std::deque<std::pair<json_rpc::transaction_id, response_callback>> m_response_callbacks;
 	};
 }

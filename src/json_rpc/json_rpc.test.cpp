@@ -54,7 +54,7 @@ TESTCASE(Pipe_json_rpc_make_response_from_req_with_id)
 	jopp::object my_request{};
 	my_request.insert("method", "foo");
 	my_request.insert("id", 35.0);
-	auto response = make_response(Pipe::json_rpc::request{std::move(my_request)});
+	auto response = make_response(Pipe::json_rpc::wrapped_request{std::move(my_request)});
 	EXPECT_EQ(response.get_field_as<std::string>("jsonrpc"), "2.0");
 	EXPECT_EQ(response.get_field_as<double>("id"), 35.0);
 }
@@ -66,7 +66,7 @@ TESTCASE(Pipe_json_rpc_make_response_with_result)
 	my_request.insert("id", 35.0);
 	jopp::object result;
 	result.insert("value", 42.0);
-	auto response = make_response(Pipe::json_rpc::request{std::move(my_request)}, std::move(result));
+	auto response = make_response(Pipe::json_rpc::wrapped_request{std::move(my_request)}, std::move(result));
 	EXPECT_EQ(response.get_field_as<std::string>("jsonrpc"), "2.0");
 	EXPECT_EQ(response.get_field_as<double>("id"), 35.0);
 	auto const& stored_result = response.get_field_as<jopp::object>("result");
@@ -80,7 +80,7 @@ TESTCASE(Pipe_json_rpc_make_response_with_error)
 	my_request.insert("id", 35.0);
 
 	auto response = make_response(
-		Pipe::json_rpc::request{std::move(my_request)},
+		Pipe::json_rpc::wrapped_request{std::move(my_request)},
 		std::runtime_error{"Something went wrong"},
 		143
 	);

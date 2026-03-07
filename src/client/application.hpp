@@ -26,7 +26,7 @@ namespace Pipe::client
 
 		void handle_request(jopp::object&& object)
 		{
-			json_rpc::request request{std::move(object)};
+			json_rpc::wrapped_request request{std::move(object)};
 			auto const method = request.method();
 
 			if(method == "get_client_application_info")
