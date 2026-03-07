@@ -21,14 +21,14 @@ namespace
 
 	struct my_notification_handler
 	{
-		bool should_be_called{false};
-		jopp::object saved_notification;
+		size_t remaining_calls{0};
+		std::vector<jopp::object> saved_notifications;
 
 		void handle_json_rpc_notification(jopp::object&& object)
 		{
-			EXPECT_EQ(should_be_called, true);
-			should_be_called = false;
-			saved_notification = std::move(object);
+			EXPECT_GT(remaining_calls, 0);
+			--remaining_calls;
+			saved_notifications.push_back(std::move(object));
 		}
 	};
 }
@@ -63,7 +63,7 @@ TESTCASE(Pipe_json_rpc_context_context_send_request_and_handle_good_response_fir
 		response.insert("id", 0.0);
 		response.insert("result", 42.0);
 		response.insert("jsonrpc", "2.0");
-		ctxt.handle_message(std::move(response), std::ref(notification_handler));
+		ctxt.handle_messages(std::move(response), std::ref(notification_handler));
 		EXPECT_EQ(response_handled, true);
 	}
 
@@ -138,7 +138,7 @@ TESTCASE(Pipe_json_rpc_context_context_send_request_and_handle_good_response_thr
 		response.insert("id", 0.0);
 		response.insert("result", 42.0);
 		response.insert("jsonrpc", "2.0");
-		ctxt.handle_message(std::move(response), std::ref(notification_handler));
+		ctxt.handle_messages(std::move(response), std::ref(notification_handler));
 		abort();
 	}
 	catch(std::runtime_error const& err)
@@ -158,13 +158,13 @@ TESTCASE(Pipe_json_rpc_context_context_handle_notification)
 	notification.insert("method", "my_notification");
 	notification.insert("params", std::move(params));
 
-	notification_handler.should_be_called = true;
-	ctxt.handle_message(std::move(notification), std::ref(notification_handler));
+	notification_handler.remaining_calls = 1;
+	ctxt.handle_messages(std::move(notification), std::ref(notification_handler));
 	EXPECT_EQ(
-		notification_handler.saved_notification.get_field_as<jopp::string>("method"),
+		notification_handler.saved_notifications.at(0).get_field_as<jopp::string>("method"),
 		"my_notification"
 	);
-	auto const& recv_params = notification_handler.saved_notification.get_field_as<jopp::object>("params");
+	auto const& recv_params = notification_handler.saved_notifications.at(0).get_field_as<jopp::object>("params");
 	EXPECT_EQ(recv_params.get_field_as<jopp::number>("a_param"), 0.2);
 }
 
@@ -179,7 +179,7 @@ TESTCASE(Pipe_json_rpc_context_context_handle_message_not_expected)
 
 	try
 	{
-		ctxt.handle_message(std::move(response), std::ref(notification_handler));
+		ctxt.handle_messages(std::move(response), std::ref(notification_handler));
 		abort();
 	}
 	catch(std::exception const& err)
@@ -219,7 +219,7 @@ TESTCASE(Pipe_json_rpc_context_context_send_request_and_handle_message_with_unkn
 		response.insert("id", 45.0);
 		response.insert("result", 42.0);
 		response.insert("jsonrpc", "2.0");
-		ctxt.handle_message(std::move(response), std::ref(notification_handler));
+		ctxt.handle_messages(std::move(response), std::ref(notification_handler));
 		abort();
 	}
 	catch(std::exception const& err)
@@ -284,7 +284,7 @@ TESTCASE(Pipe_json_rpc_context_context_send_request_and_handle_good_responses_oo
 		response.insert("id", 1.0);
 		response.insert("result", 42.0);
 		response.insert("jsonrpc", "2.0");
-		ctxt.handle_message(std::move(response), std::ref(notification_handler));
+		ctxt.handle_messages(std::move(response), std::ref(notification_handler));
 		EXPECT_EQ(last_response, 1);
 		EXPECT_EQ(ctxt.num_pending_responses(), 1);
 	}
@@ -294,7 +294,7 @@ TESTCASE(Pipe_json_rpc_context_context_send_request_and_handle_good_responses_oo
 		response.insert("id", 0.0);
 		response.insert("result", 43.0);
 		response.insert("jsonrpc", "2.0");
-		ctxt.handle_message(std::move(response), std::ref(notification_handler));
+		ctxt.handle_messages(std::move(response), std::ref(notification_handler));
 		EXPECT_EQ(last_response, 0);
 		EXPECT_EQ(ctxt.num_pending_responses(), 0);
 	}
@@ -355,7 +355,7 @@ TESTCASE(Pipe_json_rpc_context_context_send_request_and_handle_good_responses_oo
 		response.insert("id", 1.0);
 		response.insert("result", 42.0);
 		response.insert("jsonrpc", "2.0");
-		ctxt.handle_message(std::move(response), std::ref(notification_handler));
+		ctxt.handle_messages(std::move(response), std::ref(notification_handler));
 		abort();
 	}
 	catch(std::exception const& err)
@@ -370,8 +370,76 @@ TESTCASE(Pipe_json_rpc_context_context_send_request_and_handle_good_responses_oo
 		response.insert("id", 0.0);
 		response.insert("result", 43.0);
 		response.insert("jsonrpc", "2.0");
-		ctxt.handle_message(std::move(response), std::ref(notification_handler));
+		ctxt.handle_messages(std::move(response), std::ref(notification_handler));
 		EXPECT_EQ(last_response, 0);
 		EXPECT_EQ(ctxt.num_pending_responses(), 0);
+	}
+}
+
+TESTCASE(Pipe_json_rpc_context_context_handle_multiple_messages)
+{
+	Pipe::json_rpc::context ctxt;
+	my_notification_handler notification_handler;
+
+	jopp::array notifications;
+	for(size_t k = 0; k != 5; ++k)
+	{
+		jopp::object params;
+		params.insert("value", static_cast<jopp::number>(k));
+		jopp::object notification;
+		notification.insert("params" ,std::move(params));
+		notification.insert("method", "Foobar");
+		notification.insert("jsonrpc", "2.0");
+		notifications.push_back(std::move(notification));
+	}
+
+	notification_handler.remaining_calls = 5;
+	ctxt.handle_messages(std::move(notifications), std::ref(notification_handler));
+
+	EXPECT_EQ(std::size(notification_handler.saved_notifications), 5);
+	for(size_t k = 0; k != std::size(notification_handler.saved_notifications); ++k)
+	{
+		auto& notification = notification_handler.saved_notifications[k];
+		EXPECT_EQ(
+			notification.get_field_as<jopp::string>("method"),
+			"Foobar"
+		);
+
+		auto const& recv_params = notification.get_field_as<jopp::object>("params");
+		EXPECT_EQ(recv_params.get_field_as<jopp::number>("value"), static_cast<jopp::number>(k));
+	}
+}
+
+TESTCASE(Pipe_json_rpc_context_context_handle_multiple_messages_in_jopp_container)
+{
+	Pipe::json_rpc::context ctxt;
+	my_notification_handler notification_handler;
+
+	jopp::array notifications;
+	for(size_t k = 0; k != 5; ++k)
+	{
+		jopp::object params;
+		params.insert("value", static_cast<jopp::number>(k));
+		jopp::object notification;
+		notification.insert("params" ,std::move(params));
+		notification.insert("method", "Foobar");
+		notification.insert("jsonrpc", "2.0");
+		notifications.push_back(std::move(notification));
+	}
+
+	notification_handler.remaining_calls = 5;
+	ctxt.handle_messages(jopp::container{std::move(notifications)}, std::ref(notification_handler));
+
+	EXPECT_EQ(std::size(notification_handler.saved_notifications), 5);
+	for(size_t k = 0; k != std::size(notification_handler.saved_notifications); ++k)
+	{
+		auto& notification = notification_handler.saved_notifications[k];
+		EXPECT_EQ(
+			notification.get_field_as<jopp::string>("method"),
+			"Foobar"
+		);
+
+		auto const& recv_params = notification.get_field_as<jopp::object>("params");
+		EXPECT_EQ(recv_params.get_field_as<jopp::number>("value"), static_cast<jopp::number>(k));
 	}
 }
