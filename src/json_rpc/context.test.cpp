@@ -24,6 +24,7 @@ namespace
 		size_t remaining_calls{0};
 		std::vector<jopp::object> saved_notifications;
 
+		template<class T>
 		void handle_json_rpc_notification(jopp::object&& object)
 		{
 			EXPECT_GT(remaining_calls, 0);

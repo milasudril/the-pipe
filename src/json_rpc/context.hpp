@@ -43,14 +43,14 @@ namespace Pipe::json_rpc
 			request_has_been_sent = true;
 		}
 
-		template<class NotificationHandler>
+		template<class Tag = void, class NotificationHandler>
 		void handle_messages(jopp::object&& object, NotificationHandler&& notification_handler)
 		{
 			auto const id_pos = object.find("id");
 			if(id_pos == std::end(object))
 			{
 				utils::unwrap(std::forward<NotificationHandler>(notification_handler))
-					.handle_json_rpc_notification(std::move(object));
+					.template handle_json_rpc_notification<Tag>(std::move(object));
 				return;
 			}
 
