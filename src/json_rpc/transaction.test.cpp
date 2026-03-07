@@ -11,6 +11,39 @@ TESTCASE(Pipe_json_rpc_transaction_id_default_value)
 	EXPECT_EQ(Pipe::json_rpc::transaction_id{}.value(), 0.0);
 }
 
+TESTCASE(Pipe_json_rpc_transaction_id_from_float)
+{
+	Pipe::json_rpc::transaction_id id{234.0};
+	EXPECT_EQ(id.value(), 234.0);
+
+	try
+	{
+		Pipe::json_rpc::transaction_id invalid{-1.0};
+		abort();
+	}
+	catch(...)
+	{}
+
+	Pipe::json_rpc::transaction_id largest{jopp::max_safe_integer};
+	EXPECT_EQ(largest.value(), static_cast<double>(jopp::max_safe_integer));
+
+	try
+	{
+		Pipe::json_rpc::transaction_id invalid{static_cast<double>(jopp::max_safe_integer) + 4.0};
+		abort();
+	}
+	catch(...)
+	{}
+
+	try
+	{
+		Pipe::json_rpc::transaction_id invalid{4.123};
+		abort();
+	}
+	catch(...)
+	{}
+}
+
 TESTCASE(Pipe_json_rpc_transaction_id_from_value)
 {
 	Pipe::json_rpc::transaction_id id{234};
@@ -30,6 +63,26 @@ TESTCASE(Pipe_json_rpc_transaction_id_from_value)
 	try
 	{
 		Pipe::json_rpc::transaction_id invalid{jopp::max_safe_integer + 1};
+		abort();
+	}
+	catch(...)
+	{}
+
+	try
+	{
+		auto const val = std::bit_cast<double>(0x7ff0000000000001);
+		EXPECT_EQ(std::isnan(val), true);
+		Pipe::json_rpc::transaction_id invalid{std::bit_cast<double>(val)};
+		abort();
+	}
+	catch(...)
+	{}
+
+	try
+	{
+		auto const val = 1.0/0.0;
+		EXPECT_EQ(std::isinf(val), true);
+		Pipe::json_rpc::transaction_id invalid{std::bit_cast<double>(val)};
 		abort();
 	}
 	catch(...)
