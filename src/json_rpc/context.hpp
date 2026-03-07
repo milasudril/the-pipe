@@ -13,6 +13,10 @@
 
 namespace Pipe::json_rpc
 {
+	template<class Request>
+	struct request_traits
+	{};
+
 	class context
 	{
 	public:
@@ -41,6 +45,19 @@ namespace Pipe::json_rpc
 			utils::unwrap(std::forward<Receiver>(receiver))
 				.write(request{tx_id, std::move(method), std::move(params)}.take_value());
 			request_has_been_sent = true;
+		}
+
+		template<class Receiver, class Request, class Callback>
+		void send_request(Receiver&& receiver, Request&& request, Callback&& callback)
+		{
+			send_request(
+				std::forward<Receiver>(receiver),
+				request_traits<Request>::method,
+				request_traits<Request>::params(std::forward<Request>(request)),
+				[cb = std::forward<Callback>(callback)](jopp::value&& response){
+					cb(request_traits<Request>::make_response(std::move(response)));
+				}
+			);
 		}
 
 		template<class Tag = void, class NotificationHandler>

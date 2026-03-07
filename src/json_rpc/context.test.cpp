@@ -444,3 +444,65 @@ TESTCASE(Pipe_json_rpc_context_context_handle_multiple_messages_in_jopp_containe
 		EXPECT_EQ(recv_params.get_field_as<jopp::number>("value"), static_cast<jopp::number>(k));
 	}
 }
+
+namespace
+{
+	struct my_request
+	{
+		std::string request_string;
+	};
+
+	struct my_response
+	{
+		double response_value;
+	};
+}
+
+namespace Pipe::json_rpc
+{
+	template<>
+	struct request_traits<my_request>
+	{
+		static constexpr char const* method = "my_request";
+
+		static jopp::object params(my_request&& request)
+		{
+			jopp::object ret;
+			ret.insert("request_string", std::move(request).request_string);
+			return ret;
+		}
+
+		static my_response make_response(jopp::value&& value)
+		{
+			return my_response{
+				.response_value = value.get<jopp::object>().get_field_as<jopp::number>("response_value")
+			};
+		}
+	};
+};
+
+TESTCASE(Pipe_json_rpc_context_send_object_as_request_with_converted_response)
+{
+	Pipe::json_rpc::context ctxt;
+	my_receiver receiver;
+
+	auto callback_called = false;
+	ctxt.send_request(
+		std::ref(receiver),
+		my_request{"The a answer to the question of universe and anything"},
+		[&](my_response val){
+			callback_called = true;
+			EXPECT_EQ(val.response_value, 42.0);
+		}
+	);
+
+	jopp::object response;
+	response.insert("id", 0.0);
+	response.insert("jsonrpc", "2.0");
+	jopp::object result;
+	result.insert("response_value", 42.0);
+	response.insert("result", std::move(result));
+	EXPECT_EQ(callback_called, false);
+	ctxt.handle_messages(std::move(response), my_notification_handler{});
+	EXPECT_EQ(callback_called, true);
+}
