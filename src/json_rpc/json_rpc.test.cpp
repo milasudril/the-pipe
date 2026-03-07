@@ -4,39 +4,49 @@
 
 #include <testfwk/testfwk.hpp>
 
-TESTCASE(Pipe_json_rpc_context_make_request)
+TESTCASE(Pipe_json_rpc_make_notification_from_method_and_object)
 {
-	Pipe::json_rpc::context ctxt;
-
-	jopp::object params_a;
-	params_a.insert("my_param", 64.0);
-	auto req_a = ctxt.make_request("method_a", std::move(params_a));
-	EXPECT_EQ(req_a.first, Pipe::json_rpc::transaction_id{});
-	auto const req_a_obj = req_a.second.take_value();
-	EXPECT_EQ(req_a_obj.get_field_as<std::string>("jsonrpc"), "2.0");
-	EXPECT_EQ(req_a_obj.get_field_as<double>("id"), 0.0);
-	EXPECT_EQ(req_a_obj.get_field_as<std::string>("method"), "method_a");
-	auto const& req_a_params = req_a_obj.get_field_as<jopp::object>("params");
-	EXPECT_EQ(req_a_params.get_field_as<double>("my_param"), 64.0);
-
-	jopp::object params_b;
-	params_b.insert("my_other_param", 32.0);
-	auto req_b = ctxt.make_request("method_b", std::move(params_b));
-	EXPECT_EQ(req_b.first, Pipe::json_rpc::transaction_id{1});
-	auto const req_b_obj = req_b.second.take_value();
-	EXPECT_EQ(req_b_obj.get_field_as<std::string>("jsonrpc"), "2.0");
-	EXPECT_EQ(req_b_obj.get_field_as<double>("id"), 1.0);
-	EXPECT_EQ(req_b_obj.get_field_as<std::string>("method"), "method_b");
-	auto const& req_b_params = req_b_obj.get_field_as<jopp::object>("params");
-	EXPECT_EQ(req_b_params.get_field_as<double>("my_other_param"), 32.0);
+	jopp::object params;
+	params.insert("value", 0.5);
+	auto notification = Pipe::json_rpc::make_notification("foo", std::move(params));
+	EXPECT_EQ(notification.get_field_as<jopp::string>("jsonrpc"), "2.0");
+	EXPECT_EQ(notification.get_field_as<jopp::string>("method"), "foo");
+	EXPECT_EQ(notification.contains("id"), false);
+	auto& params_in_obj = notification.get_field_as<jopp::object>("params");
+	EXPECT_EQ(params_in_obj.get_field_as<jopp::number>("value"), 0.5);
 }
 
-TESTCASE(Pipe_json_rpc_make_response_from_req_without_id)
+namespace
 {
-	jopp::object my_request{};
-	my_request.insert("method", "foo");
-	auto response = make_response(Pipe::json_rpc::request{std::move(my_request)});
-	EXPECT_EQ(response.get_field_as<std::string>("jsonrpc"), "2.0");
+	struct status_notification
+	{
+		double value;
+	};
+}
+
+template<>
+struct Pipe::json_rpc::notification_traits<status_notification>
+{
+	static constexpr char const* method = "status_notification";
+	static jopp::object params(status_notification obj)
+	{
+		jopp::object ret;
+		ret.insert("value", obj.value);
+		return ret;
+	}
+};
+TESTCASE(Pipe_json_rpc_make_notification_with_deduced_method_name)
+{
+	auto notification = Pipe::json_rpc::make_notification(
+		status_notification{
+			.value = 0.25
+		}
+	);
+	EXPECT_EQ(notification.get_field_as<jopp::string>("jsonrpc"), "2.0");
+	EXPECT_EQ(notification.get_field_as<jopp::string>("method"), "status_notification");
+	EXPECT_EQ(notification.contains("id"), false);
+	auto& params_in_obj = notification.get_field_as<jopp::object>("params");
+	EXPECT_EQ(params_in_obj.get_field_as<jopp::number>("value"), 0.25);
 }
 
 TESTCASE(Pipe_json_rpc_make_response_from_req_with_id)

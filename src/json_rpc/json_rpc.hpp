@@ -18,7 +18,7 @@ namespace Pipe::json_rpc
 	 * \brief A context holds a transaction_id, that is used to generate requests. Thus, a context
 	 *        can act as a request factory
 	 */
-	class context
+	class [[deprecated("Have another context")]] context
 	{
 	public:
 		/**
@@ -33,6 +33,28 @@ namespace Pipe::json_rpc
 	private:
 		transaction_id m_transaction_id;
 	};
+
+	inline jopp::object make_notification(std::string&& method, jopp::object&& params)
+	{
+		jopp::object ret;
+		ret.insert("jsonrpc", "2.0");
+		ret.insert("method", std::move(method));
+		ret.insert("params", std::move(params));
+		return ret;
+	}
+
+	template<class T>
+	struct notification_traits
+	{};
+
+	template<class Notification>
+	inline jopp::object make_notification(Notification&& notification)
+	{
+		return make_notification(
+			notification_traits<Notification>::method,
+			notification_traits<Notification>::params(std::forward<Notification>(notification))
+		);
+	}
 
 	/**
 	 * \brief Creates a response object, given a request
