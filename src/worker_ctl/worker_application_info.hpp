@@ -8,9 +8,62 @@
 namespace Pipe::worker_ctl
 {
 	/**
-	 * \brief Contains information about a port
+	 * \brief Contains information about an input port
 	 */
-	struct port_info
+	struct input_port_info
+	{
+	};
+
+	/**
+	 * \brief Converts a output_port_info ot a jopp::object
+	 */
+	inline jopp::object to_jopp_object(input_port_info const&)
+	{
+		jopp::object ret;
+		//ret.insert("stream_content_type", obj.stream_content_type);
+		return ret;
+	}
+
+	/**
+	 * \brief Converts a jopp::object to a input_port_info
+	 */
+	inline input_port_info make_input_port_info(jopp::object const&)
+	{
+		return input_port_info{
+		};
+	}
+
+	/**
+	 * \brief A mapping from a port name to a input_port_info
+	 */
+	using input_port_info_map = std::map<std::string, input_port_info>;
+
+	/**
+	 * \brief Converts a input_port_info_map to a jopp::object
+	 */
+	inline jopp::object to_jopp_object(input_port_info_map const& obj)
+	{
+		jopp::object ret;
+		for(auto const& item : obj)
+		{ ret.insert(jopp::string{item.first}, to_jopp_object(item.second)); }
+		return ret;
+	}
+
+	/**
+	 * \brief Converts a jopp::object to a input_port_info_map
+	 */
+	inline input_port_info_map make_input_port_info_map(jopp::object const& obj)
+	{
+		input_port_info_map ret;
+		for(auto const& item: obj)
+		{ ret.insert(std::pair{item.first, make_input_port_info(item.second.get<jopp::object>())}); }
+		return ret;
+	}
+
+	/**
+	 * \brief Contains information about an output port
+	 */
+	struct output_port_info
 	{
 		/**
 		 * \brief The expected/promised content type of a port
@@ -21,9 +74,9 @@ namespace Pipe::worker_ctl
 	};
 
 	/**
-	 * \brief Converts a port_info ot a jopp::object
+	 * \brief Converts a output_port_info ot a jopp::object
 	 */
-	inline jopp::object to_jopp_object(port_info const& obj)
+	inline jopp::object to_jopp_object(output_port_info const& obj)
 	{
 		jopp::object ret;
 		ret.insert("stream_content_type", obj.stream_content_type);
@@ -31,24 +84,24 @@ namespace Pipe::worker_ctl
 	}
 
 	/**
-	 * \brief Converts a jopp::object to a port_info
+	 * \brief Converts a jopp::object to a output_port_info
 	 */
-	inline port_info make_port_info(jopp::object const& obj)
+	inline output_port_info make_output_port_info(jopp::object const& obj)
 	{
-		return port_info{
+		return output_port_info{
 			.stream_content_type = obj.get_field_as<std::string>("stream_content_type")
 		};
 	}
 
 	/**
-	 * \brief A mapping from a port name to a port_info
+	 * \brief A mapping from a port name to a output_port_info
 	 */
-	using port_info_map = std::map<std::string, port_info>;
+	using output_port_info_map = std::map<std::string, output_port_info>;
 
 	/**
-	 * \brief Converts a port_info_map to a jopp::object
+	 * \brief Converts a output_port_info_map to a jopp::object
 	 */
-	inline jopp::object to_jopp_object(port_info_map const& obj)
+	inline jopp::object to_jopp_object(output_port_info_map const& obj)
 	{
 		jopp::object ret;
 		for(auto const& item : obj)
@@ -57,13 +110,13 @@ namespace Pipe::worker_ctl
 	}
 
 	/**
-	 * \brief Converts a jopp::object to a port_info_map
+	 * \brief Converts a jopp::object to a output_port_info_map
 	 */
-	inline port_info_map make_port_info_map(jopp::object const& obj)
+	inline output_port_info_map make_output_port_info_map(jopp::object const& obj)
 	{
-		port_info_map ret;
+		output_port_info_map ret;
 		for(auto const& item: obj)
-		{ ret.insert(std::pair{item.first, make_port_info(item.second.get<jopp::object>())}); }
+		{ ret.insert(std::pair{item.first, make_output_port_info(item.second.get<jopp::object>())}); }
 		return ret;
 	}
 
@@ -80,12 +133,12 @@ namespace Pipe::worker_ctl
 		/**
 		 * \brief The available input ports
 		 */
-		port_info_map inputs;
+		input_port_info_map inputs;
 
 		/**
 		 * \brief The available output ports
 		 */
-		port_info_map outputs;
+		output_port_info_map outputs;
 	};
 
 	/**
@@ -107,8 +160,8 @@ namespace Pipe::worker_ctl
 	{
 		return worker_application_info{
 			.display_name = obj.get_field_as<std::string>("display_name"),
-			.inputs = make_port_info_map(obj.get_field_as<jopp::object>("inputs")),
-			.outputs = make_port_info_map(obj.get_field_as<jopp::object>("output"))
+			.inputs = make_input_port_info_map(obj.get_field_as<jopp::object>("inputs")),
+			.outputs = make_output_port_info_map(obj.get_field_as<jopp::object>("output"))
 		};
 	}
 }
