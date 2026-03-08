@@ -217,6 +217,9 @@ namespace Pipe::worker_ctl
 			.outputs = make_output_port_info_map(std::move(obj.get_field_as<jopp::object>("output")))
 		};
 	}
+
+	struct get_worker_application_info
+	{};
 }
 
 #endif

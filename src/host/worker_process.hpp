@@ -10,6 +10,21 @@
 #include <filesystem>
 #include <jopp/parser.hpp>
 
+namespace Pipe::json_rpc
+{
+	template<>
+	struct request_traits<worker_ctl::get_worker_application_info>
+	{
+		static constexpr char const* method = "get_worker_application_info";
+
+		static jopp::object params(worker_ctl::get_worker_application_info)
+		{ return jopp::object{}; }
+
+		static worker_ctl::worker_application_info make_response(jopp::value&& val)
+		{ return worker_ctl::make_worker_application_info(std::move(val.get<jopp::object>())); }
+	};
+}
+
 namespace Pipe::host
 {
 	class process_manager
@@ -47,12 +62,9 @@ namespace Pipe::host
 		{
 			m_json_rpc_ctxt.send_request(
 				std::ref(m_ctl_output),
-				"get_worker_application_info",
-				jopp::object{},
-				[this](jopp::value&& response){
-					m_appinfo = worker_ctl::make_worker_application_info(
-						std::move(response.get<jopp::object>())
-					);
+				worker_ctl::get_worker_application_info{},
+				[this](worker_ctl::worker_application_info&& response){
+					m_appinfo = std::move(response);
 				}
 			);
 		}
