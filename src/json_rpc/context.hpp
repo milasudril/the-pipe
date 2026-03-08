@@ -146,12 +146,12 @@ namespace Pipe::json_rpc
 			request Request,
 			response_callback<response_type<Request>> Callback
 		>
-		void send_request(Receiver&& receiver, Request&& wrapped_request, Callback&& callback)
+		void send_request(Receiver&& receiver, Request&& request, Callback&& callback)
 		{
 			send_request(
 				std::forward<Receiver>(receiver),
 				request_traits<Request>::method,
-				request_traits<Request>::params(std::forward<Request>(wrapped_request)),
+				request_traits<Request>::params(std::forward<Request>(request)),
 				[cb = std::forward<Callback>(callback)](jopp::value&& response){
 					cb(request_traits<Request>::make_response(std::move(response)));
 				}
