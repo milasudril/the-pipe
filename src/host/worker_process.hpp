@@ -5,7 +5,7 @@
 #include "src/json_rpc/context.hpp"
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/proc_mgmt/proc_mgmt.hpp"
-#include "src/client_ctl/client_application_info.hpp"
+#include "src/worker_ctl/worker_application_info.hpp"
 
 #include <filesystem>
 #include <jopp/parser.hpp>
@@ -20,10 +20,10 @@ namespace Pipe::host
 	private:
 	};
 
-	class client_process
+	class worker_process
 	{
 	public:
-		struct client_ctl_tag{};
+		struct worker_ctl_tag{};
 		struct log_stream_tag{};
 		using proc_activity_event_handler_registered_event =
 			os_services::fd::activity_event_handler_registered_event<
@@ -36,7 +36,7 @@ namespace Pipe::host
 				os_services::proc_mgmt::pidfd_tag
 			>;
 
-		explicit client_process(
+		explicit worker_process(
 			process_manager& proc_manager,
 			pid_t pid,
 			std::filesystem::path&& binary
@@ -47,10 +47,10 @@ namespace Pipe::host
 		{
 			m_json_rpc_ctxt.send_request(
 				std::ref(m_ctl_output),
-				"get_client_application_info",
+				"get_worker_application_info",
 				jopp::object{},
 				[this](jopp::value&& response){
-					m_appinfo = client_ctl::make_client_application_info(response.get<jopp::object>());
+					m_appinfo = worker_ctl::make_worker_application_info(response.get<jopp::object>());
 				}
 			);
 		}
@@ -59,7 +59,7 @@ namespace Pipe::host
 		void handle_event(json_io::parser_error_event<log_stream_tag> event);
 		void handle_event(json_io::input_closed_event<log_stream_tag>);
 
-		void handle_event(json_io::container_loaded_event<client_ctl_tag>&& event)
+		void handle_event(json_io::container_loaded_event<worker_ctl_tag>&& event)
 		{
 			m_json_rpc_ctxt.handle_messages(std::move(event.obj), std::ref(*this));
 		}
@@ -69,8 +69,8 @@ namespace Pipe::host
 		{}
 
 
-		void handle_event(json_io::parser_error_event<client_ctl_tag> event);
-		void handle_event(json_io::input_closed_event<client_ctl_tag>);
+		void handle_event(json_io::parser_error_event<worker_ctl_tag> event);
+		void handle_event(json_io::input_closed_event<worker_ctl_tag>);
 
 		void handle_event(proc_activity_event_handler_registered_event const& event)
 		{ m_registration = event; }
@@ -89,7 +89,7 @@ namespace Pipe::host
 		std::reference_wrapper<process_manager> m_proc_manager;
 		pid_t m_pid;
 		std::filesystem::path m_binary;
-		client_ctl::client_application_info m_appinfo;
+		worker_ctl::worker_application_info m_appinfo;
 
 		void handle_ctl_response(jopp::array&&)
 		{}

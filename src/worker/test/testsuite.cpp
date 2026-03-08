@@ -12,9 +12,9 @@
 
 namespace
 {
-	std::filesystem::path testclient_exe()
+	std::filesystem::path testworker_exe()
 	{
-		return std::filesystem::path{MAIKE_BUILDINFO_TARGETDIR}/"src/client/test/client";
+		return std::filesystem::path{MAIKE_BUILDINFO_TARGETDIR}/"src/worker/test/worker";
 	}
 
 	Pipe::log::item fetch_log_item(Pipe::os_services::io::input_file_descriptor_ref output)
@@ -46,9 +46,9 @@ namespace
 	}
 }
 
-TESTCASE(Pipe_client_main_sucessful_start)
+TESTCASE(Pipe_worker_main_sucessful_start)
 {
-	auto const exe_file = testclient_exe();
+	auto const exe_file = testworker_exe();
 	Pipe::os_services::ipc::pipe proc_output;
 	Pipe::os_services::ipc::pipe req_pipe;
 	Pipe::os_services::ipc::pipe resp_pipe;

@@ -2,7 +2,7 @@
 
 #@	{
 #@		"target":{"name":"dummy"},
-#@		"dependencies": [{"ref":"./client.test", "origin":"generated"}]
+#@		"dependencies": [{"ref":"./worker.test", "origin":"generated"}]
 #@	}
 
 import sys
@@ -11,5 +11,5 @@ import subprocess
 
 target = sys.argv[1]
 target_dir = os.path.dirname(target)
-exit(subprocess.run(target_dir + '/client.test').returncode)
+exit(subprocess.run(target_dir + '/worker.test').returncode)
 

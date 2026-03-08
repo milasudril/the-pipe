@@ -1,15 +1,15 @@
-#ifndef PIPE_CLIENT_APPLICATION_HPP
-#define PIPE_CLIENT_APPLICATION_HPP
+#ifndef PIPE_WORKER_APPLICATION_HPP
+#define PIPE_WORKER_APPLICATION_HPP
 
 #include "src/json_io/reader.hpp"
 #include "src/json_io/writer.hpp"
-#include "src/client_ctl/client_application_info.hpp"
+#include "src/worker_ctl/worker_application_info.hpp"
 #include "src/json_rpc/json_rpc.hpp"
 
 #include <jopp/serializer.hpp>
 #include <memory>
 
-namespace Pipe::client
+namespace Pipe::worker
 {
 	class application
 	{
@@ -29,10 +29,10 @@ namespace Pipe::client
 			json_rpc::wrapped_request request{std::move(object)};
 			auto const method = request.method();
 
-			if(method == "get_client_application_info")
+			if(method == "get_worker_application_info")
 			{
 				m_ctl_output.write(
-					make_response(std::move(request), to_jopp_object(get_client_application_info()))
+					make_response(std::move(request), to_jopp_object(get_worker_application_info()))
 				);
 			}
 			else
@@ -68,7 +68,7 @@ namespace Pipe::client
 
 	private:
 		json_io::writer m_ctl_output;
-		virtual client_ctl::client_application_info get_client_application_info() const = 0;
+		virtual worker_ctl::worker_application_info get_worker_application_info() const = 0;
 		bool m_should_exit{false};
 	};
 }

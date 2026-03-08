@@ -1,0 +1,7 @@
+{
+	"target":{
+		"name": "worker.test",
+		"dependencies": [{"ref": "src/worker/test/worker", "origin":"generated"}]
+	},
+	"dependencies":[{"ref":"./testsuite.o", "rel":"implementation"}]
+}

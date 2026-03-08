@@ -1,7 +1,7 @@
 #ifndef PIPE_HOST_SERVER_HPP
 #define PIPE_HOST_SERVER_HPP
 
-#include "./client_process.hpp"
+#include "./worker_process.hpp"
 
 #include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
@@ -21,12 +21,12 @@
 
 namespace Pipe::host
 {
-	class client_process_repository:
+	class worker_process_repository:
 		public process_manager,
-		private std::unordered_map<pid_t, std::shared_ptr<client_process>>
+		private std::unordered_map<pid_t, std::shared_ptr<worker_process>>
 	{
 	public:
-		using base = std::unordered_map<pid_t, std::shared_ptr<client_process>>;
+		using base = std::unordered_map<pid_t, std::shared_ptr<worker_process>>;
 		using base::find;
 		using base::contains;
 		using base::begin;
@@ -35,7 +35,7 @@ namespace Pipe::host
 
 		void load(
 			os_services::fd::activity_event_handler_store& activity_event_handler_store,
-			std::filesystem::path&& client_binary
+			std::filesystem::path&& worker_binary
 		)
 		{
 			os_services::ipc::pipe logpipe;
@@ -43,7 +43,7 @@ namespace Pipe::host
 			os_services::ipc::pipe response_pipe;
 
 			auto process = os_services::proc_mgmt::spawn(
-				client_binary.c_str(),
+				worker_binary.c_str(),
 				std::span<char const*>{},
 				std::span<char const*>{},
 				os_services::proc_mgmt::io_redirection{
@@ -54,31 +54,31 @@ namespace Pipe::host
 				std::span<os_services::fd::file_descriptor>{}
 			);
 
-			auto client_proc = std::make_shared<client_process>(*this, process.first, std::move(client_binary));
+			auto worker_proc = std::make_shared<worker_process>(*this, process.first, std::move(worker_binary));
 
 			auto cfg_transaction = activity_event_handler_store.make_config_transaction()
 				.add<json_io::writer::json_stream_tag>(
-					std::ref(client_proc->get_ctl_output()),
+					std::ref(worker_proc->get_ctl_output()),
 					request_pipe.take_write_end(),
 					os_services::fd::activity_status::none
 				)
 				.add<json_io::reader::json_stream_tag>(
-					json_io::reader{client_process::client_ctl_tag{}, client_proc},
+					json_io::reader{worker_process::worker_ctl_tag{}, worker_proc},
 					response_pipe.take_read_end(),
 					os_services::fd::activity_status::read
 				)
 				.add<json_io::reader::json_stream_tag>(
-					json_io::reader{client_process::log_stream_tag{}, client_proc},
+					json_io::reader{worker_process::log_stream_tag{}, worker_proc},
 					logpipe.take_read_end(),
 					os_services::fd::activity_status::read
 				)
 				.add<void>(
-					client_proc,
+					worker_proc,
 					std::move(process.second),
 					os_services::fd::activity_status::read
 				);
 
-			auto const ip = insert(std::pair{process.first, std::move(client_proc)});
+			auto const ip = insert(std::pair{process.first, std::move(worker_proc)});
 			assert(ip.second);
 
 			cfg_transaction.commit();

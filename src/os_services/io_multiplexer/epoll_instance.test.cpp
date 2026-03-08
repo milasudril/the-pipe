@@ -103,7 +103,7 @@ TESTCASE(Pipe_os_services_io_multiplexer_epoll_entry_data_create_and_get_props)
 
 namespace
 {
-	struct my_client
+	struct my_worker
 	{
 		using event_type = Pipe::os_services::fd::activity_event<
 			void,
@@ -169,7 +169,7 @@ namespace
 			if(can_read(event.status))
 			{
 				auto const id  = m_registration.event_handler_store->add<void>(
-					my_client{},
+					my_worker{},
 					accept(m_registration.fd),
 					Pipe::os_services::fd::activity_status::read
 				);

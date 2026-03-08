@@ -1,11 +1,11 @@
-#ifndef PIPE_CLIENT_CTL_CLIENT_INFO_HPP
-#define PIPE_CLIENT_CTL_CLIENT_INFO_HPP
+#ifndef PIPE_WORKER_CTL_WORKER_INFO_HPP
+#define PIPE_WORKER_CTL_WORKER_INFO_HPP
 
 #include <jopp/types.hpp>
 #include <string>
 #include <map>
 
-namespace Pipe::client_ctl
+namespace Pipe::worker_ctl
 {
 	/**
 	 * \brief Contains information about a port
@@ -68,9 +68,9 @@ namespace Pipe::client_ctl
 	}
 
 	/**
-	 * \brief Stores information about a client application
+	 * \brief Stores information about a worker application
 	 */
-	struct client_application_info
+	struct worker_application_info
 	{
 		/**
 		 * \brief A user-friendly name, independent of the name of the actual binary
@@ -89,9 +89,9 @@ namespace Pipe::client_ctl
 	};
 
 	/**
-	 * \brief Converts a client_application_info to a jopp::object
+	 * \brief Converts a worker_application_info to a jopp::object
 	 */
-	inline jopp::object to_jopp_object(client_application_info const& obj)
+	inline jopp::object to_jopp_object(worker_application_info const& obj)
 	{
 		jopp::object ret;
 		ret.insert("display_name", obj.display_name);
@@ -101,11 +101,11 @@ namespace Pipe::client_ctl
 	}
 
 	/**
-	 * \brief Converts a jopp::object to a client_application_info
+	 * \brief Converts a jopp::object to a worker_application_info
 	 */
-	inline client_application_info make_client_application_info(jopp::object const& obj)
+	inline worker_application_info make_worker_application_info(jopp::object const& obj)
 	{
-		return client_application_info{
+		return worker_application_info{
 			.display_name = obj.get_field_as<std::string>("display_name"),
 			.inputs = make_port_info_map(obj.get_field_as<jopp::object>("inputs")),
 			.outputs = make_port_info_map(obj.get_field_as<jopp::object>("output"))
