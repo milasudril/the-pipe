@@ -1,6 +1,7 @@
 //@	{"target":{"name":"app.o"}}
 
 #include "src/worker/application.hpp"
+#include "src/worker_ctl/worker_application_info.hpp"
 
 namespace
 {
@@ -9,7 +10,39 @@ namespace
 		public:
 			virtual Pipe::worker_ctl::worker_application_info get_worker_application_info() const override
 			{
-				return Pipe::worker_ctl::worker_application_info{};
+				Pipe::worker_ctl::input_port_info_map inputs;
+				std::vector<Pipe::worker_ctl::data_format_info> input_accepts;
+				input_accepts.push_back(
+					Pipe::worker_ctl::data_format_info{
+						.schema = "mime",
+						.format_descriptor = jopp::value{"text/plain"}
+					}
+				);
+				inputs.insert(
+					std::pair{
+						"input",
+						Pipe::worker_ctl::input_port_info{
+							.accepts = std::move(input_accepts)
+						}
+					}
+				);
+
+				Pipe::worker_ctl::output_port_info_map outputs;
+				outputs.insert(
+					std::pair{
+						"result",
+						Pipe::worker_ctl::data_format_info{
+							.schema = "mime",
+							.format_descriptor = jopp::value{"text/plain"}
+						}
+					}
+				);
+
+				return Pipe::worker_ctl::worker_application_info{
+					.display_name = "Test application",
+					.inputs = std::move(inputs),
+					.outputs = std::move(outputs)
+				};
 			}
 	};
 }

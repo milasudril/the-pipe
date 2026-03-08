@@ -13,7 +13,7 @@ namespace Pipe::worker_ctl
 	struct data_format_info
 	{
 		std::string schema;
-		jopp::value description;
+		jopp::value format_descriptor;
 	};
 
 	/**
@@ -23,7 +23,7 @@ namespace Pipe::worker_ctl
 	{
 		jopp::object ret;
 		ret.insert("schema", std::move(obj.schema));
-		ret.insert("description", std::move(obj.description));
+		ret.insert("format_descriptor", std::move(obj.format_descriptor));
 		return ret;
 	}
 
@@ -32,12 +32,12 @@ namespace Pipe::worker_ctl
 	 */
 	inline data_format_info make_data_format_info(jopp::object&& obj)
 	{
-		auto description = obj.find("description");
-		if(description == std::end(obj))
-		{ throw std::runtime_error{"Missing mandatory field `description`"}; }
+		auto format_descriptor = obj.find("format_descriptor");
+		if(format_descriptor == std::end(obj))
+		{ throw std::runtime_error{"Missing mandatory field `format_descriptor`"}; }
 		return data_format_info{
 			.schema = std::move(obj.get_field_as<std::string>("schema")),
-			.description = std::move(description->second)
+			.format_descriptor = std::move(format_descriptor->second)
 		};
 	}
 	/**
