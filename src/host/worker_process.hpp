@@ -6,6 +6,7 @@
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/proc_mgmt/proc_mgmt.hpp"
 #include "src/worker_ctl/worker_application_info.hpp"
+#include "src/worker_ctl/connection.hpp"
 
 #include <filesystem>
 #include <jopp/parser.hpp>
