@@ -50,7 +50,9 @@ namespace Pipe::host
 				"get_worker_application_info",
 				jopp::object{},
 				[this](jopp::value&& response){
-					m_appinfo = worker_ctl::make_worker_application_info(response.get<jopp::object>());
+					m_appinfo = worker_ctl::make_worker_application_info(
+						std::move(response.get<jopp::object>())
+					);
 				}
 			);
 		}
