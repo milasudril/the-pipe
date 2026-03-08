@@ -104,9 +104,6 @@ namespace Pipe::host
 		pid_t m_pid;
 		std::filesystem::path m_binary;
 		worker_ctl::worker_application_info m_appinfo;
-
-		void handle_ctl_response(jopp::array&&)
-		{}
 		json_rpc::context m_json_rpc_ctxt;
 	};
 }
