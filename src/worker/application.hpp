@@ -3,8 +3,8 @@
 
 #include "src/json_io/reader.hpp"
 #include "src/json_io/writer.hpp"
-#include "src/worker_ctl/worker_application_info.hpp"
-#include "src/json_rpc/json_rpc.hpp"
+#include "src/json_rpc/context.hpp"
+#include "src/worker_ctl_json_rpc_traits/worker_ctl_json_rpc_traits.hpp"
 
 #include <jopp/serializer.hpp>
 #include <memory>
@@ -29,7 +29,7 @@ namespace Pipe::worker
 			json_rpc::wrapped_request request{std::move(object)};
 			auto const method = request.method();
 
-			if(method == "get_worker_application_info")
+			if(method == json_rpc::request_traits<worker_ctl::get_worker_application_info>::method)
 			{
 				m_ctl_output.write(
 					make_response(std::move(request), to_jopp_object(get_worker_application_info()))
