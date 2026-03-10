@@ -2,6 +2,8 @@
 #define PIPE_WORKER_CTL_CONNECTION_HPP
 
 #include "src/worker_ctl/data_format_info.hpp"
+#include "src/os_services/fs/fs_entry.hpp"
+
 #include <jopp/types.hpp>
 
 namespace Pipe::worker_ctl
@@ -94,6 +96,14 @@ namespace Pipe::worker_ctl
 			.path = make_endpoint_path(std::move(obj.get_field_as<jopp::object>("path")))
 		};
 	}
+
+	struct endpoint_open_opts
+	{
+		os_services::fs::open_precondition precond{os_services::fs::open_precondition::none};
+		os_services::fs::file_permission created_endpoint_perms{
+			os_services::fs::file_permission::owner_read | os_services::fs::file_permission::owner_write
+		};
+	};
 
 	struct output_connection
 	{
