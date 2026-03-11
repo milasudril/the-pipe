@@ -99,9 +99,9 @@ namespace Pipe::worker_ctl
 
 	struct endpoint_open_opts
 	{
-		os_services::fs::open_precondition precond{os_services::fs::open_precondition::none};
-		os_services::fs::file_permission created_endpoint_perms{
-			os_services::fs::file_permission::owner_read | os_services::fs::file_permission::owner_write
+		os_services::fs::file_open_precondition precond{os_services::fs::file_open_precondition::none};
+		os_services::fs::file_access_permission created_endpoint_perms{
+			os_services::fs::file_access_permission::owner_read | os_services::fs::file_access_permission::owner_write
 		};
 	};
 
