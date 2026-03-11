@@ -35,16 +35,28 @@ namespace Pipe::os_services::fs
 		throw std::runtime_error{"Unknown opening precondition"};
 	}
 
+	enum class file_permission_bit{
+		other_execute = 0,
+		other_write   = 1,
+		other_read    = 2,
+		group_execute = 3,
+		group_write   = 4,
+		group_read    = 5,
+		owner_execute = 6,
+		owner_write   = 7,
+		owner_read    = 8
+	};
+
 	enum class file_permission {
-		other_execute = 0001,
-		other_write   = 0002,
-		other_read    = 0004,
-		group_execute = 0010,
-		group_write   = 0020,
-		group_read    = 0040,
-		owner_execute = 0100,
-		owner_write   = 0200,
-		owner_read    = 0400
+		other_execute = 1<<static_cast<int>(file_permission_bit::other_execute),
+		other_write   = 1<<static_cast<int>(file_permission_bit::other_write  ),
+		other_read    = 1<<static_cast<int>(file_permission_bit::other_read   ),
+		group_execute = 1<<static_cast<int>(file_permission_bit::group_execute),
+		group_write   = 1<<static_cast<int>(file_permission_bit::group_write  ),
+		group_read    = 1<<static_cast<int>(file_permission_bit::group_read   ),
+		owner_execute = 1<<static_cast<int>(file_permission_bit::owner_execute),
+		owner_write   = 1<<static_cast<int>(file_permission_bit::owner_write  ),
+		owner_read    = 1<<static_cast<int>(file_permission_bit::owner_read   )
 	};
 
 	consteval void enable_bitmask_operators(file_permission){}
