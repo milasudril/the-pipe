@@ -2,7 +2,11 @@
 #define PIPE_OS_SERVICES_FS_FS_ENTRY_HPP
 
 #include "src/utils/utils.hpp"
+
 #include <stdexcept>
+#include <span>
+#include <vector>
+#include <string_view>
 
 namespace Pipe::os_services::fs
 {
@@ -127,6 +131,21 @@ namespace Pipe::os_services::fs
 			{ ret.push_back(to_string(file_access_permission_bit{k})); }
 			--k;
 			mask >>= 1;
+		}
+
+		return ret;
+	}
+
+	template<class StringLike>
+	inline file_access_permission make_file_access_permission(
+		std::span<StringLike const> strings
+	)
+	{
+		file_access_permission ret{};
+		for(auto const& item : strings)
+		{
+			auto const bit = make_file_access_permission_bit(item);
+			ret |= file_access_permission{1 << static_cast<uint16_t>(bit)};
 		}
 
 		return ret;
