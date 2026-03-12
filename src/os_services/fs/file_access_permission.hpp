@@ -24,7 +24,7 @@ namespace Pipe::os_services::fs
 		owner_read    = 8
 	};
 
-	constexpr char const* to_string(file_access_permission_bit permbit)
+	inline constexpr char const* to_string(file_access_permission_bit permbit)
 	{
 		switch(permbit)
 		{
@@ -51,7 +51,7 @@ namespace Pipe::os_services::fs
 		}
 	}
 
-	constexpr file_access_permission_bit make_file_access_permission_bit(std::string_view str)
+	inline constexpr file_access_permission_bit make_file_access_permission_bit(std::string_view str)
 	{
 		if(str == "other_execute")
 		{ return file_access_permission_bit::other_execute; }
@@ -109,15 +109,15 @@ namespace Pipe::os_services::fs
 	}
 
 	template<class StringLike>
-	inline file_access_permission make_file_access_permission(
-		std::span<StringLike const> strings
+	inline constexpr file_access_permission make_file_access_permission(
+		std::span<StringLike> strings
 	)
 	{
 		file_access_permission ret{};
 		for(auto const& item : strings)
 		{
 			auto const bit = make_file_access_permission_bit(item);
-			ret |= file_access_permission{1 << static_cast<uint16_t>(bit)};
+			ret |= file_access_permission{static_cast<uint16_t>(1 << static_cast<uint16_t>(bit))};
 		}
 
 		return ret;

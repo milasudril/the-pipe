@@ -3,6 +3,7 @@
 #include "./file_access_permission.hpp"
 #include "testfwk/validation.hpp"
 
+#include <array>
 #include <testfwk/testfwk.hpp>
 
 TESTCASE(Pipe_os_services_fs_file_access_permission_bit_to_string)
@@ -147,4 +148,22 @@ TESTCASE(Pipe_os_services_fs_file_access_permission_to_array_of_strings)
 		REQUIRE_EQ(std::size(result), 1);
 		EXPECT_EQ(result[0], std::string_view{"other_execute"});
 	}
+}
+
+TESTCASE(Pipe_os_services_fs_make_file_access_permission)
+{
+	std::array strings{
+		"owner_read",
+		"owner_write",
+		"owner_execute",
+		"group_read",
+		"group_execute",
+		"other_read",
+		"other_execute"
+	};
+	auto const result = Pipe::os_services::fs::make_file_access_permission(
+		std::span{std::begin(strings), std::end(strings)}
+	);
+
+	EXPECT_EQ(static_cast<uint16_t>(result), 0755);
 }
