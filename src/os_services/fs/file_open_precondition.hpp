@@ -1,5 +1,5 @@
-#ifndef PIPE_OS_SERVICES_FS_FS_ENTRY_HPP
-#define PIPE_OS_SERVICES_FS_FS_ENTRY_HPP
+#ifndef PIPE_OS_SERVICES_FS_FILE_OPEN_PRECONDITION_HPP
+#define PIPE_OS_SERVICES_FS_FILE_OPEN_PRECONDITION_HPP
 
 #include "src/utils/utils.hpp"
 
@@ -10,7 +10,7 @@ namespace Pipe::os_services::fs
 {
 	enum class file_open_precondition{must_not_exist = -1, none = 0, must_exist = 1};
 
-	constexpr char const* to_string(file_open_precondition cond)
+	inline constexpr char const* to_string(file_open_precondition cond)
 	{
 		switch(cond)
 		{
@@ -25,7 +25,7 @@ namespace Pipe::os_services::fs
 		}
 	}
 
-	constexpr file_open_precondition make_file_open_precondition(std::string_view str)
+	inline constexpr file_open_precondition make_file_open_precondition(std::string_view str)
 	{
 		if(str == "must_not_exist")
 		{ return file_open_precondition::must_not_exist; }
@@ -34,7 +34,7 @@ namespace Pipe::os_services::fs
 		if(str == "must_exist")
 		{ return file_open_precondition::must_exist; }
 
-		throw std::runtime_error{"Unknown opening precondition"};
+		throw std::runtime_error{"Unknown file open precondition"};
 	}
 }
 
