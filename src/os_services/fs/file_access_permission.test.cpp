@@ -51,3 +51,61 @@ TESTCASE(Pipe_os_services_fs_file_access_permission_bit_to_string)
 		std::string_view{"other_execute"}
 	);
 }
+
+TESTCASE(Pipe_os_services_fs_make_file_access_permission_bit)
+{
+	EXPECT_EQ(
+		Pipe::os_services::fs::make_file_access_permission_bit("owner_read"),
+		Pipe::os_services::fs::file_access_permission_bit::owner_read
+	);
+
+	EXPECT_EQ(
+		Pipe::os_services::fs::make_file_access_permission_bit("owner_write"),
+		Pipe::os_services::fs::file_access_permission_bit::owner_write
+	);
+
+	EXPECT_EQ(
+		Pipe::os_services::fs::make_file_access_permission_bit("owner_execute"),
+		Pipe::os_services::fs::file_access_permission_bit::owner_execute
+	);
+
+	EXPECT_EQ(
+		Pipe::os_services::fs::make_file_access_permission_bit("group_read"),
+		Pipe::os_services::fs::file_access_permission_bit::group_read
+	);
+
+	EXPECT_EQ(
+		Pipe::os_services::fs::make_file_access_permission_bit("group_write"),
+		Pipe::os_services::fs::file_access_permission_bit::group_write
+	);
+
+	EXPECT_EQ(
+		Pipe::os_services::fs::make_file_access_permission_bit("group_execute"),
+		Pipe::os_services::fs::file_access_permission_bit::group_execute
+	);
+
+	EXPECT_EQ(
+		Pipe::os_services::fs::make_file_access_permission_bit("other_read"),
+		Pipe::os_services::fs::file_access_permission_bit::other_read
+	);
+
+	EXPECT_EQ(
+		Pipe::os_services::fs::make_file_access_permission_bit("other_write"),
+		Pipe::os_services::fs::file_access_permission_bit::other_write
+	);
+
+	EXPECT_EQ(
+		Pipe::os_services::fs::make_file_access_permission_bit("other_execute"),
+		Pipe::os_services::fs::file_access_permission_bit::other_execute
+	);
+
+	try
+	{
+		std::ignore = Pipe::os_services::fs::make_file_access_permission_bit("blah");
+		abort();
+	}
+	catch(std::exception const& err)
+	{
+		EXPECT_EQ(err.what(), std::string_view{"Unknown file permission bit"});
+	}
+}
