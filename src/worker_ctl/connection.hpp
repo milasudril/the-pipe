@@ -3,6 +3,7 @@
 
 #include "src/worker_ctl/data_format_info.hpp"
 #include "src/os_services/fs/fs_entry.hpp"
+#include "src/os_services/fs/file_access_permission.hpp"
 
 #include <jopp/types.hpp>
 
