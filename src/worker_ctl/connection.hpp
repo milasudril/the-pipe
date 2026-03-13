@@ -11,27 +11,27 @@ namespace Pipe::worker_ctl
 {
 	struct endpoint_path
 	{
-		std::string schema;
-		jopp::value path;
+		std::string type;
+		jopp::value value;
 	};
 
 	inline jopp::object to_jopp_object(endpoint_path&& obj)
 	{
 		jopp::object ret;
-		ret.insert("schema", std::move(obj.schema));
-		ret.insert("path", std::move(obj.path));
+		ret.insert("type", std::move(obj.type));
+		ret.insert("value", std::move(obj.value));
 		return ret;
 	}
 
 	inline endpoint_path make_endpoint_path(jopp::object&& obj)
 	{
-		auto path = obj.find("path");
-		if(path == std::end(obj))
-		{ throw std::runtime_error{"Missing mandatory field `path`"}; }
+		auto value = obj.find("value");
+		if(value == std::end(obj))
+		{ throw std::runtime_error{"Missing mandatory field `value`"}; }
 
 		return endpoint_path{
-			.schema = std::move(obj.get_field_as<jopp::string>("schema")),
-			.path = std::move(path->second)
+			.type = std::move(obj.get_field_as<jopp::string>("type")),
+			.value = std::move(value->second)
 		};
 	}
 
