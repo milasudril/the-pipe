@@ -106,6 +106,18 @@ namespace Pipe::worker_ctl
 		};
 	};
 
+	inline jopp::object to_jopp_object(endpoint_open_opts const& opts)
+	{
+		jopp::object ret;
+		ret.insert("precond", to_string(opts.precond));
+		ret.insert(
+			"created_endpoint_perms",
+			to_array_of_strings<jopp::array>(opts.created_endpoint_perms)
+		);
+
+		return ret;
+	}
+
 	struct output_connection
 	{
 		remote_input_endpoint endpoint;

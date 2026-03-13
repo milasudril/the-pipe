@@ -90,9 +90,10 @@ namespace Pipe::os_services::fs
 
 	consteval void enable_bitmask_operators(file_access_permission){}
 
-	inline std::vector<char const*> to_array_of_strings(file_access_permission perm)
+	template<class RetArray = std::vector<char const*>>
+	inline RetArray to_array_of_strings(file_access_permission perm)
 	{
-		std::vector<char const*> ret;
+		RetArray ret;
 		ret.reserve(9);
 
 		uint16_t mask = 0400;
