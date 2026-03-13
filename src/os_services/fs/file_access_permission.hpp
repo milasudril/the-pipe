@@ -8,6 +8,7 @@
 #include <vector>
 #include <string_view>
 #include <cstdint>
+#include <ranges>
 
 namespace Pipe::os_services::fs
 {
@@ -109,10 +110,9 @@ namespace Pipe::os_services::fs
 		return ret;
 	}
 
-	template<class StringLike>
-	inline constexpr file_access_permission make_file_access_permission(
-		std::span<StringLike> strings
-	)
+	template<std::ranges::forward_range Range>
+	requires(std::is_convertible_v<std::ranges::range_value_t<Range>, std::string_view>)
+	inline constexpr file_access_permission make_file_access_permission(Range&& strings)
 	{
 		file_access_permission ret{};
 		for(auto const& item : strings)

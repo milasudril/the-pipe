@@ -6,6 +6,7 @@
 #include "src/os_services/fs/file_access_permission.hpp"
 
 #include <jopp/types.hpp>
+#include <ranges>
 
 namespace Pipe::worker_ctl
 {
@@ -114,6 +115,29 @@ namespace Pipe::worker_ctl
 			"created_endpoint_perms",
 			to_array_of_strings<jopp::array>(opts.created_endpoint_perms)
 		);
+
+		return ret;
+	}
+
+	inline endpoint_open_opts make_endpoint_open_opts(jopp::object const& obj)
+	{
+		endpoint_open_opts ret;
+		auto const precond = obj.try_get_field_as<jopp::string>("precond");
+		if(precond != nullptr)
+		{ ret.precond = os_services::fs::make_file_open_precondition(*precond); }
+
+		auto const created_endpoint_perms_jopp = obj.try_get_field_as<jopp::array>("created_endpoint_perms");
+		if(created_endpoint_perms_jopp != nullptr)
+		{
+			ret.created_endpoint_perms = os_services::fs::make_file_access_permission(
+				std::ranges::transform_view{
+					*created_endpoint_perms_jopp,
+					[](jopp::value const& item){
+						return item.get<jopp::string>();
+					}
+				}
+			);
+		}
 
 		return ret;
 	}
