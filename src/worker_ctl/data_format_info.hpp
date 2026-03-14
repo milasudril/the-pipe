@@ -10,8 +10,8 @@ namespace Pipe::worker_ctl
 	 */
 	struct data_format_info
 	{
-		std::string schema;
-		jopp::value format_descriptor;
+		std::string type;
+		jopp::value value;
 	};
 
 	/**
@@ -20,8 +20,8 @@ namespace Pipe::worker_ctl
 	inline jopp::object to_jopp_object(data_format_info&& obj)
 	{
 		jopp::object ret;
-		ret.insert("schema", std::move(obj.schema));
-		ret.insert("format_descriptor", std::move(obj.format_descriptor));
+		ret.insert("type", std::move(obj.type));
+		ret.insert("value", std::move(obj.value));
 		return ret;
 	}
 
@@ -30,12 +30,12 @@ namespace Pipe::worker_ctl
 	 */
 	inline data_format_info make_data_format_info(jopp::object&& obj)
 	{
-		auto format_descriptor = obj.find("format_descriptor");
-		if(format_descriptor == std::end(obj))
-		{ throw std::runtime_error{"Missing mandatory field `format_descriptor`"}; }
+		auto value = obj.find("value");
+		if(value == std::end(obj))
+		{ throw std::runtime_error{"Missing mandatory field `value`"}; }
 		return data_format_info{
-			.schema = std::move(obj.get_field_as<std::string>("schema")),
-			.format_descriptor = std::move(format_descriptor->second)
+			.type = std::move(obj.get_field_as<std::string>("type")),
+			.value = std::move(value->second)
 		};
 	}
 }

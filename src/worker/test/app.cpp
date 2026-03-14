@@ -14,8 +14,8 @@ namespace
 				std::vector<Pipe::worker_ctl::data_format_info> input_accepts;
 				input_accepts.push_back(
 					Pipe::worker_ctl::data_format_info{
-						.schema = "mime",
-						.format_descriptor = jopp::value{"text/plain"}
+						.type = "mime",
+						.value = jopp::value{"text/plain"}
 					}
 				);
 				inputs.insert(
@@ -32,8 +32,8 @@ namespace
 					std::pair{
 						"result",
 						Pipe::worker_ctl::data_format_info{
-							.schema = "mime",
-							.format_descriptor = jopp::value{"text/plain"}
+							.type = "mime",
+							.value = jopp::value{"text/plain"}
 						}
 					}
 				);

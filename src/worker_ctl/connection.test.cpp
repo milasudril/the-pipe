@@ -41,8 +41,8 @@ TESTCASE(Pipe_worker_ctl_remote_output_endpoint_to_jopp_object)
 				.value = jopp::value{"/foo/bar"}
 			},
 			.provides = Pipe::worker_ctl::data_format_info{
-				.schema = "mime",
-				.format_descriptor = jopp::value{"text/plain"}
+				.type = "mime",
+				.value = jopp::value{"text/plain"}
 			}
 		}
 	);
@@ -52,8 +52,8 @@ TESTCASE(Pipe_worker_ctl_remote_output_endpoint_to_jopp_object)
 	EXPECT_EQ(endpoint.get_field_as<jopp::string>("value"), "/foo/bar");
 
 	auto const& provides = obj.get_field_as<jopp::object>("provides");
-	EXPECT_EQ(provides.get_field_as<jopp::string>("schema"), "mime");
-	EXPECT_EQ(provides.get_field_as<jopp::string>("format_descriptor"), "text/plain");
+	EXPECT_EQ(provides.get_field_as<jopp::string>("type"), "mime");
+	EXPECT_EQ(provides.get_field_as<jopp::string>("value"), "text/plain");
 }
 
 TESTCASE(Pipe_worker_ctl_make_remote_output_endpoint)
@@ -66,13 +66,13 @@ TESTCASE(Pipe_worker_ctl_make_remote_output_endpoint)
 	obj.insert("endpoint", std::move(endpoint));
 
 	jopp::object provides;
-	provides.insert("schema", "mime");
-	provides.insert("format_descriptor", "text/plain");
+	provides.insert("type", "mime");
+	provides.insert("value", "text/plain");
 	obj.insert("provides", std::move(provides));
 
 	auto const remote_output = Pipe::worker_ctl::make_remote_output_endpoint(std::move(obj));
 	EXPECT_EQ(remote_output.endpoint.type, "fs_entry");
 	EXPECT_EQ(remote_output.endpoint.value.get<jopp::string>(), "/foo/bar");
-	EXPECT_EQ(remote_output.provides.schema, "mime");
-	EXPECT_EQ(remote_output.provides.format_descriptor.get<jopp::string>(), "text/plain");
+	EXPECT_EQ(remote_output.provides.type, "mime");
+	EXPECT_EQ(remote_output.provides.value.get<jopp::string>(), "text/plain");
 }
