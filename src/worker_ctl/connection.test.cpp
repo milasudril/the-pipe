@@ -47,7 +47,7 @@ TESTCASE(Pipe_worker_ctl_remote_output_endpoint_to_jopp_object)
 					.value = jopp::value{"text/plain"}
 				},
 				.framing = Pipe::worker_ctl::data_framing_info{
-					.type = "dynamic_frame_size",
+					.type = "dynamic_byte_count",
 					.value = jopp::value{}
 				}
 			}
@@ -65,7 +65,7 @@ TESTCASE(Pipe_worker_ctl_remote_output_endpoint_to_jopp_object)
 	EXPECT_EQ(format.get_field_as<jopp::string>("value"), "text/plain");
 
 	auto const& framing = provides.get_field_as<jopp::object>("framing");
-	EXPECT_EQ(framing.get_field_as<jopp::string>("type"), "dynamic_frame_size");
+	EXPECT_EQ(framing.get_field_as<jopp::string>("type"), "dynamic_byte_count");
 	EXPECT_EQ(framing.get_field_as<jopp::null>("value"), jopp::null{});
 
 }
@@ -87,7 +87,7 @@ TESTCASE(Pipe_worker_ctl_make_remote_output_endpoint)
 	provides.insert("format", std::move(format));
 
 	jopp::object framing;
-	framing.insert("type", "dynamic_frame_size");
+	framing.insert("type", "dynamic_byte_count");
 	framing.insert("value", jopp::null{});
 	provides.insert("framing", std::move(framing));
 
@@ -98,6 +98,6 @@ TESTCASE(Pipe_worker_ctl_make_remote_output_endpoint)
 	EXPECT_EQ(remote_output.endpoint.value.get<jopp::string>(), "/foo/bar");
 	EXPECT_EQ(remote_output.provides.format.type, "mime");
 	EXPECT_EQ(remote_output.provides.format.value.get<jopp::string>(), "text/plain");
-	EXPECT_EQ(remote_output.provides.framing.type, "dynamic_frame_size");
+	EXPECT_EQ(remote_output.provides.framing.type, "dynamic_byte_count");
 	EXPECT_EQ(remote_output.provides.framing.value.get<jopp::null>(), jopp::null{});
 }
