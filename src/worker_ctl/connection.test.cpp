@@ -1,9 +1,11 @@
 //@	{"target":{"name":"connection.test"}}
 
 #include "./connection.hpp"
+#include "testfwk/testsuite.hpp"
 #include "testfwk/validation.hpp"
 
 #include <jopp/types.hpp>
+
 #include <testfwk/testfwk.hpp>
 
 TESTCASE(Pipe_worker_ctl_endpoint_path_to_jopp_object)
@@ -28,4 +30,49 @@ TESTCASE(Pipe_worker_ctl_make_endpoint_path)
 	auto const endpoint = Pipe::worker_ctl::make_endpoint_path(std::move(obj));
 	EXPECT_EQ(endpoint.type, "fs_entry");
 	EXPECT_EQ(endpoint.value.get<jopp::string>(), "/foo/bar");
+}
+
+TESTCASE(Pipe_worker_ctl_remote_output_endpoint_to_jopp_object)
+{
+	auto const obj = Pipe::worker_ctl::to_jopp_object(
+		Pipe::worker_ctl::remote_output_endpoint{
+			.endpoint = Pipe::worker_ctl::endpoint_path{
+				.type = "fs_entry",
+				.value = jopp::value{"/foo/bar"}
+			},
+			.provides = Pipe::worker_ctl::data_format_info{
+				.schema = "mime",
+				.format_descriptor = jopp::value{"text/plain"}
+			}
+		}
+	);
+
+	auto const& endpoint = obj.get_field_as<jopp::object>("endpoint");
+	EXPECT_EQ(endpoint.get_field_as<jopp::string>("type"), "fs_entry");
+	EXPECT_EQ(endpoint.get_field_as<jopp::string>("value"), "/foo/bar");
+
+	auto const& provides = obj.get_field_as<jopp::object>("provides");
+	EXPECT_EQ(provides.get_field_as<jopp::string>("schema"), "mime");
+	EXPECT_EQ(provides.get_field_as<jopp::string>("format_descriptor"), "text/plain");
+}
+
+TESTCASE(Pipe_worker_ctl_make_remote_output_endpoint)
+{
+	jopp::object obj;
+
+	jopp::object endpoint;
+	endpoint.insert("type", "fs_entry");
+	endpoint.insert("value", "/foo/bar");
+	obj.insert("endpoint", std::move(endpoint));
+
+	jopp::object provides;
+	provides.insert("schema", "mime");
+	provides.insert("format_descriptor", "text/plain");
+	obj.insert("provides", std::move(provides));
+
+	auto const remote_output = Pipe::worker_ctl::make_remote_output_endpoint(std::move(obj));
+	EXPECT_EQ(remote_output.endpoint.type, "fs_entry");
+	EXPECT_EQ(remote_output.endpoint.value.get<jopp::string>(), "/foo/bar");
+	EXPECT_EQ(remote_output.provides.schema, "mime");
+	EXPECT_EQ(remote_output.provides.format_descriptor.get<jopp::string>(), "text/plain");
 }
