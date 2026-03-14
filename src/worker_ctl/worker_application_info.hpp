@@ -1,7 +1,7 @@
 #ifndef PIPE_WORKER_CTL_WORKER_INFO_HPP
 #define PIPE_WORKER_CTL_WORKER_INFO_HPP
 
-#include "./data_format_info.hpp"
+#include "./data_stream_info.hpp"
 
 #include <jopp/types.hpp>
 #include <string>
