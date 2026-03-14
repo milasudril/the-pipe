@@ -29,22 +29,29 @@ namespace Pipe::worker
 		void handle_request(jopp::object&& object)
 		{
 			json_rpc::wrapped_request request{std::move(object)};
-			auto const method = request.method();
+			try
+			{
+				auto const method = request.method();
 
-			if(method == json_rpc::request_traits<worker_ctl::get_worker_application_info>::method)
-			{
-				m_ctl_output.write(
-					make_response(std::move(request), to_jopp_object(get_worker_application_info()))
-				);
+				if(method == json_rpc::request_traits<worker_ctl::get_worker_application_info>::method)
+				{
+					m_ctl_output.write(
+						make_response(std::move(request), to_jopp_object(get_worker_application_info()))
+					);
+				}
+				if(method == json_rpc::request_traits<worker_ctl::input_connection>::method)
+				{
+					connect(worker_ctl::make_input_connection(std::move(request.take_value().get_field_as<jopp::object>("params"))));
+					m_ctl_output.write(make_response(std::move(request), jopp::object{}));
+				}
+				else
+				{
+					throw std::runtime_error{"Unsupported method"};
+				}
 			}
-			if(method == json_rpc::request_traits<worker_ctl::input_connection>::method)
+			catch(std::exception const& e)
 			{
-				connect(worker_ctl::make_input_connection(std::move(request.take_value().get_field_as<jopp::object>("params"))));
-				m_ctl_output.write(make_response(std::move(request), jopp::object{}));
-			}
-			else
-			{
-				throw std::runtime_error{"Unsupported method"};
+				m_ctl_output.write(make_response(std::move(request), e));
 			}
 		}
 
