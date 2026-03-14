@@ -1,7 +1,7 @@
 #ifndef PIPE_WORKER_CTL_CONNECTION_HPP
 #define PIPE_WORKER_CTL_CONNECTION_HPP
 
-#include "src/worker_ctl/data_format_info.hpp"
+#include "src/worker_ctl/stream_info.hpp"
 #include "src/os_services/fs/file_open_precondition.hpp"
 #include "src/os_services/fs/file_access_permission.hpp"
 
@@ -10,31 +10,12 @@
 
 namespace Pipe::worker_ctl
 {
-	struct endpoint_path
-	{
-		std::string type;
-		jopp::value value;
-	};
+	struct endpoint_path_tag{};
 
-	inline jopp::object to_jopp_object(endpoint_path&& obj)
-	{
-		jopp::object ret;
-		ret.insert("type", std::move(obj.type));
-		ret.insert("value", std::move(obj.value));
-		return ret;
-	}
+	using endpoint_path = any<endpoint_path_tag>;
 
 	inline endpoint_path make_endpoint_path(jopp::object&& obj)
-	{
-		auto value = obj.find("value");
-		if(value == std::end(obj))
-		{ throw std::runtime_error{"Missing mandatory field `value`"}; }
-
-		return endpoint_path{
-			.type = std::move(obj.get_field_as<jopp::string>("type")),
-			.value = std::move(value->second)
-		};
-	}
+	{ return make_any<endpoint_path_tag>(std::move(obj)); }
 
 	struct remote_output_endpoint
 	{
