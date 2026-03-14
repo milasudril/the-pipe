@@ -65,20 +65,20 @@ namespace Pipe::worker_ctl
 
 	struct remote_input_endpoint
 	{
-		endpoint_path path;
+		endpoint_path address;
 	};
 
 	inline jopp::object to_jopp_object(remote_input_endpoint&& obj)
 	{
 		jopp::object ret;
-		ret.insert("path", to_jopp_object(std::move(obj.path)));
+		ret.insert("address", to_jopp_object(std::move(obj.address)));
 		return ret;
 	}
 
 	inline remote_input_endpoint make_remote_input_endpoint(jopp::object&& obj)
 	{
 		return remote_input_endpoint{
-			.path = make_endpoint_path(std::move(obj.get_field_as<jopp::object>("path")))
+			.address = make_endpoint_path(std::move(obj.get_field_as<jopp::object>("address")))
 		};
 	}
 
