@@ -4,6 +4,8 @@
 #include "src/json_io/reader.hpp"
 #include "src/json_io/writer.hpp"
 #include "src/json_rpc/context.hpp"
+#include "src/json_rpc/json_rpc.hpp"
+#include "src/worker_ctl/connection.hpp"
 #include "src/worker_ctl_json_rpc_traits/worker_ctl_json_rpc_traits.hpp"
 
 #include <jopp/serializer.hpp>
@@ -35,6 +37,11 @@ namespace Pipe::worker
 					make_response(std::move(request), to_jopp_object(get_worker_application_info()))
 				);
 			}
+			if(method == json_rpc::request_traits<worker_ctl::input_connection>::method)
+			{
+				connect(worker_ctl::make_input_connection(std::move(request.take_value().get_field_as<jopp::object>("params"))));
+				m_ctl_output.write(make_response(std::move(request), jopp::object{}));
+			}
 			else
 			{
 				throw std::runtime_error{"Unsupported method"};
@@ -63,6 +70,11 @@ namespace Pipe::worker
 		{ return m_should_exit; }
 
 		static std::unique_ptr<application> create();
+
+		void connect(worker_ctl::input_connection&& connection)
+		{
+			fputs(to_string(worker_ctl::to_jopp_object(std::move(connection))).c_str(), stderr);
+		}
 
 		virtual ~application() = default;
 

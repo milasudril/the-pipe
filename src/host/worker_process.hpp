@@ -54,6 +54,15 @@ namespace Pipe::host
 			);
 		}
 
+		void connect(worker_ctl::input_connection&& connection)
+		{
+			m_json_rpc_ctxt.send_request(
+				std::ref(m_ctl_output),
+				std::move(connection),
+				[](auto&&){}
+			);
+		}
+
 		void handle_event(json_io::container_loaded_event<log_stream_tag>&& event);
 		void handle_event(json_io::parser_error_event<log_stream_tag> event);
 		void handle_event(json_io::input_closed_event<log_stream_tag>);

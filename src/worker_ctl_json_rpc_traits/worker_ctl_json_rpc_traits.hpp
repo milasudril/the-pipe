@@ -19,6 +19,18 @@ namespace Pipe::json_rpc
 		static worker_ctl::worker_application_info make_response(jopp::value&& val)
 		{ return worker_ctl::make_worker_application_info(std::move(val.get<jopp::object>())); }
 	};
+
+	template<>
+	struct request_traits<worker_ctl::input_connection>
+	{
+		static constexpr const char* method = "connect_input_port";
+
+		static jopp::object params(worker_ctl::input_connection&& conn)
+		{ return worker_ctl::to_jopp_object(std::move(conn)); }
+
+		static empty_response make_response(jopp::value&&)
+		{ return empty_response{}; }
+	};
 }
 
 #endif

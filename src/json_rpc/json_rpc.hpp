@@ -14,6 +14,8 @@
  */
 namespace Pipe::json_rpc
 {
+	struct empty_response{};
+
 	/**
 	 * \brief Creates a JSON-RPC notification given method and object
 	 */
