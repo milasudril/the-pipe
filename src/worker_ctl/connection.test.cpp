@@ -2,6 +2,7 @@
 
 #include "./connection.hpp"
 
+#include "src/worker_ctl/data_stream_info.hpp"
 #include "testfwk/testsuite.hpp"
 #include "testfwk/validation.hpp"
 
@@ -100,4 +101,72 @@ TESTCASE(Pipe_worker_ctl_make_remote_output_endpoint)
 	EXPECT_EQ(remote_output.provides.format.value.get<jopp::string>(), "text/plain");
 	EXPECT_EQ(remote_output.provides.framing.type, "dynamic_byte_count");
 	EXPECT_EQ(remote_output.provides.framing.value.get<jopp::null>(), jopp::null{});
+}
+
+TESTCASE(Pipe_worker_ctl_input_connection_to_jopp_object)
+{
+	auto const obj = to_jopp_object(
+		Pipe::worker_ctl::input_connection{
+			.remote_endpoint = Pipe::worker_ctl::remote_output_endpoint{
+				.address = Pipe::worker_ctl::endpoint_path{
+					.type = "fs_entry",
+					.value = jopp::value{"/foo/bar"}
+				},
+				.provides = Pipe::worker_ctl::data_stream_info{
+					.format = Pipe::worker_ctl::data_format_info{
+						.type = "mime",
+						.value = jopp::value{"text/plain"}
+					},
+					.framing = Pipe::worker_ctl::data_framing_info{
+						.type = "dynamic_byte_count",
+						.value = jopp::value{}
+					}
+				}
+			},
+			.portname = "foobar"
+		}
+	);
+
+	EXPECT_EQ(obj.get_field_as<jopp::string>("portname"), "foobar");
+	auto const& remote_endpoint = obj.get_field_as<jopp::object>("remote_endpoint");
+	auto const& address = remote_endpoint.get_field_as<jopp::object>("address");
+	EXPECT_EQ(address.get_field_as<jopp::string>("type"), "fs_entry");
+	EXPECT_EQ(address.get_field_as<jopp::string>("value"), "/foo/bar");
+	auto const& provides = remote_endpoint.get_field_as<jopp::object>("provides");
+	auto const& format = provides.get_field_as<jopp::object>("format");
+	EXPECT_EQ(format.get_field_as<jopp::string>("type"), "mime");
+	EXPECT_EQ(format.get_field_as<jopp::string>("value"), "text/plain");
+	auto const& framing = provides.get_field_as<jopp::object>("framing");
+	EXPECT_EQ(framing.get_field_as<jopp::string>("type"), "dynamic_byte_count");
+}
+
+TESTCASE(Pipe_worker_ctl_make_input_connection)
+{
+	jopp::object obj_in;
+	obj_in.insert("portname", "foobar");
+
+	jopp::object remote_endpoint;
+	jopp::object address;
+	address.insert("type", "fs_entry");
+	address.insert("value", "/foo/bar");
+	remote_endpoint.insert("address", std::move(address));
+	jopp::object provides;
+	jopp::object format;
+	format.insert("type", "mime");
+	format.insert("value", "text/plain");
+	provides.insert("format", std::move(format));
+	jopp::object framing;
+	framing.insert("type", "dynamic_byte_count");
+	provides.insert("framing", std::move(framing));
+	remote_endpoint.insert("provides", std::move(provides));
+	obj_in.insert("remote_endpoint", std::move(remote_endpoint));
+
+	auto const result = Pipe::worker_ctl::make_input_connection(std::move(obj_in));
+	EXPECT_EQ(result.portname, "foobar");
+	EXPECT_EQ(result.remote_endpoint.address.type, "fs_entry");
+	EXPECT_EQ(result.remote_endpoint.address.value.get<jopp::string>(), "/foo/bar");
+	EXPECT_EQ(result.remote_endpoint.provides.format.type, "mime");
+	EXPECT_EQ(result.remote_endpoint.provides.format.value.get<jopp::string>(), "text/plain");
+	EXPECT_EQ(result.remote_endpoint.provides.framing.type, "dynamic_byte_count");
+	EXPECT_EQ(result.remote_endpoint.provides.framing.value.get<jopp::null>(), jopp::null{});
 }
