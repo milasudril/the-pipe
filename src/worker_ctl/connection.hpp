@@ -1,7 +1,7 @@
 #ifndef PIPE_WORKER_CTL_CONNECTION_HPP
 #define PIPE_WORKER_CTL_CONNECTION_HPP
 
-#include "src/worker_ctl/stream_info.hpp"
+#include "src/worker_ctl/data_stream_info.hpp"
 #include "src/os_services/fs/file_open_precondition.hpp"
 #include "src/os_services/fs/file_access_permission.hpp"
 
