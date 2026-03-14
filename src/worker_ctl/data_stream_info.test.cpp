@@ -69,5 +69,3 @@ TESTCASE(Pipe_worker_ctl_make_data_stream_info)
 	EXPECT_EQ(obj.framing.type, "dynamic_frame_size");
 	EXPECT_EQ(obj.framing.value.get<jopp::null>(), jopp::null{});
 }
-
-#endif
