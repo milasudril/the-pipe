@@ -1,6 +1,7 @@
 //@	{"target":{"name":"app.o"}}
 
 #include "src/worker/application.hpp"
+#include "src/worker_ctl/data_stream_info.hpp"
 #include "src/worker_ctl/worker_application_info.hpp"
 
 namespace
@@ -11,11 +12,17 @@ namespace
 			virtual Pipe::worker_ctl::worker_application_info get_worker_application_info() const override
 			{
 				Pipe::worker_ctl::input_port_info_map inputs;
-				std::vector<Pipe::worker_ctl::data_format_info> input_accepts;
+				std::vector<Pipe::worker_ctl::data_stream_info> input_accepts;
 				input_accepts.push_back(
-					Pipe::worker_ctl::data_format_info{
-						.type = "mime",
-						.value = jopp::value{"text/plain"}
+					Pipe::worker_ctl::data_stream_info{
+						.format = Pipe::worker_ctl::data_format_info{
+							.type = "mime",
+							.value = jopp::value{"text/plain"}
+						},
+						.framing = Pipe::worker_ctl::data_framing_info{
+							.type = "dynamic_byte_count",
+							.value = jopp::value{}
+						}
 					}
 				);
 				inputs.insert(
@@ -26,18 +33,22 @@ namespace
 						}
 					}
 				);
-
 				Pipe::worker_ctl::output_port_info_map outputs;
 				outputs.insert(
 					std::pair{
 						"result",
-						Pipe::worker_ctl::data_format_info{
-							.type = "mime",
-							.value = jopp::value{"text/plain"}
+						Pipe::worker_ctl::data_stream_info{
+							.format = Pipe::worker_ctl::data_format_info{
+								.type = "mime",
+								.value = jopp::value{"text/plain"}
+							},
+							.framing = Pipe::worker_ctl::data_framing_info{
+								.type = "dynamic_byte_count",
+								.value = jopp::value{}
+							}
 						}
 					}
 				);
-
 				return Pipe::worker_ctl::worker_application_info{
 					.display_name = "Test application",
 					.inputs = std::move(inputs),
