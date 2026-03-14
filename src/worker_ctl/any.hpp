@@ -25,14 +25,15 @@ namespace Pipe::worker_ctl
 	template<class Tag, class TypeNameType = std::string>
 	inline any<Tag, TypeNameType> make_any(jopp::object&& obj)
 	{
+		any<Tag, TypeNameType> ret;
+		// TODO: May need to convert from TypeNameType to string
+		ret.type = std::move(obj.get_field_as<TypeNameType>("type"));
+
 		auto value = obj.find("value");
-		if(value == std::end(obj))
-		{ throw std::runtime_error{"Missing mandatory field `value`"}; }
-		return any<Tag, TypeNameType>{
-			// TODO: May need to convert from TypeNameType to string
-			.type = std::move(obj.get_field_as<TypeNameType>("type")),
-			.value = std::move(value->second)
-		};
+		if(value != std::end(obj))
+		{ ret.value = std::move(value->second); }
+
+		return ret;
 	}
 }
 
