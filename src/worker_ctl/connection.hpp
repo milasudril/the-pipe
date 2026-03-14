@@ -20,7 +20,7 @@ namespace Pipe::worker_ctl
 	struct remote_output_endpoint
 	{
 		endpoint_path endpoint;
-		data_format_info provides;
+		data_stream_info provides;
 	};
 
 	inline jopp::object to_jopp_object(remote_output_endpoint&& obj)
@@ -35,7 +35,7 @@ namespace Pipe::worker_ctl
 	{
 		return remote_output_endpoint{
 			.endpoint = make_endpoint_path(std::move(obj.get_field_as<jopp::object>("endpoint"))),
-			.provides = make_data_format_info(std::move(obj.get_field_as<jopp::object>("provides")))
+			.provides = make_data_stream_info(std::move(obj.get_field_as<jopp::object>("provides")))
 		};
 	}
 

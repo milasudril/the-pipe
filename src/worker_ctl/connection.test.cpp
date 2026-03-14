@@ -1,6 +1,7 @@
 //@	{"target":{"name":"connection.test"}}
 
 #include "./connection.hpp"
+
 #include "testfwk/testsuite.hpp"
 #include "testfwk/validation.hpp"
 
@@ -40,9 +41,15 @@ TESTCASE(Pipe_worker_ctl_remote_output_endpoint_to_jopp_object)
 				.type = "fs_entry",
 				.value = jopp::value{"/foo/bar"}
 			},
-			.provides = Pipe::worker_ctl::data_format_info{
-				.type = "mime",
-				.value = jopp::value{"text/plain"}
+			.provides = Pipe::worker_ctl::data_stream_info{
+				.format = Pipe::worker_ctl::data_format_info{
+					.type = "mime",
+					.value = jopp::value{"text/plain"}
+				},
+				.framing = Pipe::worker_ctl::data_framing_info{
+					.type = "dynamic_frame_size",
+					.value = jopp::value{}
+				}
 			}
 		}
 	);
@@ -52,8 +59,15 @@ TESTCASE(Pipe_worker_ctl_remote_output_endpoint_to_jopp_object)
 	EXPECT_EQ(endpoint.get_field_as<jopp::string>("value"), "/foo/bar");
 
 	auto const& provides = obj.get_field_as<jopp::object>("provides");
-	EXPECT_EQ(provides.get_field_as<jopp::string>("type"), "mime");
-	EXPECT_EQ(provides.get_field_as<jopp::string>("value"), "text/plain");
+
+	auto const& format = provides.get_field_as<jopp::object>("format");
+	EXPECT_EQ(format.get_field_as<jopp::string>("type"), "mime");
+	EXPECT_EQ(format.get_field_as<jopp::string>("value"), "text/plain");
+
+	auto const& framing = provides.get_field_as<jopp::object>("framing");
+	EXPECT_EQ(framing.get_field_as<jopp::string>("type"), "dynamic_frame_size");
+	EXPECT_EQ(framing.get_field_as<jopp::null>("value"), jopp::null{});
+
 }
 
 TESTCASE(Pipe_worker_ctl_make_remote_output_endpoint)
@@ -66,13 +80,24 @@ TESTCASE(Pipe_worker_ctl_make_remote_output_endpoint)
 	obj.insert("endpoint", std::move(endpoint));
 
 	jopp::object provides;
-	provides.insert("type", "mime");
-	provides.insert("value", "text/plain");
+
+	jopp::object format;
+	format.insert("type", "mime");
+	format.insert("value", "text/plain");
+	provides.insert("format", std::move(format));
+
+	jopp::object framing;
+	framing.insert("type", "dynamic_frame_size");
+	framing.insert("value", jopp::null{});
+	provides.insert("framing", std::move(framing));
+
 	obj.insert("provides", std::move(provides));
 
 	auto const remote_output = Pipe::worker_ctl::make_remote_output_endpoint(std::move(obj));
 	EXPECT_EQ(remote_output.endpoint.type, "fs_entry");
 	EXPECT_EQ(remote_output.endpoint.value.get<jopp::string>(), "/foo/bar");
-	EXPECT_EQ(remote_output.provides.type, "mime");
-	EXPECT_EQ(remote_output.provides.value.get<jopp::string>(), "text/plain");
+	EXPECT_EQ(remote_output.provides.format.type, "mime");
+	EXPECT_EQ(remote_output.provides.format.value.get<jopp::string>(), "text/plain");
+	EXPECT_EQ(remote_output.provides.framing.type, "dynamic_frame_size");
+	EXPECT_EQ(remote_output.provides.framing.value.get<jopp::null>(), jopp::null{});
 }
