@@ -129,6 +129,7 @@ namespace Pipe::worker_ctl
 	{
 		remote_input_endpoint remote_endpoint;
 		std::string portname;
+		endpoint_open_opts remote_endpoint_open_opts;
 	};
 
 	inline jopp::object to_jopp_object(output_connection&& obj)
@@ -136,15 +137,22 @@ namespace Pipe::worker_ctl
 		jopp::object ret;
 		ret.insert("remote_endpoint", to_jopp_object(std::move(obj.remote_endpoint)));
 		ret.insert("portname", std::move(obj.portname));
+		ret.insert("remote_endpoint_open_opts", to_jopp_object(obj.remote_endpoint_open_opts));
 		return ret;
 	}
 
 	inline output_connection make_output_connection(jopp::object&& obj)
 	{
-		return output_connection{
-			.remote_endpoint = make_remote_input_endpoint(std::move(obj.get_field_as<jopp::object>("remote_endpoint"))),
-			.portname = std::move(obj.get_field_as<jopp::string>("portname"))
-		};
+		output_connection ret;
+		ret.remote_endpoint =
+			make_remote_input_endpoint(std::move(obj.get_field_as<jopp::object>("remote_endpoint"))),
+		ret.portname = std::move(obj.get_field_as<jopp::string>("portname"));
+
+		auto const remote_endpoint_open_opts = obj.try_get_field_as<jopp::object>("remote_endpoint_open_opts");
+		if(remote_endpoint_open_opts != nullptr)
+		{ ret.remote_endpoint_open_opts = make_endpoint_open_opts(*remote_endpoint_open_opts); }
+
+		return ret;
 	}
 }
 #endif
