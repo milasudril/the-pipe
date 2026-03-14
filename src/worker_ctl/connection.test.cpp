@@ -37,7 +37,7 @@ TESTCASE(Pipe_worker_ctl_remote_output_endpoint_to_jopp_object)
 {
 	auto const obj = Pipe::worker_ctl::to_jopp_object(
 		Pipe::worker_ctl::remote_output_endpoint{
-			.endpoint = Pipe::worker_ctl::endpoint_path{
+			.address = Pipe::worker_ctl::endpoint_path{
 				.type = "fs_entry",
 				.value = jopp::value{"/foo/bar"}
 			},
@@ -54,9 +54,9 @@ TESTCASE(Pipe_worker_ctl_remote_output_endpoint_to_jopp_object)
 		}
 	);
 
-	auto const& endpoint = obj.get_field_as<jopp::object>("endpoint");
-	EXPECT_EQ(endpoint.get_field_as<jopp::string>("type"), "fs_entry");
-	EXPECT_EQ(endpoint.get_field_as<jopp::string>("value"), "/foo/bar");
+	auto const& address = obj.get_field_as<jopp::object>("address");
+	EXPECT_EQ(address.get_field_as<jopp::string>("type"), "fs_entry");
+	EXPECT_EQ(address.get_field_as<jopp::string>("value"), "/foo/bar");
 
 	auto const& provides = obj.get_field_as<jopp::object>("provides");
 
@@ -77,7 +77,7 @@ TESTCASE(Pipe_worker_ctl_make_remote_output_endpoint)
 	jopp::object endpoint;
 	endpoint.insert("type", "fs_entry");
 	endpoint.insert("value", "/foo/bar");
-	obj.insert("endpoint", std::move(endpoint));
+	obj.insert("address", std::move(endpoint));
 
 	jopp::object provides;
 
@@ -94,8 +94,8 @@ TESTCASE(Pipe_worker_ctl_make_remote_output_endpoint)
 	obj.insert("provides", std::move(provides));
 
 	auto const remote_output = Pipe::worker_ctl::make_remote_output_endpoint(std::move(obj));
-	EXPECT_EQ(remote_output.endpoint.type, "fs_entry");
-	EXPECT_EQ(remote_output.endpoint.value.get<jopp::string>(), "/foo/bar");
+	EXPECT_EQ(remote_output.address.type, "fs_entry");
+	EXPECT_EQ(remote_output.address.value.get<jopp::string>(), "/foo/bar");
 	EXPECT_EQ(remote_output.provides.format.type, "mime");
 	EXPECT_EQ(remote_output.provides.format.value.get<jopp::string>(), "text/plain");
 	EXPECT_EQ(remote_output.provides.framing.type, "dynamic_byte_count");

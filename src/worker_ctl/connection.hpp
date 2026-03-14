@@ -19,14 +19,14 @@ namespace Pipe::worker_ctl
 
 	struct remote_output_endpoint
 	{
-		endpoint_path endpoint;
+		endpoint_path address;
 		data_stream_info provides;
 	};
 
 	inline jopp::object to_jopp_object(remote_output_endpoint&& obj)
 	{
 		jopp::object ret;
-		ret.insert("endpoint", to_jopp_object(std::move(obj.endpoint)));
+		ret.insert("address", to_jopp_object(std::move(obj.address)));
 		ret.insert("provides", to_jopp_object(std::move(obj.provides)));
 		return ret;
 	}
@@ -34,21 +34,21 @@ namespace Pipe::worker_ctl
 	inline remote_output_endpoint make_remote_output_endpoint(jopp::object&& obj)
 	{
 		return remote_output_endpoint{
-			.endpoint = make_endpoint_path(std::move(obj.get_field_as<jopp::object>("endpoint"))),
+			.address = make_endpoint_path(std::move(obj.get_field_as<jopp::object>("address"))),
 			.provides = make_data_stream_info(std::move(obj.get_field_as<jopp::object>("provides")))
 		};
 	}
 
 	struct input_connection
 	{
-		remote_output_endpoint endpoint;
+		remote_output_endpoint remote_endpoint;
 		std::string portname;
 	};
 
 	inline jopp::object to_jopp_object(input_connection&& obj)
 	{
 		jopp::object ret;
-		ret.insert("endpoint", to_jopp_object(std::move(obj.endpoint)));
+		ret.insert("remote_endpoint", to_jopp_object(std::move(obj.remote_endpoint)));
 		ret.insert("portname", std::move(obj.portname));
 		return ret;
 	}
@@ -56,7 +56,9 @@ namespace Pipe::worker_ctl
 	inline input_connection make_input_connection(jopp::object&& obj)
 	{
 		return input_connection{
-			.endpoint = make_remote_output_endpoint(std::move(obj.get_field_as<jopp::object>("endpoint"))),
+			.remote_endpoint = make_remote_output_endpoint(
+				std::move(obj.get_field_as<jopp::object>("remote_endpoint"))
+			),
 			.portname = std::move(obj.get_field_as<jopp::string>("portname"))
 		};
 	}
@@ -125,22 +127,22 @@ namespace Pipe::worker_ctl
 
 	struct output_connection
 	{
-		remote_input_endpoint endpoint;
+		remote_input_endpoint remote_endpoint;
 		std::string portname;
 	};
 
 	inline jopp::object to_jopp_object(output_connection&& obj)
 	{
 		jopp::object ret;
-		ret.insert("endpoint", to_jopp_object(std::move(obj.endpoint)));
+		ret.insert("remote_endpoint", to_jopp_object(std::move(obj.remote_endpoint)));
 		ret.insert("portname", std::move(obj.portname));
 		return ret;
 	}
 
-	inline output_connection mkae_output_connection(jopp::object&& obj)
+	inline output_connection make_output_connection(jopp::object&& obj)
 	{
 		return output_connection{
-			.endpoint = make_remote_input_endpoint(std::move(obj.get_field_as<jopp::object>("endpoint"))),
+			.remote_endpoint = make_remote_input_endpoint(std::move(obj.get_field_as<jopp::object>("remote_endpoint"))),
 			.portname = std::move(obj.get_field_as<jopp::string>("portname"))
 		};
 	}
