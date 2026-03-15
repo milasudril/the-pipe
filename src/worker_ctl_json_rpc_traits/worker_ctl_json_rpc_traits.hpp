@@ -24,7 +24,7 @@ namespace Pipe::json_rpc
 	template<>
 	struct request_traits<worker_ctl::input_connection>
 	{
-		static constexpr const char* method = "connect_input_port";
+		static constexpr char const* method = "connect_input_port";
 
 		static jopp::object params(worker_ctl::input_connection&& conn)
 		{ return to_jopp_object(std::move(conn)); }
@@ -67,6 +67,24 @@ namespace Pipe::json_rpc
 
 		static empty_response make_response(jopp::value&&)
 		{ return empty_response{}; }
+	};
+
+	template<>
+	struct notification_traits<worker_ctl::output_disconnection>
+	{
+		static constexpr char const* method = "remote_input_disconnected";
+
+		static jopp::object params(worker_ctl::output_disconnection&& conn)
+		{ return to_jopp_object(std::move(conn)); }
+	};
+
+	template<>
+	struct notification_traits<worker_ctl::input_disconnection>
+	{
+		static constexpr char const* method = "remote_output_disconnected";
+
+		static jopp::object params(worker_ctl::input_disconnection&& conn)
+		{ return to_jopp_object(std::move(conn)); }
 	};
 }
 
