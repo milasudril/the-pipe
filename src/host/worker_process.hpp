@@ -1,6 +1,7 @@
 #include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/json_io/reader.hpp"
 #include "src/json_io/writer.hpp"
+#include "src/worker_ctl/disconnection.hpp"
 #include "src/worker_ctl_json_rpc_traits/worker_ctl_json_rpc_traits.hpp"
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/proc_mgmt/proc_mgmt.hpp"
@@ -68,6 +69,24 @@ namespace Pipe::host
 			m_json_rpc_ctxt.send_request(
 				std::ref(m_ctl_output),
 				std::move(connection),
+				[](auto&&){}
+			);
+		}
+
+		void disconnect(worker_ctl::input_disconnection&& disconn)
+		{
+			m_json_rpc_ctxt.send_request(
+				std::ref(m_ctl_output),
+				std::move(disconn),
+				[](auto&&){}
+			);
+		}
+
+		void disconnect(worker_ctl::output_disconnection&& disconn)
+		{
+			m_json_rpc_ctxt.send_request(
+				std::ref(m_ctl_output),
+				std::move(disconn),
 				[](auto&&){}
 			);
 		}

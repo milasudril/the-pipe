@@ -4,6 +4,7 @@
 #include "src/json_rpc/context.hpp"
 #include "src/json_rpc/json_rpc.hpp"
 #include "src/worker_ctl/connection.hpp"
+#include "src/worker_ctl/disconnection.hpp"
 #include "src/worker_ctl/worker_application_info.hpp"
 
 namespace Pipe::json_rpc
@@ -26,7 +27,7 @@ namespace Pipe::json_rpc
 		static constexpr const char* method = "connect_input_port";
 
 		static jopp::object params(worker_ctl::input_connection&& conn)
-		{ return worker_ctl::to_jopp_object(std::move(conn)); }
+		{ return to_jopp_object(std::move(conn)); }
 
 		static empty_response make_response(jopp::value&&)
 		{ return empty_response{}; }
@@ -38,7 +39,31 @@ namespace Pipe::json_rpc
 		static constexpr const char* method = "connect_output_port";
 
 		static jopp::object params(worker_ctl::output_connection&& conn)
-		{ return worker_ctl::to_jopp_object(std::move(conn)); }
+		{ return to_jopp_object(std::move(conn)); }
+
+		static empty_response make_response(jopp::value&&)
+		{ return empty_response{}; }
+	};
+
+	template<>
+	struct request_traits<worker_ctl::input_disconnection>
+	{
+		static constexpr char const* method = "disconnect_input_port";
+
+		static jopp::object params(worker_ctl::input_disconnection&& conn)
+		{ return to_jopp_object(std::move(conn)); }
+
+		static empty_response make_response(jopp::value&&)
+		{ return empty_response{}; }
+	};
+
+	template<>
+	struct request_traits<worker_ctl::output_disconnection>
+	{
+		static constexpr char const* method = "disconnect_output_port";
+
+		static jopp::object params(worker_ctl::output_disconnection&& conn)
+		{ return to_jopp_object(std::move(conn)); }
 
 		static empty_response make_response(jopp::value&&)
 		{ return empty_response{}; }
