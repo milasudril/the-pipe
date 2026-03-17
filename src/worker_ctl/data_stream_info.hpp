@@ -12,24 +12,24 @@ namespace Pipe::worker_ctl
 	inline data_format_info make_data_format_info(jopp::object&& obj)
 	{ return make_any<data_format_info_tag>(std::move(obj)); }
 
-	struct data_framing_info_tag{};
+	struct data_transport_info_tag{};
 
-	using data_framing_info = any<data_framing_info_tag>;
+	using data_transport_info = any<data_transport_info_tag>;
 
-	inline data_framing_info make_data_framing_info(jopp::object&& obj)
-	{ return make_any<data_framing_info_tag>(std::move(obj)); }
+	inline data_transport_info make_data_transport_info(jopp::object&& obj)
+	{ return make_any<data_transport_info_tag>(std::move(obj)); }
 
 	struct data_stream_info
 	{
 		data_format_info format;
-		data_framing_info framing;
+		data_transport_info transport_method;
 	};
 
 	inline jopp::object to_jopp_object(data_stream_info&& obj)
 	{
 		jopp::object ret;
 		ret.insert("format", to_jopp_object(std::move(obj.format)));
-		ret.insert("framing", to_jopp_object(std::move(obj.framing)));
+		ret.insert("transport_method", to_jopp_object(std::move(obj.transport_method)));
 		return ret;
 	}
 
@@ -37,7 +37,9 @@ namespace Pipe::worker_ctl
 	{
 		return data_stream_info{
 			.format = make_data_format_info(std::move(obj.get_field_as<jopp::object>("format"))),
-			.framing = make_data_framing_info(std::move(obj.get_field_as<jopp::object>("framing")))
+			.transport_method = make_data_transport_info(
+				std::move(obj.get_field_as<jopp::object>("transport_method"))
+			)
 		};
 	}
 }

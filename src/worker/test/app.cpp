@@ -19,8 +19,8 @@ namespace
 							.type = "mime",
 							.value = jopp::value{"text/plain"}
 						},
-						.framing = Pipe::worker_ctl::data_framing_info{
-							.type = "dynamic_byte_count",
+						.transport_method = Pipe::worker_ctl::data_transport_info{
+							.type = "message_file",
 							.value = jopp::value{}
 						}
 					}
@@ -42,8 +42,8 @@ namespace
 								.type = "mime",
 								.value = jopp::value{"text/plain"}
 							},
-							.framing = Pipe::worker_ctl::data_framing_info{
-								.type = "dynamic_byte_count",
+							.transport_method = Pipe::worker_ctl::data_transport_info{
+								.type = "message_file",
 								.value = jopp::value{}
 							}
 						}

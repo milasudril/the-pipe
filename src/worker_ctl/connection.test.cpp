@@ -50,8 +50,8 @@ TESTCASE(Pipe_worker_ctl_remote_output_endpoint_to_jopp_object)
 					.type = "mime",
 					.value = jopp::value{"text/plain"}
 				},
-				.framing = Pipe::worker_ctl::data_framing_info{
-					.type = "dynamic_byte_count",
+				.transport_method = Pipe::worker_ctl::data_transport_info{
+					.type = "foobar",
 					.value = jopp::value{}
 				}
 			}
@@ -68,9 +68,9 @@ TESTCASE(Pipe_worker_ctl_remote_output_endpoint_to_jopp_object)
 	EXPECT_EQ(format.get_field_as<jopp::string>("type"), "mime");
 	EXPECT_EQ(format.get_field_as<jopp::string>("value"), "text/plain");
 
-	auto const& framing = provides.get_field_as<jopp::object>("framing");
-	EXPECT_EQ(framing.get_field_as<jopp::string>("type"), "dynamic_byte_count");
-	EXPECT_EQ(framing.get_field_as<jopp::null>("value"), jopp::null{});
+	auto const& transport_method = provides.get_field_as<jopp::object>("transport_method");
+	EXPECT_EQ(transport_method.get_field_as<jopp::string>("type"), "foobar");
+	EXPECT_EQ(transport_method.get_field_as<jopp::null>("value"), jopp::null{});
 
 }
 
@@ -90,10 +90,10 @@ TESTCASE(Pipe_worker_ctl_make_remote_output_endpoint)
 	format.insert("value", "text/plain");
 	provides.insert("format", std::move(format));
 
-	jopp::object framing;
-	framing.insert("type", "dynamic_byte_count");
-	framing.insert("value", jopp::null{});
-	provides.insert("framing", std::move(framing));
+	jopp::object transport_method;
+	transport_method.insert("type", "foobar");
+	transport_method.insert("value", jopp::null{});
+	provides.insert("transport_method", std::move(transport_method));
 
 	obj.insert("provides", std::move(provides));
 
@@ -102,8 +102,8 @@ TESTCASE(Pipe_worker_ctl_make_remote_output_endpoint)
 	EXPECT_EQ(remote_output.address.value.get<jopp::string>(), "/foo/bar");
 	EXPECT_EQ(remote_output.provides.format.type, "mime");
 	EXPECT_EQ(remote_output.provides.format.value.get<jopp::string>(), "text/plain");
-	EXPECT_EQ(remote_output.provides.framing.type, "dynamic_byte_count");
-	EXPECT_EQ(remote_output.provides.framing.value.get<jopp::null>(), jopp::null{});
+	EXPECT_EQ(remote_output.provides.transport_method.type, "foobar");
+	EXPECT_EQ(remote_output.provides.transport_method.value.get<jopp::null>(), jopp::null{});
 }
 
 TESTCASE(Pipe_worker_ctl_input_connection_to_jopp_object)
@@ -120,8 +120,8 @@ TESTCASE(Pipe_worker_ctl_input_connection_to_jopp_object)
 						.type = "mime",
 						.value = jopp::value{"text/plain"}
 					},
-					.framing = Pipe::worker_ctl::data_framing_info{
-						.type = "dynamic_byte_count",
+					.transport_method = Pipe::worker_ctl::data_transport_info{
+						.type = "foobar",
 						.value = jopp::value{}
 					}
 				}
@@ -139,8 +139,8 @@ TESTCASE(Pipe_worker_ctl_input_connection_to_jopp_object)
 	auto const& format = provides.get_field_as<jopp::object>("format");
 	EXPECT_EQ(format.get_field_as<jopp::string>("type"), "mime");
 	EXPECT_EQ(format.get_field_as<jopp::string>("value"), "text/plain");
-	auto const& framing = provides.get_field_as<jopp::object>("framing");
-	EXPECT_EQ(framing.get_field_as<jopp::string>("type"), "dynamic_byte_count");
+	auto const& transport_method = provides.get_field_as<jopp::object>("transport_method");
+	EXPECT_EQ(transport_method.get_field_as<jopp::string>("type"), "foobar");
 }
 
 TESTCASE(Pipe_worker_ctl_make_input_connection)
@@ -158,9 +158,9 @@ TESTCASE(Pipe_worker_ctl_make_input_connection)
 	format.insert("type", "mime");
 	format.insert("value", "text/plain");
 	provides.insert("format", std::move(format));
-	jopp::object framing;
-	framing.insert("type", "dynamic_byte_count");
-	provides.insert("framing", std::move(framing));
+	jopp::object transport_method;
+	transport_method.insert("type", "foobar");
+	provides.insert("transport_method", std::move(transport_method));
 	remote_endpoint.insert("provides", std::move(provides));
 	obj_in.insert("remote_endpoint", std::move(remote_endpoint));
 
@@ -170,8 +170,8 @@ TESTCASE(Pipe_worker_ctl_make_input_connection)
 	EXPECT_EQ(result.remote_endpoint.address.value.get<jopp::string>(), "/foo/bar");
 	EXPECT_EQ(result.remote_endpoint.provides.format.type, "mime");
 	EXPECT_EQ(result.remote_endpoint.provides.format.value.get<jopp::string>(), "text/plain");
-	EXPECT_EQ(result.remote_endpoint.provides.framing.type, "dynamic_byte_count");
-	EXPECT_EQ(result.remote_endpoint.provides.framing.value.get<jopp::null>(), jopp::null{});
+	EXPECT_EQ(result.remote_endpoint.provides.transport_method.type, "foobar");
+	EXPECT_EQ(result.remote_endpoint.provides.transport_method.value.get<jopp::null>(), jopp::null{});
 }
 
 TESTCASE(Pipe_worker_ctl_remote_input_endpoint_to_jopp_object)
