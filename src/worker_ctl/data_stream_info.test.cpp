@@ -34,7 +34,7 @@ TESTCASE(Pipe_worker_ctl_data_stream_info_to_jopp_object)
 				.type = "mime",
 				.value = jopp::value{"text/plain"}
 			},
-			.transport_method = Pipe::worker_ctl::data_transport_info{
+			.transport_params = Pipe::worker_ctl::data_transport_info{
 				.type = "foobar",
 				.value = jopp::value{}
 			}
@@ -45,9 +45,9 @@ TESTCASE(Pipe_worker_ctl_data_stream_info_to_jopp_object)
 	EXPECT_EQ(format.get_field_as<jopp::string>("type"), "mime");
 	EXPECT_EQ(format.get_field_as<jopp::string>("value"), "text/plain");
 
-	auto const& transport_method = obj.get_field_as<jopp::object>("transport_method");
-	EXPECT_EQ(transport_method.get_field_as<jopp::string>("type"), "foobar");
-	EXPECT_EQ(transport_method.get_field_as<jopp::null>("value"), jopp::null{});
+	auto const& transport_params = obj.get_field_as<jopp::object>("transport_params");
+	EXPECT_EQ(transport_params.get_field_as<jopp::string>("type"), "foobar");
+	EXPECT_EQ(transport_params.get_field_as<jopp::null>("value"), jopp::null{});
 }
 
 TESTCASE(Pipe_worker_ctl_make_data_stream_info)
@@ -59,13 +59,13 @@ TESTCASE(Pipe_worker_ctl_make_data_stream_info)
 	format.insert("value", "text/plain");
 	obj_in.insert("format", std::move(format));
 
-	jopp::object transport_method;
-	transport_method.insert("type", "foobar");
-	obj_in.insert("transport_method", std::move(transport_method));
+	jopp::object transport_params;
+	transport_params.insert("type", "foobar");
+	obj_in.insert("transport_params", std::move(transport_params));
 
 	auto const obj = Pipe::worker_ctl::make_data_stream_info(std::move(obj_in));
 	EXPECT_EQ(obj.format.type, "mime");
 	EXPECT_EQ(obj.format.value.get<jopp::string>(), "text/plain");
-	EXPECT_EQ(obj.transport_method.type, "foobar");
-	EXPECT_EQ(obj.transport_method.value.get<jopp::null>(), jopp::null{});
+	EXPECT_EQ(obj.transport_params.type, "foobar");
+	EXPECT_EQ(obj.transport_params.value.get<jopp::null>(), jopp::null{});
 }

@@ -22,14 +22,14 @@ namespace Pipe::worker_ctl
 	struct data_stream_info
 	{
 		data_format_info format;
-		data_transport_info transport_method;
+		data_transport_info transport_params;
 	};
 
 	inline jopp::object to_jopp_object(data_stream_info&& obj)
 	{
 		jopp::object ret;
 		ret.insert("format", to_jopp_object(std::move(obj.format)));
-		ret.insert("transport_method", to_jopp_object(std::move(obj.transport_method)));
+		ret.insert("transport_params", to_jopp_object(std::move(obj.transport_params)));
 		return ret;
 	}
 
@@ -37,11 +37,17 @@ namespace Pipe::worker_ctl
 	{
 		return data_stream_info{
 			.format = make_data_format_info(std::move(obj.get_field_as<jopp::object>("format"))),
-			.transport_method = make_data_transport_info(
-				std::move(obj.get_field_as<jopp::object>("transport_method"))
+			.transport_params = make_data_transport_info(
+				std::move(obj.get_field_as<jopp::object>("transport_params"))
 			)
 		};
 	}
+
+	struct port_capability
+	{
+		data_format_info format;
+		std::string transport_method;
+	};
 }
 
 #endif

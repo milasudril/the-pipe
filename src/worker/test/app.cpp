@@ -19,7 +19,7 @@ namespace
 							.type = "mime",
 							.value = jopp::value{"text/plain"}
 						},
-						.transport_method = Pipe::worker_ctl::data_transport_info{
+						.transport_params = Pipe::worker_ctl::data_transport_info{
 							.type = "message_file",
 							.value = jopp::value{}
 						}
@@ -42,7 +42,7 @@ namespace
 								.type = "mime",
 								.value = jopp::value{"text/plain"}
 							},
-							.transport_method = Pipe::worker_ctl::data_transport_info{
+							.transport_params = Pipe::worker_ctl::data_transport_info{
 								.type = "message_file",
 								.value = jopp::value{}
 							}
