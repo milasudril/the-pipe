@@ -39,6 +39,7 @@ namespace Pipe::worker
 						make_response(std::move(request), to_jopp_object(get_worker_application_info()))
 					);
 				}
+				else
 				if(method == json_rpc::request_traits<worker_ctl::input_connection>::method)
 				{
 					connect(worker_ctl::make_input_connection(std::move(request.take_value().get_field_as<jopp::object>("params"))));
