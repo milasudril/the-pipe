@@ -48,6 +48,22 @@ namespace Pipe::worker_ctl
 		data_format_info format;
 		std::string transport_method;
 	};
+
+	inline jopp::object to_jopp_object(port_capability&& obj)
+	{
+		jopp::object ret;
+		ret.insert("format", to_jopp_object(std::move(obj.format)));
+		ret.insert("transport_method", std::move(obj.transport_method));
+		return ret;
+	}
+
+	inline port_capability make_port_capability(jopp::object&& obj)
+	{
+		return port_capability{
+			.format = make_data_format_info(std::move(obj.get_field_as<jopp::object>("format"))),
+			.transport_method = std::move(obj.get_field_as<jopp::string>("transport_method"))
+		};
+	}
 }
 
 #endif

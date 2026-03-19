@@ -12,17 +12,14 @@ namespace
 			virtual Pipe::worker_ctl::worker_application_info get_worker_application_info() const override
 			{
 				Pipe::worker_ctl::input_port_info_map inputs;
-				std::vector<Pipe::worker_ctl::data_stream_info> input_accepts;
+				std::vector<Pipe::worker_ctl::port_capability> input_accepts;
 				input_accepts.push_back(
-					Pipe::worker_ctl::data_stream_info{
+					Pipe::worker_ctl::port_capability{
 						.format = Pipe::worker_ctl::data_format_info{
 							.type = "mime",
 							.value = jopp::value{"text/plain"}
 						},
-						.transport_params = Pipe::worker_ctl::data_transport_info{
-							.type = "message_file",
-							.value = jopp::value{}
-						}
+						.transport_method = "message_file"
 					}
 				);
 				inputs.insert(
@@ -37,15 +34,12 @@ namespace
 				outputs.insert(
 					std::pair{
 						"result",
-						Pipe::worker_ctl::data_stream_info{
+						Pipe::worker_ctl::port_capability{
 							.format = Pipe::worker_ctl::data_format_info{
 								.type = "mime",
 								.value = jopp::value{"text/plain"}
 							},
-							.transport_params = Pipe::worker_ctl::data_transport_info{
-								.type = "message_file",
-								.value = jopp::value{}
-							}
+							.transport_method = "message_file"
 						}
 					}
 				);

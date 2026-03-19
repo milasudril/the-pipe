@@ -14,7 +14,7 @@ namespace Pipe::worker_ctl
 	 */
 	struct input_port_info
 	{
-		std::vector<data_stream_info> accepts;
+		std::vector<port_capability> accepts;
 	};
 
 	/**
@@ -37,9 +37,9 @@ namespace Pipe::worker_ctl
 	 */
 	inline input_port_info make_input_port_info(jopp::object&& obj)
 	{
-		std::vector<data_stream_info> accepts;
+		std::vector<port_capability> accepts;
 		for(auto&& item: std::move(obj.get_field_as<jopp::array>("accepts")))
-		{ accepts.push_back(make_data_stream_info(std::move(item.get<jopp::object>()))); }
+		{ accepts.push_back(make_port_capability(std::move(item.get<jopp::object>()))); }
 
 		return input_port_info{
 			.accepts = std::move(accepts)
@@ -85,7 +85,7 @@ namespace Pipe::worker_ctl
 	 */
 	struct output_port_info
 	{
-		data_stream_info provides;
+		port_capability provides;
 	};
 
 	/**
@@ -104,7 +104,7 @@ namespace Pipe::worker_ctl
 	inline output_port_info make_output_port_info(jopp::object&& obj)
 	{
 		return output_port_info{
-			.provides = make_data_stream_info(std::move(obj.get_field_as<jopp::object>("provides")))
+			.provides = make_port_capability(std::move(obj.get_field_as<jopp::object>("provides")))
 		};
 	}
 
