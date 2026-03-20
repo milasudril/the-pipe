@@ -69,12 +69,35 @@ namespace Pipe::json_rpc
 	 * Using this function ensures that the response inherits the transaction_id from the wrapped_request.
 	 * Also, the field "jsonrpc" is added for better conformance.
 	 */
-	inline jopp::object make_response(wrapped_request&& req)
+	[[deprecated]] inline jopp::object make_response(wrapped_request&& req)
 	{
 		auto req_value = req.take_value();
 		jopp::object response;
 		if(auto id = req_value.find("id"); id != std::end(req_value))
 		{ response.insert("id", std::move(id->second)); }
+		response.insert("jsonrpc", "2.0");
+		return response;
+	}
+
+	 /**
+	 * \brief Creates a response object, given a wrapped_request
+	 *
+	 * Using this function ensures that the response inherits the transaction_id from the wrapped_request.
+	 * Also, the field "jsonrpc" is added for better conformance.
+	 */
+	inline jopp::object make_response(wrapped_request const& req)
+	{
+		auto const& req_value = req.value();
+		jopp::object response;
+		if(auto id = req_value.find("id"); id != std::end(req_value))
+		{
+			id->second.visit([&response]<class T>(T const& item){
+				if constexpr(std::is_same_v<T, jopp::string> || std::is_same_v<T, jopp::number>)
+				{ response.insert("id", item); }
+				else
+				{ throw std::runtime_error{"Request id has wrong type"}; }
+			});
+		}
 		response.insert("jsonrpc", "2.0");
 		return response;
 	}
