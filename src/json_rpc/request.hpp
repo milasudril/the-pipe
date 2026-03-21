@@ -120,14 +120,22 @@ namespace Pipe::json_rpc
 		 * \brief The name of method that corresponds to T
 		 */
 		{ request_traits<T>::method } -> std::convertible_to<char const*>;
-
-		/**
-		 * \brief Converts a jopp::value and returns some response object, to be passed to the request
-		 * callback in the ongoing transaction.
-		 */
-		{ request_traits<T>::make_result(std::move(val)) } -> different_from<void>;
 	}
 	&& (std::is_empty_v<T> || has_params_to_from_jopp_object<T>);
+
+	template<class T, class ResponseType>
+	concept has_result_to_from_jopp_object = requires(ResponseType&& recv_result, jopp::object&& send_result)
+	{
+		/**
+		 * \brief Converts send_result to a some result, for use when processing the response
+		 */
+		{ request_traits<T>::make_result(std::move(send_result)) } -> std::same_as<ResponseType>;
+
+		/**
+		 * \brief Converts recv_result to a jopp::object for use when sending the response
+		 */
+		{ request_traits<T>::result_to_jopp_object(std::move(recv_result)) } -> std::same_as<jopp::object>;
+	};
 
 	template<request RequestType, class Handler>
 	jopp::object dispatch_request(json_rpc::wrapped_request&& request, Handler&& handler)
