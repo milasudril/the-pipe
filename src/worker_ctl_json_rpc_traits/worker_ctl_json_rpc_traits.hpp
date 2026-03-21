@@ -29,11 +29,11 @@ namespace Pipe::json_rpc
 		static jopp::object params_to_jopp_object(worker_ctl::input_connection&& conn)
 		{ return to_jopp_object(std::move(conn)); }
 
-		static empty_response make_result(jopp::value&&)
-		{ return empty_response{}; }
-
 		static worker_ctl::input_connection make_params(jopp::object&& obj)
 		{ return worker_ctl::make_input_connection(std::move(obj)); }
+
+		static empty_response make_result(jopp::value&&)
+		{ return empty_response{}; }
 	};
 
 	template<>
@@ -44,11 +44,11 @@ namespace Pipe::json_rpc
 		static jopp::object params_to_jopp_object(worker_ctl::output_connection&& conn)
 		{ return to_jopp_object(std::move(conn)); }
 
-		static empty_response make_result(jopp::value&&)
-		{ return empty_response{}; }
-
 		static worker_ctl::output_connection make_params(jopp::object&& obj)
 		{ return worker_ctl::make_output_connection(std::move(obj)); }
+
+		static empty_response make_result(jopp::value&&)
+		{ return empty_response{}; }
 	};
 
 	template<>
@@ -59,11 +59,11 @@ namespace Pipe::json_rpc
 		static jopp::object params_to_jopp_object(worker_ctl::input_disconnection&& conn)
 		{ return to_jopp_object(std::move(conn)); }
 
-		static empty_response make_result(jopp::value&&)
-		{ return empty_response{}; }
-
 		static worker_ctl::input_disconnection make_params(jopp::object&& obj)
 		{ return worker_ctl::make_input_disconnection(std::move(obj)); }
+
+		static empty_response make_result(jopp::value&&)
+		{ return empty_response{}; }
 	};
 
 	template<>
@@ -74,11 +74,11 @@ namespace Pipe::json_rpc
 		static jopp::object params_to_jopp_object(worker_ctl::output_disconnection&& conn)
 		{ return to_jopp_object(std::move(conn)); }
 
-		static empty_response make_result(jopp::value&&)
-		{ return empty_response{}; }
-
 		static worker_ctl::output_disconnection make_params(jopp::object&& obj)
 		{ return worker_ctl::make_output_disconnection(std::move(obj)); }
+
+		static empty_response make_result(jopp::value&&)
+		{ return empty_response{}; }
 	};
 
 	template<>
@@ -102,15 +102,15 @@ namespace Pipe::json_rpc
 
 namespace Pipe::worker_ctl
 {
-	template<class Handler>
-	jopp::object dispatch_request(json_rpc::wrapped_request&& request, Handler&& handler)
+	template<class RequestHandler>
+	jopp::object dispatch_request(json_rpc::wrapped_request&& request, RequestHandler&& handler)
 	{
 		static constexpr std::array supported_methods{
 			json_rpc::request_traits<get_worker_application_info>::method
 		};
 
 		static constexpr std::array callbacks{
-			json_rpc::dispatch_request<get_worker_application_info, Handler>
+			json_rpc::dispatch_request<get_worker_application_info, RequestHandler>
 		};
 
 		static_assert(std::size(callbacks) == std::size(supported_methods));
@@ -120,7 +120,7 @@ namespace Pipe::worker_ctl
 		{ throw std::runtime_error{"Unsupported method"}; }
 
 		auto const index = i - std::begin(callbacks);
-		return callbacks[i](std::move(request), std::forward<Handler>(handler));
+		return callbacks[i](std::move(request), std::forward<RequestHandler>(handler));
 	}
 };
 

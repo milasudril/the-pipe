@@ -116,11 +116,16 @@ namespace Pipe::json_rpc
 	 * \brief Defines the requirements of a request
 	 */
 	template<class T>
-	concept request = requires(T&& obj, jopp::value&& val){
+	concept request = requires(T&& obj, jopp::value&& resp_val){
 		/**
 		 * \brief The name of method that corresponds to T
 		 */
 		{ request_traits<T>::method } -> std::convertible_to<char const*>;
+
+		/**
+		 * \brief Converts resp_val to a result (which must not be void)
+		 */
+		{ request_traits<T>::make_result(std::move(resp_val)) } -> different_from<void>;
 	}
 	&& (std::is_empty_v<T> || has_params_to_from_jopp_object<T>);
 
