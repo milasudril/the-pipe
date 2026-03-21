@@ -61,6 +61,9 @@ namespace Pipe::json_rpc
 		jopp::object const& value() const
 		{ return m_value; }
 
+		jopp::object& value()
+		{ return m_value; }
+
 		/**
 		 * \brief Gets the method of the wrapped_request
 		 */
