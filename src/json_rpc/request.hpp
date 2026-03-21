@@ -148,18 +148,18 @@ namespace Pipe::json_rpc
 	};
 
 	template<request RequestType, request_handler<RequestType> Handler>
-	jopp::object dispatch_request(json_rpc::wrapped_request&& request, Handler&& handler)
+	jopp::object dispatch_request(wrapped_request&& request, Handler&& handler)
 	{
 		return make_response(
 			request,
-			to_jopp_object(
+			request_traits<RequestType>::result_to_jopp_object(
 				utils::unwrap(std::forward<Handler>(handler)).handle_request(
 					[&](){
 						if constexpr (std::is_empty_v<RequestType>)
 						{ return RequestType{}; }
 						else
 						{
-							return json_rpc::request_traits<RequestType>::make_params(
+							return request_traits<RequestType>::make_params(
 								std::move(request.value().get_field_as<jopp::object>("params"))
 							);
 						}
