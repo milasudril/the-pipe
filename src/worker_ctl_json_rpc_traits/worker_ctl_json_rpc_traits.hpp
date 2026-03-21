@@ -96,20 +96,6 @@ namespace Pipe::json_rpc
 
 namespace Pipe::worker_ctl
 {
-	template<class RequestType, class Handler>
-	jopp::object dispatch_request(json_rpc::wrapped_request&& request, Handler&& handler)
-	{
-		auto const params = request.value().try_get_field_as<jopp::object>("params");
-		return make_response(
-			request,
-			to_jopp_object(
-				std::forward<Handler>(handler).handle_request(
-					json_rpc::request_traits<RequestType>::make_request(params)
-				)
-			)
-		);
-	}
-
 	template<class Handler>
 	jopp::object dispatch_request(json_rpc::wrapped_request&& request, Handler&& handler)
 	{
@@ -121,7 +107,7 @@ namespace Pipe::worker_ctl
 		};
 
 		static constexpr std::array callbacks{
-			dispatch_request<get_worker_application_info, Handler>
+			json_rpc::dispatch_request<get_worker_application_info, Handler>
 		};
 
 		static_assert(std::size(callbacks) == std::size(supported_methods));

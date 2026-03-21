@@ -111,7 +111,20 @@ namespace Pipe::json_rpc
 		 * callback
 		 */
 		{ request_traits<T>::make_response(std::move(val)) } -> different_from<void>;
-
 	};
+
+	template<request RequestType, class Handler>
+	jopp::object dispatch_request(json_rpc::wrapped_request&& request, Handler&& handler)
+	{
+		auto const params = request.value().try_get_field_as<jopp::object>("params");
+		return make_response(
+			request,
+			to_jopp_object(
+				std::forward<Handler>(handler).handle_request(
+					json_rpc::request_traits<RequestType>::make_request(params)
+				)
+			)
+		);
+	}
 }
 #endif
