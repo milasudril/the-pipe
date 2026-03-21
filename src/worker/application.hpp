@@ -52,7 +52,17 @@ namespace Pipe::worker
 		void handle_request(jopp::array&& reqs)
 		{
 			for(jopp::value& item: std::move(reqs))
-			{ handle_request(std::move(item.get<jopp::object>())); }
+			{
+				item.visit([&]<class T>(T&& obj){
+					if constexpr(std::is_same_v<T, jopp::object>)
+					{ handle_request(std::forward<T>(obj)); }
+					else
+					{
+						// TODO: Send protocol error notification "Expected object" back to client
+						m_ctl_output.write(jopp::object{});
+					}
+				});
+			}
 		}
 
 		void handle_event(json_io::parser_error_event<ctl_request_tag>)
