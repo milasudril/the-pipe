@@ -91,11 +91,17 @@ namespace Pipe::json_rpc
 	template<class S, class T>
 	concept different_from = different_from_v<S, T>;
 
+	template<class T>
+	concept convertible_to_jopp_object = requires(T&& obj)
+	{
+		{to_jopp_object(std::forward<T>(obj))} -> std::same_as<jopp::object>;
+	};
+
 	/**
 	 * \brief Defines the requirements of a request
 	 */
 	template<class T>
-	concept request = requires(T&& obj, jopp::value&& val){
+	concept request = requires(T&& obj, jopp::value&& val, jopp::object* recv_params){
 		/**
 		 * \brief The name of method that corresponds to T
 		 */
@@ -108,9 +114,14 @@ namespace Pipe::json_rpc
 
 		/**
 		 * \brief Converts a jopp::value and returns some response object, to be passed to the request
-		 * callback
+		 * callback in the ongoing transaction.
 		 */
 		{ request_traits<T>::make_response(std::move(val)) } -> different_from<void>;
+
+		/**
+		 * \brief If not null, recv_params is converted into a T, to be passed to the request handler
+		 */
+		{ request_traits<T>::make_request(recv_params) } -> std::same_as<T>;
 	};
 
 	template<request RequestType, class Handler>

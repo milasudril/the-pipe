@@ -37,6 +37,13 @@ namespace Pipe::json_rpc
 
 		static empty_response make_response(jopp::value&&)
 		{ return empty_response{}; }
+
+		static worker_ctl::input_connection make_request(jopp::object* obj)
+		{
+			if(obj == nullptr)
+			{ throw std::runtime_error{"Missing mandatory parameters"}; }
+			return worker_ctl::make_input_connection(std::move(*obj));
+		}
 	};
 
 	template<>
@@ -49,6 +56,13 @@ namespace Pipe::json_rpc
 
 		static empty_response make_response(jopp::value&&)
 		{ return empty_response{}; }
+
+		static worker_ctl::output_connection make_request(jopp::object* obj)
+		{
+			if(obj == nullptr)
+			{ throw std::runtime_error{"Missing mandatory parameters"}; }
+			return worker_ctl::make_output_connection(std::move(*obj));
+		}
 	};
 
 	template<>
@@ -61,6 +75,13 @@ namespace Pipe::json_rpc
 
 		static empty_response make_response(jopp::value&&)
 		{ return empty_response{}; }
+
+		static worker_ctl::input_disconnection make_request(jopp::object* obj)
+		{
+			if(obj == nullptr)
+			{ throw std::runtime_error{"Missing mandatory parameters"}; }
+			return worker_ctl::make_input_disconnection(std::move(*obj));
+		}
 	};
 
 	template<>
@@ -73,6 +94,13 @@ namespace Pipe::json_rpc
 
 		static empty_response make_response(jopp::value&&)
 		{ return empty_response{}; }
+
+		static worker_ctl::output_disconnection make_request(jopp::object* obj)
+		{
+			if(obj == nullptr)
+			{ throw std::runtime_error{"Missing mandatory parameters"}; }
+			return worker_ctl::make_output_disconnection(std::move(*obj));
+		}
 	};
 
 	template<>
