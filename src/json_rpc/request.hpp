@@ -97,6 +97,20 @@ namespace Pipe::json_rpc
 		{to_jopp_object(std::forward<T>(obj))} -> std::same_as<jopp::object>;
 	};
 
+	template<class T>
+	concept has_params_to_from_jopp_object = requires(T&& send_params, jopp::object&& recv_params)
+	{
+		/**
+		 * \brief Converts send_params to a jopp::object for use when sending the request
+		 */
+		{ request_traits<T>::params_to_jopp_object(std::forward<T>(send_params)) } -> std::same_as<jopp::object>;
+
+		/**
+		 * \brief Converts recv_params to a T for use when processing the request
+		 */
+		{ request_traits<T>::make_params(std::move(recv_params)) } -> std::same_as<T>;
+	};
+
 	/**
 	 * \brief Defines the requirements of a request
 	 */
@@ -113,17 +127,7 @@ namespace Pipe::json_rpc
 		 */
 		{ request_traits<T>::make_result(std::move(val)) } -> different_from<void>;
 	}
-	&& (std::is_empty_v<T> || requires(T&& obj, jopp::value&& val, jopp::object&& recv_params){
-		/**
-		 * \brief Converts an object of type T into a jopp::object that will be sent as parameters
-		 */
-		{ request_traits<T>::params_to_jopp_object(std::forward<T>(obj)) } -> std::same_as<jopp::object>;
-
-		/**
-		 * \brief If not null, recv_params is converted into a T, to be passed to the request handler
-		 */
-		{ request_traits<T>::make_params(std::move(recv_params)) } -> std::same_as<T>;
-	});
+	&& (std::is_empty_v<T> || has_params_to_from_jopp_object<T>);
 
 	template<request RequestType, class Handler>
 	jopp::object dispatch_request(json_rpc::wrapped_request&& request, Handler&& handler)
