@@ -15,6 +15,15 @@ namespace Pipe::json_rpc
 	{
 		if(!obj.contains("method"))
 		{ throw std::runtime_error{"JSON-RPC object is missing mandatory field `method`"}; }
+
+		auto const i = obj.find("id");
+		if(i != std::end(obj))
+		{
+			auto const& val = i->second;
+			if(val.get_if<jopp::number>() == nullptr && val.get_if<jopp::string>() == nullptr)
+			{ throw std::runtime_error{"JSON-RPC request id has wrong type"}; }
+		}
+
 		return std::move(obj);
 	}
 
