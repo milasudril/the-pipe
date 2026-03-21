@@ -3,7 +3,7 @@
 #ifndef PIPE_JSON_RPC_CONTEXT_HPP
 #define PIPE_JSON_RPC_CONTEXT_HPP
 
-#include "./wrapped_request.hpp"
+#include "./request.hpp"
 #include "./transaction.hpp"
 
 #include "src/utils/utils.hpp"

@@ -3,7 +3,7 @@
 
 #include "src/json_rpc/context.hpp"
 #include "src/json_rpc/json_rpc.hpp"
-#include "src/json_rpc/wrapped_request.hpp"
+#include "src/json_rpc/request.hpp"
 #include "src/worker_ctl/connection.hpp"
 #include "src/worker_ctl/disconnection.hpp"
 #include "src/worker_ctl/worker_application_info.hpp"

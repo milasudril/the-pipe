@@ -2,7 +2,7 @@
 #define PIPE_JSON_RPC_HPP
 
 #include "./transaction.hpp"
-#include "./wrapped_request.hpp"
+#include "./request.hpp"
 #include "src/utils/utils.hpp"
 
 #include <deque>

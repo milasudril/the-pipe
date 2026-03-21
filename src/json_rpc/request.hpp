@@ -1,5 +1,5 @@
-#ifndef PIPE_JSON_RPC_WRAPPED_REQUEST_HPP
-#define PIPE_JSON_RPC_WRAPPED_REQUEST_HPP
+#ifndef PIPE_JSON_RPC_REQUEST_HPP
+#define PIPE_JSON_RPC_REQUEST_HPP
 
 #include "./transaction.hpp"
 

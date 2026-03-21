@@ -1,6 +1,6 @@
-//@	{"target":{"name":"wrapped_request.test"}}
+//@	{"target":{"name":"request.test"}}
 
-#include "./wrapped_request.hpp"
+#include "./request.hpp"
 
 #include <testfwk/testfwk.hpp>
 
