@@ -101,38 +101,47 @@ namespace Pipe::json_rpc
 	 * \brief Defines the requirements of a request
 	 */
 	template<class T>
-	concept request = requires(T&& obj, jopp::value&& val, jopp::object* recv_params){
+	concept request = requires(T&& obj, jopp::value&& val){
 		/**
 		 * \brief The name of method that corresponds to T
 		 */
 		{ request_traits<T>::method } -> std::convertible_to<char const*>;
 
 		/**
+		 * \brief Converts a jopp::value and returns some response object, to be passed to the request
+		 * callback in the ongoing transaction.
+		 */
+		{ request_traits<T>::make_result(std::move(val)) } -> different_from<void>;
+	}
+	&& (std::is_empty_v<T> || requires(T&& obj, jopp::value&& val, jopp::object&& recv_params){
+		/**
 		 * \brief Converts an object of type T into a jopp::object that will be sent as parameters
 		 */
 		{ request_traits<T>::params_to_jopp_object(std::forward<T>(obj)) } -> std::same_as<jopp::object>;
 
 		/**
-		 * \brief Converts a jopp::value and returns some response object, to be passed to the request
-		 * callback in the ongoing transaction.
-		 */
-		{ request_traits<T>::make_result(std::move(val)) } -> different_from<void>;
-
-		/**
 		 * \brief If not null, recv_params is converted into a T, to be passed to the request handler
 		 */
-		{ request_traits<T>::make_params(recv_params) } -> std::same_as<T>;
-	};
+		{ request_traits<T>::make_params(std::move(recv_params)) } -> std::same_as<T>;
+	});
 
 	template<request RequestType, class Handler>
 	jopp::object dispatch_request(json_rpc::wrapped_request&& request, Handler&& handler)
 	{
-		auto const params = request.value().try_get_field_as<jopp::object>("params");
 		return make_response(
 			request,
 			to_jopp_object(
 				std::forward<Handler>(handler).handle_request(
-					json_rpc::request_traits<RequestType>::make_params(params)
+					[&](){
+						if constexpr (std::is_empty_v<RequestType>)
+						{ return RequestType{}; }
+						else
+						{
+							return json_rpc::request_traits<RequestType>::make_params(
+								std::move(request.value().get_field_as<jopp::object>("params"))
+							);
+						}
+					}()
 				)
 			)
 		);
