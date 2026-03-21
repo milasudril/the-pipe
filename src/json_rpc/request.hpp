@@ -121,7 +121,7 @@ namespace Pipe::json_rpc
 		/**
 		 * \brief If not null, recv_params is converted into a T, to be passed to the request handler
 		 */
-		{ request_traits<T>::make_request(recv_params) } -> std::same_as<T>;
+		{ request_traits<T>::make_params(recv_params) } -> std::same_as<T>;
 	};
 
 	template<request RequestType, class Handler>
@@ -132,7 +132,7 @@ namespace Pipe::json_rpc
 			request,
 			to_jopp_object(
 				std::forward<Handler>(handler).handle_request(
-					json_rpc::request_traits<RequestType>::make_request(params)
+					json_rpc::request_traits<RequestType>::make_params(params)
 				)
 			)
 		);

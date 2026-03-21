@@ -479,7 +479,7 @@ namespace Pipe::json_rpc
 			};
 		}
 
-		static my_request make_request(jopp::object*)
+		static my_request make_params(jopp::object*)
 		{return my_request{};}
 	};
 };
