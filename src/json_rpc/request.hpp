@@ -2,6 +2,7 @@
 #define PIPE_JSON_RPC_REQUEST_HPP
 
 #include "./transaction.hpp"
+#include "src/utils/utils.hpp"
 
 #include <jopp/types.hpp>
 
@@ -123,27 +124,36 @@ namespace Pipe::json_rpc
 	}
 	&& (std::is_empty_v<T> || has_params_to_from_jopp_object<T>);
 
-	template<class T, class ResponseType>
+	template<class ResponseType, class RequestType>
 	concept has_result_to_from_jopp_object = requires(ResponseType&& recv_result, jopp::object&& send_result)
 	{
 		/**
 		 * \brief Converts send_result to a some result, for use when processing the response
 		 */
-		{ request_traits<T>::make_result(std::move(send_result)) } -> std::same_as<ResponseType>;
+		{ request_traits<RequestType>::make_result(std::move(send_result)) } -> std::same_as<ResponseType>;
 
 		/**
 		 * \brief Converts recv_result to a jopp::object for use when sending the response
 		 */
-		{ request_traits<T>::result_to_jopp_object(std::move(recv_result)) } -> std::same_as<jopp::object>;
+		{ request_traits<RequestType>::result_to_jopp_object(std::move(recv_result)) } -> std::same_as<jopp::object>;
 	};
 
-	template<request RequestType, class Handler>
+	template<class ResponseType, class RequestType>
+	concept response = std::is_empty_v<ResponseType> || has_result_to_from_jopp_object<ResponseType, RequestType>;
+
+	template<class Handler, class RequestType>
+	concept request_handler = request<RequestType> && requires(Handler&& handler, RequestType&& request)
+	{
+		{ utils::unwrap(std::forward<Handler>(handler)).handle_request(std::move(request)) } -> response<RequestType>;
+	};
+
+	template<request RequestType, request_handler<RequestType> Handler>
 	jopp::object dispatch_request(json_rpc::wrapped_request&& request, Handler&& handler)
 	{
 		return make_response(
 			request,
 			to_jopp_object(
-				std::forward<Handler>(handler).handle_request(
+				utils::unwrap(std::forward<Handler>(handler)).handle_request(
 					[&](){
 						if constexpr (std::is_empty_v<RequestType>)
 						{ return RequestType{}; }
