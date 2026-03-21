@@ -99,9 +99,6 @@ namespace Pipe::worker_ctl
 	template<class Handler>
 	jopp::object dispatch_request(json_rpc::wrapped_request&& request, Handler&& handler)
 	{
-		auto const& method = request.method();
-		auto const params = request.value().try_get_field_as<jopp::object>("params");
-
 		static constexpr std::array supported_methods{
 			json_rpc::request_traits<get_worker_application_info>::method
 		};
@@ -112,7 +109,7 @@ namespace Pipe::worker_ctl
 
 		static_assert(std::size(callbacks) == std::size(supported_methods));
 
-		auto const i = std::ranges::find(supported_methods, method);
+		auto const i = std::ranges::find(supported_methods, request.method());
 		if(i == std::end(supported_methods))
 		{ throw std::runtime_error{"Unsupported method"}; }
 
