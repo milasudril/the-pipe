@@ -74,5 +74,44 @@ namespace Pipe::json_rpc
 		transaction_id m_id;
 		jopp::object m_value;
 	};
+
+	/**
+	 * \brief Type trait to be specialized for T to be used as a request
+	 */
+	template<class Request>
+	struct request_traits
+	{};
+
+	template<class S, class T>
+	constexpr auto different_from_v = !std::is_same_v<S, T>;
+
+	/**
+	 * \brief The opposite of std::same_as
+	 */
+	template<class S, class T>
+	concept different_from = different_from_v<S, T>;
+
+	/**
+	 * \brief Defines the requirements of a request
+	 */
+	template<class T>
+	concept request = requires(T&& obj, jopp::value&& val){
+		/**
+		 * \brief The name of method that corresponds to T
+		 */
+		{ request_traits<T>::method } -> std::convertible_to<char const*>;
+
+		/**
+		 * \brief Converts an object of type T into a jopp::object that will be sent as parameters
+		 */
+		{ request_traits<T>::params(std::forward<T>(obj)) } -> std::same_as<jopp::object>;
+
+		/**
+		 * \brief Converts a jopp::value and returns some response object, to be passed to the request
+		 * callback
+		 */
+		{ request_traits<T>::make_response(std::move(val)) } -> different_from<void>;
+
+	};
 }
 #endif
