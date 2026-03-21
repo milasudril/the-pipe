@@ -46,7 +46,7 @@ namespace Pipe::json_rpc
 		/**
 		 * \brief Moves the value out from the wrapped_request
 		 */
-		[[deprecated]] jopp::object&& take_value()
+		jopp::object&& take_value()
 		{ return std::move(m_value); }
 
 		jopp::object const& value() const

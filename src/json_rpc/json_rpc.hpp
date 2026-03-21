@@ -63,22 +63,6 @@ namespace Pipe::json_rpc
 		);
 	}
 
-	/**
-	 * \brief Creates a response object, given a wrapped_request
-	 *
-	 * Using this function ensures that the response inherits the transaction_id from the wrapped_request.
-	 * Also, the field "jsonrpc" is added for better conformance.
-	 */
-	[[deprecated]] inline jopp::object make_response(wrapped_request&& req)
-	{
-		auto req_value = req.take_value();
-		jopp::object response;
-		if(auto id = req_value.find("id"); id != std::end(req_value))
-		{ response.insert("id", std::move(id->second)); }
-		response.insert("jsonrpc", "2.0");
-		return response;
-	}
-
 	 /**
 	 * \brief Creates a response object, given a wrapped_request
 	 *
@@ -105,9 +89,9 @@ namespace Pipe::json_rpc
 	/**
 	 * \brief Creates a response object, given a wrapped_request and its result
 	 */
-	inline jopp::object make_response(wrapped_request&& req, jopp::object&& result)
+	inline jopp::object make_response(wrapped_request const& req, jopp::object&& result)
 	{
-		auto response = make_response(std::move(req));
+		auto response = make_response(req);
 		response.insert("result", std::move(result));
 		return response;
 	}
@@ -125,9 +109,9 @@ namespace Pipe::json_rpc
 	 * \brief Creates a response object, given a wrapped_request and some exception-like object
 	 */
 	template<exception_like T>
-	inline jopp::object make_response(wrapped_request&& req, T const& exception, int code = -32000)
+	inline jopp::object make_response(wrapped_request const& req, T const& exception, int code = -32000)
 	{
-		auto response = make_response(std::move(req));
+		auto response = make_response(req);
 		jopp::object error;
 		error.insert("code", static_cast<jopp::number>(code));
 		error.insert("message", exception.what());
