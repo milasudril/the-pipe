@@ -20,7 +20,7 @@ namespace Pipe::json_rpc
 		static jopp::object params_to_jopp_object(worker_ctl::get_worker_application_info)
 		{ return jopp::object{}; }
 
-		static worker_ctl::worker_application_info make_response(jopp::value&& val)
+		static worker_ctl::worker_application_info make_result(jopp::value&& val)
 		{ return worker_ctl::make_worker_application_info(std::move(val.get<jopp::object>())); }
 
 		static worker_ctl::get_worker_application_info make_request(jopp::object*)
@@ -35,7 +35,7 @@ namespace Pipe::json_rpc
 		static jopp::object params_to_jopp_object(worker_ctl::input_connection&& conn)
 		{ return to_jopp_object(std::move(conn)); }
 
-		static empty_response make_response(jopp::value&&)
+		static empty_response make_result(jopp::value&&)
 		{ return empty_response{}; }
 
 		static worker_ctl::input_connection make_request(jopp::object* obj)
@@ -54,7 +54,7 @@ namespace Pipe::json_rpc
 		static jopp::object params_to_jopp_object(worker_ctl::output_connection&& conn)
 		{ return to_jopp_object(std::move(conn)); }
 
-		static empty_response make_response(jopp::value&&)
+		static empty_response make_result(jopp::value&&)
 		{ return empty_response{}; }
 
 		static worker_ctl::output_connection make_request(jopp::object* obj)
@@ -73,7 +73,7 @@ namespace Pipe::json_rpc
 		static jopp::object params_to_jopp_object(worker_ctl::input_disconnection&& conn)
 		{ return to_jopp_object(std::move(conn)); }
 
-		static empty_response make_response(jopp::value&&)
+		static empty_response make_result(jopp::value&&)
 		{ return empty_response{}; }
 
 		static worker_ctl::input_disconnection make_request(jopp::object* obj)
@@ -92,7 +92,7 @@ namespace Pipe::json_rpc
 		static jopp::object params_to_jopp_object(worker_ctl::output_disconnection&& conn)
 		{ return to_jopp_object(std::move(conn)); }
 
-		static empty_response make_response(jopp::value&&)
+		static empty_response make_result(jopp::value&&)
 		{ return empty_response{}; }
 
 		static worker_ctl::output_disconnection make_request(jopp::object* obj)

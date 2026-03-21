@@ -472,7 +472,7 @@ namespace Pipe::json_rpc
 			return ret;
 		}
 
-		static my_response make_response(jopp::value&& value)
+		static my_response make_result(jopp::value&& value)
 		{
 			return my_response{
 				.response_value = value.get<jopp::object>().get_field_as<jopp::number>("response_value")

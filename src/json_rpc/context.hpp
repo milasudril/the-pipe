@@ -16,11 +16,11 @@ namespace Pipe::json_rpc
 {
 	/**
 	 * \brief The response type that corresponds to Request, deduced from the return value of
-	 *        request_traits<Request>::make_respnse(jopp::value)
+	 *        request_traits<Request>::make_result(jopp::value)
 	 */
 	template<request Request>
 	using response_type = std::invoke_result_t<
-		decltype(request_traits<Request>::make_response),
+		decltype(request_traits<Request>::make_result),
 		jopp::value
 	>;
 
@@ -114,7 +114,7 @@ namespace Pipe::json_rpc
 				request_traits<Request>::method,
 				request_traits<Request>::params_to_jopp_object(std::forward<Request>(request)),
 				[cb = std::forward<Callback>(callback)](jopp::value&& response){
-					cb(request_traits<Request>::make_response(std::move(response)));
+					cb(request_traits<Request>::make_result(std::move(response)));
 				}
 			);
 		}

@@ -116,7 +116,7 @@ namespace Pipe::json_rpc
 		 * \brief Converts a jopp::value and returns some response object, to be passed to the request
 		 * callback in the ongoing transaction.
 		 */
-		{ request_traits<T>::make_response(std::move(val)) } -> different_from<void>;
+		{ request_traits<T>::make_result(std::move(val)) } -> different_from<void>;
 
 		/**
 		 * \brief If not null, recv_params is converted into a T, to be passed to the request handler
