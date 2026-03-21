@@ -5,6 +5,7 @@
 #include "src/utils/utils.hpp"
 
 #include <jopp/types.hpp>
+#include <utility>
 
 namespace Pipe::json_rpc
 {
@@ -130,7 +131,7 @@ namespace Pipe::json_rpc
 	&& (std::is_empty_v<T> || has_params_to_from_jopp_object<T>);
 
 	template<class ResponseType, class RequestType>
-	concept has_result_to_from_jopp_object = requires(ResponseType&& recv_result, jopp::object&& send_result)
+	concept has_result_to_from_jopp_object = requires(ResponseType&& recv_result, jopp::value&& send_result)
 	{
 		/**
 		 * \brief Converts send_result to a some result, for use when processing the response
@@ -152,26 +153,105 @@ namespace Pipe::json_rpc
 		{ utils::unwrap(std::forward<Handler>(handler)).handle_request(std::move(request)) } -> response<RequestType>;
 	};
 
-	template<request RequestType, request_handler<RequestType> Handler>
-	jopp::object dispatch_request(wrapped_request&& request, Handler&& handler)
+	template<request RequestType>
+	auto make_request(jopp::object&& request_val)
 	{
-		return make_response(
-			request,
-			request_traits<RequestType>::result_to_jopp_object(
-				utils::unwrap(std::forward<Handler>(handler)).handle_request(
-					[&](){
-						if constexpr (std::is_empty_v<RequestType>)
-						{ return RequestType{}; }
-						else
-						{
-							return request_traits<RequestType>::make_params(
-								std::move(request.value().get_field_as<jopp::object>("params"))
-							);
-						}
-					}()
-				)
+		if constexpr (std::is_empty_v<RequestType>)
+		{ return RequestType{}; }
+		else
+		{
+			return request_traits<RequestType>::make_params(
+				std::move(request_val.get_field_as<jopp::object>("params"))
+			);
+		}
+	}
+
+	/**
+	 * \brief Creates a response object, given a wrapped_request
+	 *
+	 * Using this function ensures that the response inherits the transaction_id from the wrapped_request.
+	 * Also, the field "jsonrpc" is added for better conformance.
+	 */
+	inline jopp::object make_response(wrapped_request const& req)
+	{
+		auto const& req_value = req.value();
+		jopp::object response;
+		if(auto id = req_value.find("id"); id != std::end(req_value))
+		{
+			id->second.visit([&response]<class T>(T const& item){
+				if constexpr(std::is_same_v<T, jopp::string> || std::is_same_v<T, jopp::number>)
+				{ response.insert("id", item); }
+				else
+				{ throw std::runtime_error{"Request id has wrong type"}; }
+			});
+		}
+		response.insert("jsonrpc", "2.0");
+		return response;
+	}
+
+	/**
+	 * \brief Creates a response object, given a wrapped_request and its result
+	 */
+	inline jopp::object make_response(wrapped_request const& req, jopp::object&& result)
+	{
+		auto response = make_response(req);
+		response.insert("result", std::move(result));
+		return response;
+	}
+
+	/**
+	 * \brief Something that looks like an exception
+	 */
+	template<class T>
+	concept exception_like = requires(T const& obj)
+	{
+		{ obj.what() } -> std::same_as<char const*>;
+	};
+
+	/**
+	 * \brief Creates a response object, given a wrapped_request and some exception-like object
+	 */
+	template<exception_like T>
+	inline jopp::object make_response(wrapped_request const& req, T const& exception, int code = -32000)
+	{
+		auto response = make_response(req);
+		jopp::object error;
+		error.insert("code", static_cast<jopp::number>(code));
+		error.insert("message", exception.what());
+		response.insert("error", std::move(error));
+		return response;
+	}
+
+	template<request RequestType, request_handler<RequestType> RequestHandler>
+	jopp::object dispatch_request(wrapped_request&& request, RequestHandler&& handler)
+	{
+		using response_type = decltype(
+			utils::unwrap(std::forward<RequestHandler>(handler)).handle_request(
+				std::declval<RequestType>()
 			)
 		);
+
+		if constexpr(std::is_empty_v<response_type>)
+		{
+			std::ignore = utils::unwrap(std::forward<RequestHandler>(handler)).handle_request(
+				make_request<RequestType>(std::move(request.value()))
+			);
+			return make_response(request, jopp::object{});
+		}
+		else
+		{
+			return make_response(
+				request,
+				request_traits<RequestType>::result_to_jopp_object(
+					utils::unwrap(std::forward<RequestHandler>(handler)).handle_request(
+						make_request<RequestType>(std::move(request.value()))
+					)
+				)
+			);
+		}
 	}
+
+	template<class RequestHandler>
+	using request_dispatch_function = jopp::object (*)(wrapped_request&&, RequestHandler&& handler);
 }
 #endif

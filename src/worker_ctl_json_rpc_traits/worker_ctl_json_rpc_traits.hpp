@@ -19,6 +19,13 @@ namespace Pipe::json_rpc
 
 		static worker_ctl::worker_application_info make_result(jopp::value&& val)
 		{ return worker_ctl::make_worker_application_info(std::move(val.get<jopp::object>())); }
+
+		static jopp::object result_to_jopp_object(worker_ctl::worker_application_info&& appinfo)
+		{ return worker_ctl::to_jopp_object(std::move(appinfo)); }
+#if 0
+		worker_ctl::worker_application_info make_result(jopp::object&& obj)
+		{ return worker_ctl::make_worker_application_info(std::move(obj)); }
+#endif
 	};
 
 	template<>
@@ -110,7 +117,7 @@ namespace Pipe::worker_ctl
 		};
 
 		static constexpr std::array callbacks{
-			json_rpc::dispatch_request<get_worker_application_info, RequestHandler>
+			&json_rpc::dispatch_request<get_worker_application_info, RequestHandler>
 		};
 
 		static_assert(std::size(callbacks) == std::size(supported_methods));
@@ -119,8 +126,8 @@ namespace Pipe::worker_ctl
 		if(i == std::end(supported_methods))
 		{ throw std::runtime_error{"Unsupported method"}; }
 
-		auto const index = i - std::begin(callbacks);
-		return callbacks[i](std::move(request), std::forward<RequestHandler>(handler));
+		auto const index = i - std::begin(supported_methods);
+		return callbacks[index](std::move(request), std::forward<RequestHandler>(handler));
 	}
 };
 

@@ -6,6 +6,7 @@
 #include "src/json_rpc/context.hpp"
 #include "src/json_rpc/json_rpc.hpp"
 #include "src/worker_ctl/connection.hpp"
+#include "src/worker_ctl/worker_application_info.hpp"
 #include "src/worker_ctl_json_rpc_traits/worker_ctl_json_rpc_traits.hpp"
 
 #include <jopp/serializer.hpp>
@@ -31,30 +32,16 @@ namespace Pipe::worker
 			json_rpc::wrapped_request request{std::move(object)};
 			try
 			{
-				auto const method = request.method();
-
-				if(method == json_rpc::request_traits<worker_ctl::get_worker_application_info>::method)
-				{
-					m_ctl_output.write(
-						make_response(std::move(request), to_jopp_object(get_worker_application_info()))
-					);
-				}
-				else
-				if(method == json_rpc::request_traits<worker_ctl::input_connection>::method)
-				{
-					connect(worker_ctl::make_input_connection(std::move(request.take_value().get_field_as<jopp::object>("params"))));
-					m_ctl_output.write(make_response(std::move(request), jopp::object{}));
-				}
-				else
-				{
-					throw std::runtime_error{"Unsupported method"};
-				}
+				m_ctl_output.write(worker_ctl::dispatch_request(std::move(request), std::ref(*this)));
 			}
 			catch(std::exception const& e)
 			{
 				m_ctl_output.write(make_response(std::move(request), e));
 			}
 		}
+
+		auto handle_request(worker_ctl::get_worker_application_info)
+		{ return get_worker_application_info(); }
 
 		json_io::writer& get_ctl_output()
 		{ return m_ctl_output; }
