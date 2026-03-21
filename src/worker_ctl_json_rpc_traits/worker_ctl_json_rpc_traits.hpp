@@ -17,7 +17,7 @@ namespace Pipe::json_rpc
 	{
 		static constexpr char const* method = "get_worker_application_info";
 
-		static jopp::object params(worker_ctl::get_worker_application_info)
+		static jopp::object params_to_jopp_object(worker_ctl::get_worker_application_info)
 		{ return jopp::object{}; }
 
 		static worker_ctl::worker_application_info make_response(jopp::value&& val)
@@ -32,7 +32,7 @@ namespace Pipe::json_rpc
 	{
 		static constexpr char const* method = "connect_input_port";
 
-		static jopp::object params(worker_ctl::input_connection&& conn)
+		static jopp::object params_to_jopp_object(worker_ctl::input_connection&& conn)
 		{ return to_jopp_object(std::move(conn)); }
 
 		static empty_response make_response(jopp::value&&)
@@ -51,7 +51,7 @@ namespace Pipe::json_rpc
 	{
 		static constexpr const char* method = "connect_output_port";
 
-		static jopp::object params(worker_ctl::output_connection&& conn)
+		static jopp::object params_to_jopp_object(worker_ctl::output_connection&& conn)
 		{ return to_jopp_object(std::move(conn)); }
 
 		static empty_response make_response(jopp::value&&)
@@ -70,7 +70,7 @@ namespace Pipe::json_rpc
 	{
 		static constexpr char const* method = "disconnect_input_port";
 
-		static jopp::object params(worker_ctl::input_disconnection&& conn)
+		static jopp::object params_to_jopp_object(worker_ctl::input_disconnection&& conn)
 		{ return to_jopp_object(std::move(conn)); }
 
 		static empty_response make_response(jopp::value&&)
@@ -89,7 +89,7 @@ namespace Pipe::json_rpc
 	{
 		static constexpr char const* method = "disconnect_output_port";
 
-		static jopp::object params(worker_ctl::output_disconnection&& conn)
+		static jopp::object params_to_jopp_object(worker_ctl::output_disconnection&& conn)
 		{ return to_jopp_object(std::move(conn)); }
 
 		static empty_response make_response(jopp::value&&)
@@ -108,7 +108,7 @@ namespace Pipe::json_rpc
 	{
 		static constexpr char const* method = "remote_input_disconnected";
 
-		static jopp::object params(worker_ctl::output_disconnection&& conn)
+		static jopp::object params_to_jopp_object(worker_ctl::output_disconnection&& conn)
 		{ return to_jopp_object(std::move(conn)); }
 	};
 
@@ -117,7 +117,7 @@ namespace Pipe::json_rpc
 	{
 		static constexpr char const* method = "remote_output_disconnected";
 
-		static jopp::object params(worker_ctl::input_disconnection&& conn)
+		static jopp::object params_to_jopp_object(worker_ctl::input_disconnection&& conn)
 		{ return to_jopp_object(std::move(conn)); }
 	};
 }

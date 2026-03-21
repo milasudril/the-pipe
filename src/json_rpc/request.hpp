@@ -110,7 +110,7 @@ namespace Pipe::json_rpc
 		/**
 		 * \brief Converts an object of type T into a jopp::object that will be sent as parameters
 		 */
-		{ request_traits<T>::params(std::forward<T>(obj)) } -> std::same_as<jopp::object>;
+		{ request_traits<T>::params_to_jopp_object(std::forward<T>(obj)) } -> std::same_as<jopp::object>;
 
 		/**
 		 * \brief Converts a jopp::value and returns some response object, to be passed to the request

@@ -465,7 +465,7 @@ namespace Pipe::json_rpc
 	{
 		static constexpr char const* method = "my_request";
 
-		static jopp::object params(my_request&& request)
+		static jopp::object params_to_jopp_object(my_request&& request)
 		{
 			jopp::object ret;
 			ret.insert("request_string", std::move(request).request_string);

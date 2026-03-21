@@ -28,7 +28,7 @@ template<>
 struct Pipe::json_rpc::notification_traits<status_notification>
 {
 	static constexpr char const* method = "status_notification";
-	static jopp::object params(status_notification obj)
+	static jopp::object params_to_jopp_object(status_notification obj)
 	{
 		jopp::object ret;
 		ret.insert("value", obj.value);

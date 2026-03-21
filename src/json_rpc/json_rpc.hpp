@@ -48,7 +48,7 @@ namespace Pipe::json_rpc
 		/**
 		 * \brief Converts an object of type T into a jopp::object that will be sent as parameters
 		 */
-		{ notification_traits<T>::params(std::forward<T>(obj)) } -> std::same_as<jopp::object>;
+		{ notification_traits<T>::params_to_jopp_object(std::forward<T>(obj)) } -> std::same_as<jopp::object>;
 	};
 
 	/**
@@ -59,7 +59,7 @@ namespace Pipe::json_rpc
 	{
 		return make_notification(
 			notification_traits<Notification>::method,
-			notification_traits<Notification>::params(std::forward<Notification>(notification))
+			notification_traits<Notification>::params_to_jopp_object(std::forward<Notification>(notification))
 		);
 	}
 
