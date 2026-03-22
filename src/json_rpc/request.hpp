@@ -145,7 +145,9 @@ namespace Pipe::json_rpc
 	};
 
 	template<class ResponseType, class RequestType>
-	concept response = std::is_empty_v<ResponseType> || has_result_to_from_jopp_object<ResponseType, RequestType>;
+	concept response = std::is_empty_v<ResponseType>
+		|| std::is_same_v<ResponseType, void>
+		|| has_result_to_from_jopp_object<ResponseType, RequestType>;
 
 	template<class Handler, class RequestType>
 	concept request_handler = request<RequestType> && requires(Handler&& handler, RequestType&& request)
@@ -198,6 +200,14 @@ namespace Pipe::json_rpc
 			)
 		);
 
+		if constexpr(std::is_same_v<response_type, void>)
+		{
+			utils::unwrap(std::forward<RequestHandler>(handler)).handle_request(
+				make_request<RequestType>(std::move(request.params))
+			);
+			return make_response(std::move(request.id), jopp::object{});
+		}
+		else
 		if constexpr(std::is_empty_v<response_type>)
 		{
 			std::ignore = utils::unwrap(std::forward<RequestHandler>(handler)).handle_request(

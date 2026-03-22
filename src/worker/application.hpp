@@ -44,6 +44,12 @@ namespace Pipe::worker
 		auto handle_request(worker_ctl::get_worker_application_info)
 		{ return get_worker_application_info(); }
 
+		void handle_request(worker_ctl::input_connection&&)
+		{ }
+
+		void handle_request(worker_ctl::output_connection&&)
+		{ }
+
 		json_io::writer& get_ctl_output()
 		{ return m_ctl_output; }
 

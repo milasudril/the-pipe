@@ -109,11 +109,15 @@ namespace Pipe::worker_ctl
 	[[nodiscard]] jopp::object dispatch_request(json_rpc::received_request&& request, RequestHandler&& handler)
 	{
 		static constexpr std::array supported_methods{
-			json_rpc::request_traits<get_worker_application_info>::method
+			json_rpc::request_traits<get_worker_application_info>::method,
+			json_rpc::request_traits<input_connection>::method,
+			json_rpc::request_traits<output_connection>::method
 		};
 
 		static constexpr std::array callbacks{
-			&json_rpc::dispatch_request<get_worker_application_info, RequestHandler>
+			json_rpc::dispatch_request<get_worker_application_info, RequestHandler>,
+			json_rpc::dispatch_request<input_connection, RequestHandler>,
+			json_rpc::dispatch_request<output_connection, RequestHandler>
 		};
 
 		static_assert(std::size(callbacks) == std::size(supported_methods));
