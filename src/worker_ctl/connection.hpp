@@ -106,7 +106,7 @@ namespace Pipe::worker_ctl
 	struct output_connection
 	{
 		remote_input_endpoint remote_endpoint;
-		std::string portname;
+		std::string local_portname;
 		endpoint_open_opts remote_endpoint_open_opts;
 	};
 
@@ -114,7 +114,7 @@ namespace Pipe::worker_ctl
 	{
 		jopp::object ret;
 		ret.insert("remote_endpoint", to_jopp_object(std::move(obj.remote_endpoint)));
-		ret.insert("portname", std::move(obj.portname));
+		ret.insert("local_portname", std::move(obj.local_portname));
 		ret.insert("remote_endpoint_open_opts", to_jopp_object(obj.remote_endpoint_open_opts));
 		return ret;
 	}
@@ -124,7 +124,7 @@ namespace Pipe::worker_ctl
 		output_connection ret;
 		ret.remote_endpoint =
 			make_remote_input_endpoint(std::move(obj.get_field_as<jopp::object>("remote_endpoint"))),
-		ret.portname = std::move(obj.get_field_as<jopp::string>("portname"));
+		ret.local_portname = std::move(obj.get_field_as<jopp::string>("local_portname"));
 
 		auto const remote_endpoint_open_opts = obj.try_get_field_as<jopp::object>("remote_endpoint_open_opts");
 		if(remote_endpoint_open_opts != nullptr)

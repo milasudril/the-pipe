@@ -178,7 +178,7 @@ TESTCASE(Pipe_worker_ctl_output_connection_to_jopp_object)
 					.value = jopp::value{"/foo/bar"}
 				}
 			},
-			.portname = "foobar",
+			.local_portname = "foobar",
 			.remote_endpoint_open_opts = Pipe::worker_ctl::endpoint_open_opts{
 				.precond = Pipe::os_services::fs::file_open_precondition::must_exist,
 				.created_endpoint_perms = Pipe::os_services::fs::file_access_permission::owner_read
@@ -190,7 +190,7 @@ TESTCASE(Pipe_worker_ctl_output_connection_to_jopp_object)
 	auto const& address = remote_endpoint.get_field_as<jopp::object>("address");
 	EXPECT_EQ(address.get_field_as<jopp::string>("type"), "fs_entry");
 	EXPECT_EQ(address.get_field_as<jopp::string>("value"), "/foo/bar");
-	EXPECT_EQ(obj.get_field_as<jopp::string>("portname"), "foobar");
+	EXPECT_EQ(obj.get_field_as<jopp::string>("local_portname"), "foobar");
 	auto const& endpoint_open_opts = obj.get_field_as<jopp::object>("remote_endpoint_open_opts");
 	EXPECT_EQ(endpoint_open_opts.get_field_as<jopp::string>("precond"), "must_exist");
 	auto const& perms = endpoint_open_opts.get_field_as<jopp::array>("created_endpoint_perms");
@@ -202,7 +202,7 @@ TESTCASE(Pipe_worker_ctl_make_output_connection_no_open_opts)
 {
 	jopp::object obj_in;
 
-	obj_in.insert("portname", "foobar");
+	obj_in.insert("local_portname", "foobar");
 
 	jopp::object remote_endpoint;
 	jopp::object address;
@@ -212,7 +212,7 @@ TESTCASE(Pipe_worker_ctl_make_output_connection_no_open_opts)
 	obj_in.insert("remote_endpoint", std::move(remote_endpoint));
 
 	auto const output_connection = Pipe::worker_ctl::make_output_connection(std::move(obj_in));
-	EXPECT_EQ(output_connection.portname, "foobar");
+	EXPECT_EQ(output_connection.local_portname, "foobar");
 	EXPECT_EQ(output_connection.remote_endpoint.address.type, "fs_entry");
 	EXPECT_EQ(output_connection.remote_endpoint.address.value.get<jopp::string>(), "/foo/bar");
 	EXPECT_EQ(
@@ -231,7 +231,7 @@ TESTCASE(Pipe_worker_ctl_make_output_connection)
 {
 	jopp::object obj_in;
 
-	obj_in.insert("portname", "foobar");
+	obj_in.insert("local_portname", "foobar");
 
 	jopp::object remote_endpoint;
 	jopp::object address;
@@ -248,7 +248,7 @@ TESTCASE(Pipe_worker_ctl_make_output_connection)
 	obj_in.insert("remote_endpoint_open_opts", std::move(remote_endpoint_open_opts));
 
 	auto const output_connection = Pipe::worker_ctl::make_output_connection(std::move(obj_in));
-	EXPECT_EQ(output_connection.portname, "foobar");
+	EXPECT_EQ(output_connection.local_portname, "foobar");
 	EXPECT_EQ(output_connection.remote_endpoint.address.type, "fs_entry");
 	EXPECT_EQ(output_connection.remote_endpoint.address.value.get<jopp::string>(), "/foo/bar");
 	EXPECT_EQ(
