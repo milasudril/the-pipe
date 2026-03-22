@@ -381,5 +381,26 @@ namespace Pipe::json_rpc
 			});
 		}
 	}
+
+	template<class Func, class ErrorHandler>
+	void handle_message(jopp::container&& reqs, Func&& func, ErrorHandler&& on_error)
+	{
+		std::move(reqs).visit(
+			[
+				func = std::forward<Func>(func),
+				on_error = std::forward<ErrorHandler>(on_error)
+			]<class MessageContainer>(MessageContainer&& item) mutable {
+				handle_message(
+					std::forward<MessageContainer>(item),
+					[func = std::move(func)]<class T>(T&& obj){
+						func(std::forward<T>(obj));
+					},
+					[on_error = std::move(on_error)](json_rpc::message_handling_error&& err) {
+						on_error(std::move(err));
+					}
+				);
+			}
+		);
+	}
 }
 #endif
