@@ -166,62 +166,6 @@ namespace Pipe::json_rpc
 		}
 	}
 
-	/**
-	 * \brief Creates a response object, given a wrapped_request
-	 *
-	 * Using this function ensures that the response inherits the transaction_id from the wrapped_request.
-	 * Also, the field "jsonrpc" is added for better conformance.
-	 */
-	inline jopp::object make_response(wrapped_request const& req)
-	{
-		auto const& req_value = req.value();
-		jopp::object response;
-		if(auto id = req_value.find("id"); id != std::end(req_value))
-		{
-			id->second.visit([&response]<class T>(T const& item){
-				if constexpr(std::is_same_v<T, jopp::string> || std::is_same_v<T, jopp::number>)
-				{ response.insert("id", item); }
-				else
-				{ throw std::runtime_error{"Request id has wrong type"}; }
-			});
-		}
-		response.insert("jsonrpc", "2.0");
-		return response;
-	}
-
-	/**
-	 * \brief Creates a response object, given a wrapped_request and its result
-	 */
-	inline jopp::object make_response(wrapped_request const& req, jopp::object&& result)
-	{
-		auto response = make_response(req);
-		response.insert("result", std::move(result));
-		return response;
-	}
-
-	/**
-	 * \brief Something that looks like an exception
-	 */
-	template<class T>
-	concept exception_like = requires(T const& obj)
-	{
-		{ obj.what() } -> std::same_as<char const*>;
-	};
-
-	/**
-	 * \brief Creates a response object, given a wrapped_request and some exception-like object
-	 */
-	template<exception_like T>
-	inline jopp::object make_response(wrapped_request const& req, T const& exception, int code = -32000)
-	{
-		auto response = make_response(req);
-		jopp::object error;
-		error.insert("code", static_cast<jopp::number>(code));
-		error.insert("message", exception.what());
-		response.insert("error", std::move(error));
-		return response;
-	}
-
 	struct received_request
 	{
 		std::string method;
