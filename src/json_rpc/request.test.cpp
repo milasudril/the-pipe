@@ -228,6 +228,39 @@ TESTCASE(Pipe_json_rpc_handle_message_request_exception_thrown)
 	EXPECT_EQ(err.message, std::string_view{"Something went wrong"});
 }
 
+TESTCASE(Pipe_json_rpc_handle_message_request_bad_id)
+{
+	std::variant<
+		std::monostate,
+		Pipe::json_rpc::received_request,
+		Pipe::json_rpc::received_notification
+	> msg;
+
+	Pipe::json_rpc::message_handling_error err;
+
+	jopp::object obj;
+	obj.insert("method", "Foobar");
+	jopp::object params;
+	params.insert("value", 124.0);
+	obj.insert("params", std::move(params));
+	obj.insert("id", false);
+
+	Pipe::json_rpc::handle_message(
+		std::move(obj),
+		[&msg]<class T>(T&& value){
+			msg = std::move(value);
+			throw std::runtime_error{"Something went wrong"};
+		},
+		[&err](Pipe::json_rpc::message_handling_error&& value){
+			err = std::move(value);
+		}
+	);
+
+	EXPECT_EQ(msg.index(), 0);
+	EXPECT_EQ(err.id, jopp::value{false});
+	EXPECT_EQ(err.message, std::string_view{"Field `id` has an unsupported type"});
+}
+
 TESTCASE(Pipe_json_rpc_handle_message_notification_no_params_no_method)
 {
 	std::variant<
@@ -383,3 +416,78 @@ TESTCASE(Pipe_json_rpc_handle_message_notification_exception_thrown)
 	EXPECT_EQ(err.id, jopp::value{});
 	EXPECT_EQ(err.message, std::string_view{"Something went wrong"});
 }
+
+TESTCASE(Pipe_json_rpc_copy_id)
+{
+	{
+		jopp::value const id{243.45};
+		auto result = Pipe::json_rpc::copy_id(id);
+		EXPECT_EQ(result.get<jopp::number>(), 243.45);
+		result = jopp::value{35.0};
+		EXPECT_EQ(result.get<jopp::number>(), 35.0);
+		EXPECT_EQ(id.get<jopp::number>(), 243.45);
+	}
+
+	{
+		jopp::value const id{"Hej"};
+		auto result = Pipe::json_rpc::copy_id(id);
+		EXPECT_EQ(result.get<jopp::string>(), "Hej");
+		result = jopp::value{"foo"};
+		EXPECT_EQ(result.get<jopp::string>(), "foo");
+		EXPECT_EQ(id.get<jopp::string>(), "Hej");
+	}
+
+	{
+		jopp::value const id{jopp::null{}};
+		try
+		{
+			auto const result = Pipe::json_rpc::copy_id(id);
+			abort();
+		}
+		catch(std::runtime_error const& err)
+		{
+			EXPECT_EQ(err.what(), std::string_view{"Field `id` has an unsupported type"});
+		}
+	}
+
+	{
+		jopp::value const id{true};
+		try
+		{
+			auto const result = Pipe::json_rpc::copy_id(id);
+			abort();
+		}
+		catch(std::runtime_error const& err)
+		{
+			EXPECT_EQ(err.what(), std::string_view{"Field `id` has an unsupported type"});
+		}
+	}
+
+	{
+		jopp::value const id{jopp::array{}};
+		try
+		{
+			auto const result = Pipe::json_rpc::copy_id(id);
+			abort();
+		}
+		catch(std::runtime_error const& err)
+		{
+			EXPECT_EQ(err.what(), std::string_view{"Field `id` has an unsupported type"});
+		}
+	}
+
+	{
+		jopp::value const id{jopp::object{}};
+		try
+		{
+			auto const result = Pipe::json_rpc::copy_id(id);
+			abort();
+		}
+		catch(std::runtime_error const& err)
+		{
+			EXPECT_EQ(err.what(), std::string_view{"Field `id` has an unsupported type"});
+		}
+	}
+}
+
+
