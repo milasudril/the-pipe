@@ -361,5 +361,25 @@ namespace Pipe::json_rpc
 			);
 		}
 	}
+	template<class Func, class ErrorHandler>
+	void handle_message(jopp::array&& reqs, Func func, ErrorHandler on_error)
+	{
+		for(jopp::value& item: std::move(reqs))
+		{
+			item.visit([func = func, on_error = on_error]<class T>(T&& obj) mutable {
+				if constexpr(std::is_same_v<T, jopp::object>)
+				{ handle_message(std::forward<T>(obj), std::move(func), std::move(on_error)); }
+				else
+				{
+					std::move(on_error)(
+						json_rpc::message_handling_error{
+							.message = "JSON-RPC messages must be objects",
+							.id = jopp::value{}
+						}
+					);
+				}
+			});
+		}
+	}
 }
 #endif

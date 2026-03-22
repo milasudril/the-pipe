@@ -22,8 +22,16 @@ namespace Pipe::worker
 
 		void handle_event(json_io::container_loaded_event<ctl_request_tag>&& event)
 		{
-			std::move(event.obj).visit([this]<class T>(T&& item){
-					handle_request(std::forward<T>(item));
+			std::move(event.obj).visit([this]<class MessageContainer>(MessageContainer&& item){
+					json_rpc::handle_message(
+						std::forward<MessageContainer>(item),
+						[this]<class T>(T&& obj){
+							handle_message(std::forward<T>(obj));
+						},
+						[this](json_rpc::message_handling_error&& err) {
+							m_ctl_output.write(make_response(std::move(err)));
+						}
+					);
 				}
 			);
 		}
@@ -39,28 +47,6 @@ namespace Pipe::worker
 					m_ctl_output.write(make_response(std::move(err)));
 				}
 			);
-		}
-
-		void handle_request(jopp::array&& reqs)
-		{
-			for(jopp::value& item: std::move(reqs))
-			{
-				item.visit([this]<class T>(T&& obj){
-					if constexpr(std::is_same_v<T, jopp::object>)
-					{ handle_request(std::forward<T>(obj)); }
-					else
-					{
-						m_ctl_output.write(
-							make_response(
-								json_rpc::message_handling_error{
-									.message = "JSON-RPC messages must be objects",
-									.id = jopp::value{}
-								}
-							)
-						);
-					}
-				});
-			}
 		}
 
 		void handle_message(json_rpc::received_request&& req)
@@ -83,7 +69,7 @@ namespace Pipe::worker
 
 
 		void handle_event(json_io::parser_error_event<ctl_request_tag>)
-		{}
+		{ m_should_exit = true}
 
 		void handle_event(json_io::input_closed_event<ctl_request_tag>)
 		{ m_should_exit = true; }
