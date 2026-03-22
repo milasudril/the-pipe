@@ -276,6 +276,23 @@ namespace Pipe::json_rpc
 		jopp::value id;
 	};
 
+	inline jopp::value copy_id(jopp::value const& val)
+	{
+		return val.visit(
+			utils::overload{
+				[](auto const&) -> jopp::value {
+					throw std::runtime_error{"Field `id` has an unsupported type"};
+				},
+				[](jopp::number val) {
+					return jopp::value{val};
+				},
+				[](jopp::string const& val) {
+					return jopp::value{val};
+				}
+			}
+		);
+	}
+
 	template<class Func, class ErrorHandler>
 	void handle_message(jopp::object&& obj, Func&& func, ErrorHandler&& on_error)
 	{
@@ -283,26 +300,14 @@ namespace Pipe::json_rpc
 		if(i != std::end(obj))
 		{
 			auto id = std::move(i->second);
-			auto method = obj.try_get_field_as<jopp::string>("method");
-			if(method == nullptr)
-			{
-				std::forward<ErrorHandler>(on_error)(
-					message_handling_error{
-						.message = "Mandatory field `method` is missing",
-						.id = std::move(id)
-					}
-				);
-				return;
-			}
-
 			auto params = obj.try_get_field_as<jopp::object>("params");
 			try
 			{
 				std::forward<Func>(func)(
 					received_request{
-						.method = std::move(*method),
+						.method = std::move(obj.get_field_as<jopp::string>("method")),
 						.params = (params == nullptr)? jopp::object{} : std::move(*params),
-						.id = std::move(id)
+						.id = copy_id(id)
 					}
 				);
 			}

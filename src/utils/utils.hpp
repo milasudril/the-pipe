@@ -312,6 +312,12 @@ namespace Pipe::utils
 	private:
 		Callable m_func;
 	};
+
+	template<class... Ts>
+	struct overload : Ts...
+	{
+		using Ts::operator()...;
+	};
 };
 
 template<class T>
