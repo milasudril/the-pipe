@@ -315,18 +315,25 @@ namespace Pipe::json_rpc
 			{
 				std::forward<ErrorHandler>(on_error)(
 					message_handling_error{
-						.what = err.what(),
+						.message = err.what(),
 						.id = std::move(id)
 					}
 				);
-				return;
 			}
 		}
 		else
 		{
 			try
 			{
-				auto params = obj.try_get_field_as<jopp::object>("params");
+				jopp::object* params = nullptr;
+				auto params_entry = obj.find("params");
+				if(params_entry != std::end(obj))
+				{
+					params = params_entry->second.get_if<jopp::object>();
+					if(params == nullptr)
+					{ throw std::runtime_error{"The field `params` has wrong type"}; }
+				}
+
 				std::forward<Func>(func)(
 					received_notification{
 						.method = std::move(obj.get_field_as<jopp::string>("method")),
@@ -338,11 +345,10 @@ namespace Pipe::json_rpc
 			{
 				std::forward<ErrorHandler>(on_error)(
 					message_handling_error{
-						.what = err.what(),
+						.message = err.what(),
 						.id = jopp::value{}
 					}
 				);
-				return;
 			}
 		}
 	}
