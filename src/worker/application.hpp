@@ -35,10 +35,8 @@ namespace Pipe::worker
 				[this]<class T>(T&& obj){
 					handle_message(std::forward<T>(obj));
 				},
-				[this](json_rpc::message_handling_error&& err)
-				{
-					// TODO: Send to client
-					puts(err.message.c_str());
+				[this](json_rpc::message_handling_error&& err) {
+					m_ctl_output.write(make_response(std::move(err)));
 				}
 			);
 		}
@@ -47,12 +45,19 @@ namespace Pipe::worker
 		{
 			for(jopp::value& item: std::move(reqs))
 			{
-				item.visit([&]<class T>(T&& obj){
+				item.visit([this]<class T>(T&& obj){
 					if constexpr(std::is_same_v<T, jopp::object>)
 					{ handle_request(std::forward<T>(obj)); }
 					else
 					{
-						// TODO: Send error notification to client
+						m_ctl_output.write(
+							make_response(
+								json_rpc::message_handling_error{
+									.message = "JSON-RPC messages must be objects",
+									.id = jopp::value{}
+								}
+							)
+						);
 					}
 				});
 			}

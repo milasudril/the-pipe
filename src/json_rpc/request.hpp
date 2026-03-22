@@ -232,7 +232,8 @@ namespace Pipe::json_rpc
 	[[nodiscard]] inline jopp::object make_response(jopp::value&& id)
 	{
 		jopp::object response;
-		response.insert("id", std::move(id));
+		if(id.get_if<jopp::null>() == nullptr)
+		{ response.insert("id", std::move(id)); }
 		response.insert("jsonrpc", "2.0");
 		return response;
 	}
@@ -284,6 +285,16 @@ namespace Pipe::json_rpc
 		std::string message;
 		jopp::value id;
 	};
+
+	inline jopp::object make_response(message_handling_error&& err, int code = -32000)
+	{
+		auto ret = make_response(std::move(err.id));
+		jopp::object error;
+		error.insert("message", std::move(err.message));
+		error.insert("code", jopp::value{static_cast<double>(code)});
+		ret.insert("error", std::move(error));
+		return ret;
+	}
 
 	inline jopp::value copy_id(jopp::value const& val)
 	{
