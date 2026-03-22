@@ -10,58 +10,36 @@
 
 namespace Pipe::worker_ctl
 {
-	struct endpoint_path_tag{};
-
-	using endpoint_path = any<endpoint_path_tag>;
-
-	inline endpoint_path make_endpoint_path(jopp::object&& obj)
-	{ return make_any<endpoint_path_tag>(std::move(obj)); }
-
-	struct remote_output_endpoint
-	{
-		endpoint_path address;
-		data_stream_info provides;
-	};
-
-	inline jopp::object to_jopp_object(remote_output_endpoint&& obj)
-	{
-		jopp::object ret;
-		ret.insert("address", to_jopp_object(std::move(obj.address)));
-		ret.insert("provides", to_jopp_object(std::move(obj.provides)));
-		return ret;
-	}
-
-	inline remote_output_endpoint make_remote_output_endpoint(jopp::object&& obj)
-	{
-		return remote_output_endpoint{
-			.address = make_endpoint_path(std::move(obj.get_field_as<jopp::object>("address"))),
-			.provides = make_data_stream_info(std::move(obj.get_field_as<jopp::object>("provides")))
-		};
-	}
-
 	struct input_connection
 	{
-		remote_output_endpoint remote_endpoint;
-		std::string portname;
+		data_stream_info remote_stream_info;
+		std::string local_portname;
 	};
 
 	inline jopp::object to_jopp_object(input_connection&& obj)
 	{
 		jopp::object ret;
-		ret.insert("remote_endpoint", to_jopp_object(std::move(obj.remote_endpoint)));
-		ret.insert("portname", std::move(obj.portname));
+		ret.insert("remote_stream_info", to_jopp_object(std::move(obj.remote_stream_info)));
+		ret.insert("local_portname", std::move(obj.local_portname));
 		return ret;
 	}
 
 	inline input_connection make_input_connection(jopp::object&& obj)
 	{
 		return input_connection{
-			.remote_endpoint = make_remote_output_endpoint(
-				std::move(obj.get_field_as<jopp::object>("remote_endpoint"))
+			.remote_stream_info = make_data_stream_info(
+				std::move(obj.get_field_as<jopp::object>("remote_stream_info"))
 			),
-			.portname = std::move(obj.get_field_as<jopp::string>("portname"))
+			.local_portname = std::move(obj.get_field_as<jopp::string>("local_portname"))
 		};
 	}
+
+	struct endpoint_path_tag{};
+
+	using endpoint_path = any<endpoint_path_tag>;
+
+	inline endpoint_path make_endpoint_path(jopp::object&& obj)
+	{ return make_any<endpoint_path_tag>(std::move(obj)); }
 
 	struct remote_input_endpoint
 	{
