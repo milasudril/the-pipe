@@ -161,7 +161,7 @@ namespace Pipe::json_rpc
 		else
 		{
 			return request_traits<RequestType>::make_params(
-				std::move(request_val.get_field_as<jopp::object>("params"))
+				std::move(request_val)
 			);
 		}
 	}
@@ -222,8 +222,30 @@ namespace Pipe::json_rpc
 		return response;
 	}
 
+	struct received_request
+	{
+		std::string method;
+		jopp::object params;
+		jopp::value id;
+	};
+
+	[[nodiscard]] inline jopp::object make_response(jopp::value&& id)
+	{
+		jopp::object response;
+		response.insert("id", std::move(id));
+		response.insert("jsonrpc", "2.0");
+		return response;
+	}
+
+	[[nodiscard]] inline jopp::object make_response(jopp::value&& id, jopp::object&& response)
+	{
+		auto ret = make_response(std::move(id));
+		ret.insert("response", std::move(response));
+		return ret;
+	}
+
 	template<request RequestType, request_handler<RequestType> RequestHandler>
-	jopp::object dispatch_request(wrapped_request&& request, RequestHandler&& handler)
+	[[nodiscard]] jopp::object dispatch_request(received_request&& request, RequestHandler&& handler)
 	{
 		using response_type = decltype(
 			utils::unwrap(std::forward<RequestHandler>(handler)).handle_request(
@@ -231,38 +253,25 @@ namespace Pipe::json_rpc
 			)
 		);
 
-		// FIXME: Even though we only move request.value() here, the caller has thrown away the
-		//        transaction id by using std::move. Thus, it cannot send an error response back
-		//        in case an exception is thrown.
-
-		// FIXME: A notification doesn't have a return value
-
 		if constexpr(std::is_empty_v<response_type>)
 		{
 			std::ignore = utils::unwrap(std::forward<RequestHandler>(handler)).handle_request(
-				make_request<RequestType>(std::move(request.value()))
+				make_request<RequestType>(std::move(request.params))
 			);
-			return make_response(request, jopp::object{});
+			return make_response(std::move(request.id), jopp::object{});
 		}
 		else
 		{
 			return make_response(
-				request,
+				std::move(request.id),
 				request_traits<RequestType>::result_to_jopp_object(
 					utils::unwrap(std::forward<RequestHandler>(handler)).handle_request(
-						make_request<RequestType>(std::move(request.value()))
+						make_request<RequestType>(std::move(request.params))
 					)
 				)
 			);
 		}
 	}
-
-	struct received_request
-	{
-		std::string method;
-		jopp::object params;
-		jopp::value id;
-	};
 
 	struct received_notification
 	{

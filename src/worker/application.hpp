@@ -5,6 +5,7 @@
 #include "src/json_io/writer.hpp"
 #include "src/json_rpc/context.hpp"
 #include "src/json_rpc/json_rpc.hpp"
+#include "src/json_rpc/request.hpp"
 #include "src/worker_ctl/connection.hpp"
 #include "src/worker_ctl/worker_application_info.hpp"
 #include "src/worker_ctl_json_rpc_traits/worker_ctl_json_rpc_traits.hpp"
@@ -29,15 +30,40 @@ namespace Pipe::worker
 
 		void handle_request(jopp::object&& object)
 		{
-			json_rpc::wrapped_request request{std::move(object)};
-			try
+			json_rpc::handle_message(
+				std::move(object),
+				[this]<class T>(T&& obj){
+					handle_message(std::forward<T>(obj));
+				},
+				[this](json_rpc::message_handling_error&& err)
+				{
+					// TODO: Send to client
+					puts(err.message.c_str());
+				}
+			);
+		}
+
+		void handle_request(jopp::array&& reqs)
+		{
+			for(jopp::value& item: std::move(reqs))
 			{
-				m_ctl_output.write(worker_ctl::dispatch_request(std::move(request), std::ref(*this)));
+				item.visit([&]<class T>(T&& obj){
+					if constexpr(std::is_same_v<T, jopp::object>)
+					{ handle_request(std::forward<T>(obj)); }
+					else
+					{
+						// TODO: Send error notification to client
+					}
+				});
 			}
-			catch(std::exception const& e)
-			{
-				m_ctl_output.write(make_response(std::move(request), e));
-			}
+		}
+
+		void handle_message(json_rpc::received_request&& req)
+		{ m_ctl_output.write(worker_ctl::dispatch_request(std::move(req), std::ref(*this))); }
+
+		void handle_message(json_rpc::received_notification&&)
+		{
+			throw std::runtime_error{"Not implemented"};
 		}
 
 		auto handle_request(worker_ctl::get_worker_application_info)
@@ -49,21 +75,7 @@ namespace Pipe::worker
 		void handle_request(jopp::value&&)
 		{ throw std::runtime_error{"Unexpected request type"}; }
 
-		void handle_request(jopp::array&& reqs)
-		{
-			for(jopp::value& item: std::move(reqs))
-			{
-				item.visit([&]<class T>(T&& obj){
-					if constexpr(std::is_same_v<T, jopp::object>)
-					{ handle_request(std::forward<T>(obj)); }
-					else
-					{
-						// TODO: Send protocol error notification "Expected object" back to client
-						m_ctl_output.write(jopp::object{});
-					}
-				});
-			}
-		}
+
 
 		void handle_event(json_io::parser_error_event<ctl_request_tag>)
 		{}
