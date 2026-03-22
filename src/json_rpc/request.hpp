@@ -231,6 +231,12 @@ namespace Pipe::json_rpc
 			)
 		);
 
+		// FIXME: Even though we only move request.value() here, the caller has thrown away the
+		//        transaction id by using std::move. Thus, it cannot send an error response back
+		//        in case an exception is thrown.
+
+		// FIXME: A notification doesn't have a return value
+
 		if constexpr(std::is_empty_v<response_type>)
 		{
 			std::ignore = utils::unwrap(std::forward<RequestHandler>(handler)).handle_request(
@@ -251,7 +257,89 @@ namespace Pipe::json_rpc
 		}
 	}
 
-	template<class RequestHandler>
-	using request_dispatch_function = jopp::object (*)(wrapped_request&&, RequestHandler&& handler);
+	struct received_request
+	{
+		std::string method;
+		jopp::object params;
+		jopp::value id;
+	};
+
+	struct received_notification
+	{
+		std::string method;
+		jopp::object params;
+	};
+
+	struct message_handling_error
+	{
+		std::string message;
+		jopp::value id;
+	};
+
+	template<class Func, class ErrorHandler>
+	void handle_message(jopp::object&& obj, Func&& func, ErrorHandler&& on_error)
+	{
+		auto const i = obj.find("id");
+		if(i != std::end(obj))
+		{
+			auto id = std::move(i->second);
+			auto method = obj.try_get_field_as<jopp::string>("method");
+			if(method == nullptr)
+			{
+				std::forward<ErrorHandler>(on_error)(
+					message_handling_error{
+						.message = "Mandatory field `method` is missing",
+						.id = std::move(id)
+					}
+				);
+				return;
+			}
+
+			auto params = obj.try_get_field_as<jopp::object>("params");
+			try
+			{
+				std::forward<Func>(func)(
+					received_request{
+						.method = std::move(*method),
+						.params = (params == nullptr)? jopp::object{} : std::move(*params),
+						.id = std::move(id)
+					}
+				);
+			}
+			catch(std::exception const& err)
+			{
+				std::forward<ErrorHandler>(on_error)(
+					message_handling_error{
+						.what = err.what(),
+						.id = std::move(id)
+					}
+				);
+				return;
+			}
+		}
+		else
+		{
+			try
+			{
+				auto params = obj.try_get_field_as<jopp::object>("params");
+				std::forward<Func>(func)(
+					received_notification{
+						.method = std::move(obj.get_field_as<jopp::string>("method")),
+						.params = (params == nullptr)? jopp::object{} : std::move(*params)
+					}
+				);
+			}
+			catch(std::exception const& err)
+			{
+				std::forward<ErrorHandler>(on_error)(
+					message_handling_error{
+						.what = err.what(),
+						.id = jopp::value{}
+					}
+				);
+				return;
+			}
+		}
+	}
 }
 #endif
