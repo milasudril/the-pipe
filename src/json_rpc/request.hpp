@@ -300,9 +300,17 @@ namespace Pipe::json_rpc
 		if(i != std::end(obj))
 		{
 			auto id = std::move(i->second);
-			auto params = obj.try_get_field_as<jopp::object>("params");
 			try
 			{
+				jopp::object* params = nullptr;
+				auto params_entry = obj.find("params");
+				if(params_entry != std::end(obj))
+				{
+					params = params_entry->second.get_if<jopp::object>();
+					if(params == nullptr)
+					{ throw std::runtime_error{"The field `params` has wrong type"}; }
+				}
+
 				std::forward<Func>(func)(
 					received_request{
 						.method = std::move(obj.get_field_as<jopp::string>("method")),
