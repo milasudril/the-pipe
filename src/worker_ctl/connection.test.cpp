@@ -48,7 +48,7 @@ TESTCASE(Pipe_worker_ctl_input_connection_to_jopp_object)
 					.value = jopp::value{"text/plain"}
 				},
 				.transport_params = Pipe::worker_ctl::data_transport_info{
-					.type = "foobar",
+					.type = std::vector<std::string>{"foobar", "bulle"},
 					.value = jopp::value{"kaka"}
 				}
 			},
@@ -59,7 +59,9 @@ TESTCASE(Pipe_worker_ctl_input_connection_to_jopp_object)
 	EXPECT_EQ(obj.get_field_as<jopp::string>("local_portname"), "foobar");
 	auto const& remote_stream_info = obj.get_field_as<jopp::object>("remote_stream_info");
 	auto const& address = remote_stream_info.get_field_as<jopp::object>("transport_params");
-	EXPECT_EQ(address.get_field_as<jopp::string>("type"), "foobar");
+	auto const& type = address.get_field_as<jopp::array>("type");
+	EXPECT_EQ(type.begin()->get<jopp::string>(), "foobar");
+	EXPECT_EQ((type.begin() + 1)->get<jopp::string>(), "bulle");
 	EXPECT_EQ(address.get_field_as<jopp::string>("value"), "kaka");
 	auto const& format = remote_stream_info.get_field_as<jopp::object>("format");
 	EXPECT_EQ(format.get_field_as<jopp::string>("type"), "mime");
@@ -73,7 +75,9 @@ TESTCASE(Pipe_worker_ctl_make_input_connection)
 
 	jopp::object remote_stream_info;
 	jopp::object transport_params;
-	transport_params.insert("type", "fs_entry");
+	jopp::array type;
+	type.push_back("fs_entry");
+	transport_params.insert("type", std::move(type));
 	transport_params.insert("value", "/foo/bar");
 	remote_stream_info.insert("transport_params", std::move(transport_params));
 	jopp::object format;
@@ -84,7 +88,7 @@ TESTCASE(Pipe_worker_ctl_make_input_connection)
 
 	auto const result = Pipe::worker_ctl::make_input_connection(std::move(obj_in));
 	EXPECT_EQ(result.local_portname, "foobar");
-	EXPECT_EQ(result.remote_stream_info.transport_params.type, "fs_entry");
+	EXPECT_EQ(result.remote_stream_info.transport_params.type.front(), "fs_entry");
 	EXPECT_EQ(result.remote_stream_info.transport_params.value.get<jopp::string>(), "/foo/bar");
 	EXPECT_EQ(result.remote_stream_info.format.type, "mime");
 	EXPECT_EQ(result.remote_stream_info.format.value.get<jopp::string>(), "text/plain");

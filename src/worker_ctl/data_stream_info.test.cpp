@@ -22,7 +22,8 @@ TESTCASE(Pipe_worker_ctl_make_data_transport_info)
 	obj_in.insert("type", "foobar");
 
 	auto obj = Pipe::worker_ctl::make_data_transport_info(std::move(obj_in));
-	EXPECT_EQ(obj.type, "foobar");
+	EXPECT_EQ(obj.type.front(), "foobar");
+	EXPECT_EQ(obj.type.back(), "baź");
 	EXPECT_EQ(obj.value.get<jopp::null>(), jopp::null{});
 }
 
@@ -35,7 +36,7 @@ TESTCASE(Pipe_worker_ctl_data_stream_info_to_jopp_object)
 				.value = jopp::value{"text/plain"}
 			},
 			.transport_params = Pipe::worker_ctl::data_transport_info{
-				.type = "foobar",
+				.type = std::vector<std::string>{"foobar", "bulle"},
 				.value = jopp::value{}
 			}
 		}
@@ -66,6 +67,7 @@ TESTCASE(Pipe_worker_ctl_make_data_stream_info)
 	auto const obj = Pipe::worker_ctl::make_data_stream_info(std::move(obj_in));
 	EXPECT_EQ(obj.format.type, "mime");
 	EXPECT_EQ(obj.format.value.get<jopp::string>(), "text/plain");
-	EXPECT_EQ(obj.transport_params.type, "foobar");
+	EXPECT_EQ(obj.transport_params.type.front(), "foobar");
+	EXPECT_EQ(obj.transport_params.type.back(), "bulle");
 	EXPECT_EQ(obj.transport_params.value.get<jopp::null>(), jopp::null{});
 }
