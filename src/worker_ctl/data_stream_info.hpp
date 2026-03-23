@@ -7,10 +7,10 @@ namespace Pipe::worker_ctl
 {
 	struct data_format_info_tag{};
 
-	using data_format_info = any<data_format_info_tag>;
+	using data_format_info = any<data_format_info_tag, std::vector<std::string>>;
 
 	inline data_format_info make_data_format_info(jopp::object&& obj)
-	{ return make_any<data_format_info_tag>(std::move(obj)); }
+	{ return make_any<data_format_info_tag, std::vector<std::string>>(std::move(obj)); }
 
 	struct data_transport_info_tag{};
 

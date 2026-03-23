@@ -8,11 +8,15 @@
 TESTCASE(Pipe_worker_ctl_make_data_format_info)
 {
 	jopp::object obj_in;
-	obj_in.insert("type", "mime");
+	jopp::array type;
+	type.push_back("pipe_worker_ctl");
+	type.push_back("mime");
+	obj_in.insert("type", std::move(type));
 	obj_in.insert("value", "text/plain");
 
 	auto obj = Pipe::worker_ctl::make_data_format_info(std::move(obj_in));
-	EXPECT_EQ(obj.type, "mime");
+	EXPECT_EQ(obj.type.front(), "pipe_worker_ctl");
+	EXPECT_EQ(obj.type.back(), "mime");
 	EXPECT_EQ(obj.value.get<jopp::string>(), "text/plain");
 }
 
@@ -32,7 +36,7 @@ TESTCASE(Pipe_worker_ctl_data_stream_info_to_jopp_object)
 	auto const obj = to_jopp_object(
 		Pipe::worker_ctl::data_stream_info{
 			.format = Pipe::worker_ctl::data_format_info{
-				.type = "mime",
+				.type = std::vector<std::string>{"pipe_worker_ctl", "mime"},
 				.value = jopp::value{"text/plain"}
 			},
 			.transport_params = Pipe::worker_ctl::data_transport_info{
@@ -42,9 +46,13 @@ TESTCASE(Pipe_worker_ctl_data_stream_info_to_jopp_object)
 		}
 	);
 
-	auto const& format = obj.get_field_as<jopp::object>("format");
-	EXPECT_EQ(format.get_field_as<jopp::string>("type"), "mime");
-	EXPECT_EQ(format.get_field_as<jopp::string>("value"), "text/plain");
+	{
+		auto const& format = obj.get_field_as<jopp::object>("format");
+		auto const& type = format.get_field_as<jopp::array>("type");
+		EXPECT_EQ(type.begin()->get<jopp::string>(), "pipe_worker_ctl");
+		EXPECT_EQ((type.begin() + 1)->get<jopp::string>(), "mime");
+		EXPECT_EQ(format.get_field_as<jopp::string>("value"), "text/plain");
+	}
 
 	auto const& transport_params = obj.get_field_as<jopp::object>("transport_params");
 	EXPECT_EQ(transport_params.get_field_as<jopp::string>("type"), "foobar");
@@ -65,7 +73,7 @@ TESTCASE(Pipe_worker_ctl_make_data_stream_info)
 	obj_in.insert("transport_params", std::move(transport_params));
 
 	auto const obj = Pipe::worker_ctl::make_data_stream_info(std::move(obj_in));
-	EXPECT_EQ(obj.format.type, "mime");
+	EXPECT_EQ(obj.format.type.front(), "mime");
 	EXPECT_EQ(obj.format.value.get<jopp::string>(), "text/plain");
 	EXPECT_EQ(obj.transport_params.type.front(), "foobar");
 	EXPECT_EQ(obj.transport_params.type.back(), "bulle");

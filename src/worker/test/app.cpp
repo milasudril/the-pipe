@@ -16,7 +16,7 @@ namespace
 				input_accepts.push_back(
 					Pipe::worker_ctl::port_capability{
 						.format = Pipe::worker_ctl::data_format_info{
-							.type = "mime",
+							.type = std::vector<std::string>{"pipe_worker", "mime"},
 							.value = jopp::value{"text/plain"}
 						},
 						.transport_method = "message_file"
@@ -36,7 +36,7 @@ namespace
 						"result",
 						Pipe::worker_ctl::port_capability{
 							.format = Pipe::worker_ctl::data_format_info{
-								.type = "mime",
+								.type = std::vector<std::string>{"pipe_worker", "mime"},
 								.value = jopp::value{"text/plain"}
 							},
 							.transport_method = "message_file"

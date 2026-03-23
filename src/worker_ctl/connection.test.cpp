@@ -44,7 +44,7 @@ TESTCASE(Pipe_worker_ctl_input_connection_to_jopp_object)
 		Pipe::worker_ctl::input_connection{
 			.remote_stream_info = Pipe::worker_ctl::data_stream_info{
 				.format = Pipe::worker_ctl::data_format_info{
-					.type = "mime",
+					.type = std::vector<std::string>{"pipe","mime"},
 					.value = jopp::value{"text/plain"}
 				},
 				.transport_params = Pipe::worker_ctl::data_transport_info{
@@ -58,14 +58,21 @@ TESTCASE(Pipe_worker_ctl_input_connection_to_jopp_object)
 
 	EXPECT_EQ(obj.get_field_as<jopp::string>("local_portname"), "foobar");
 	auto const& remote_stream_info = obj.get_field_as<jopp::object>("remote_stream_info");
-	auto const& address = remote_stream_info.get_field_as<jopp::object>("transport_params");
-	auto const& type = address.get_field_as<jopp::array>("type");
-	EXPECT_EQ(type.begin()->get<jopp::string>(), "foobar");
-	EXPECT_EQ((type.begin() + 1)->get<jopp::string>(), "bulle");
-	EXPECT_EQ(address.get_field_as<jopp::string>("value"), "kaka");
-	auto const& format = remote_stream_info.get_field_as<jopp::object>("format");
-	EXPECT_EQ(format.get_field_as<jopp::string>("type"), "mime");
-	EXPECT_EQ(format.get_field_as<jopp::string>("value"), "text/plain");
+	{
+		auto const& address = remote_stream_info.get_field_as<jopp::object>("transport_params");
+		auto const& type = address.get_field_as<jopp::array>("type");
+		EXPECT_EQ(type.begin()->get<jopp::string>(), "foobar");
+		EXPECT_EQ((type.begin() + 1)->get<jopp::string>(), "bulle");
+		EXPECT_EQ(address.get_field_as<jopp::string>("value"), "kaka");
+	}
+
+	{
+		auto const& format = remote_stream_info.get_field_as<jopp::object>("format");
+		auto const& type = format.get_field_as<jopp::array>("type");
+		EXPECT_EQ(type.begin()->get<jopp::string>(), "pipe");
+		EXPECT_EQ((type.begin() + 1)->get<jopp::string>(), "mime");
+		EXPECT_EQ(format.get_field_as<jopp::string>("value"), "text/plain");
+	}
 }
 
 TESTCASE(Pipe_worker_ctl_make_input_connection)
@@ -81,7 +88,13 @@ TESTCASE(Pipe_worker_ctl_make_input_connection)
 	transport_params.insert("value", "/foo/bar");
 	remote_stream_info.insert("transport_params", std::move(transport_params));
 	jopp::object format;
-	format.insert("type", "mime");
+
+	{
+		jopp::array type;
+		type.push_back("mime");
+		format.insert("type", std::move(type));
+	}
+
 	format.insert("value", "text/plain");
 	remote_stream_info.insert("format", std::move(format));
 	obj_in.insert("remote_stream_info", std::move(remote_stream_info));
@@ -90,7 +103,7 @@ TESTCASE(Pipe_worker_ctl_make_input_connection)
 	EXPECT_EQ(result.local_portname, "foobar");
 	EXPECT_EQ(result.remote_stream_info.transport_params.type.front(), "fs_entry");
 	EXPECT_EQ(result.remote_stream_info.transport_params.value.get<jopp::string>(), "/foo/bar");
-	EXPECT_EQ(result.remote_stream_info.format.type, "mime");
+	EXPECT_EQ(result.remote_stream_info.format.type.front(), "mime");
 	EXPECT_EQ(result.remote_stream_info.format.value.get<jopp::string>(), "text/plain");
 }
 
