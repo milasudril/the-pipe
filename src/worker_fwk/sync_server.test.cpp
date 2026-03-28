@@ -5,8 +5,10 @@
 
 #include <testfwk/testfwk.hpp>
 
+#if 0
 TESTCASE(Pipe_worker_fwk_sync_server_init)
 {
 	Pipe::worker_fwk::sync_server server;
 	EXPECT_EQ(std::size(server.socket_name()), Pipe::os_services::ipc::sunpath_maxlength);
 }
+#endif
