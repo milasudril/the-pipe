@@ -7,22 +7,22 @@ namespace Pipe::worker_sync
 {
 	struct port_activity_subscription
 	{
-		std::string server_portname;
+		std::string remote_portname;
 	};
 
 	struct port_activity_unsubscription
 	{
-		std::string server_portname;
+		std::string remote_portname;
 	}
 
 	struct data_ready_event
 	{
-		std::string server_portname;
+		std::string local_portname;
 	};
 
 	struct client_ready_event
 	{
-		std::string server_portname;
+		std::string local_portname;
 	};
 }
 
