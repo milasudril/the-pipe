@@ -13,7 +13,7 @@ namespace Pipe::worker_sync
 	struct port_activity_unsubscription
 	{
 		std::string server_portname;
-	}
+	};
 
 	struct data_ready_event
 	{
