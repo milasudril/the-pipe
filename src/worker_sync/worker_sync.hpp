@@ -58,7 +58,7 @@ namespace Pipe::worker_sync
 		{
 			uint64_t transaction_id;
 			client_to_server_msg_types msg_type;
-			uint32_t msg_size;
+			uint32_t payload_size;
 		};
 
 		enum class server_to_client_msg_types:uint32_t{
@@ -72,7 +72,7 @@ namespace Pipe::worker_sync
 		{
 			uint64_t transaction_id;
 			server_to_client_msg_types msg_type;
-			uint32_t msg_size;
+			uint32_t payload_size;
 		};
 	}
 }
