@@ -318,6 +318,18 @@ namespace Pipe::utils
 	{
 		using Ts::operator()...;
 	};
+
+	template<class T>
+	struct array_size;
+
+	template<class T, size_t N>
+	struct array_size<T[N]>
+	{
+		static constexpr size_t value = N;
+	};
+
+	template<class T>
+	inline constexpr auto array_size_v = array_size<T>::value;
 };
 
 template<class T>

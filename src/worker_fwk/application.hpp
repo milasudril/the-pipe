@@ -1,6 +1,8 @@
 #ifndef PIPE_WORKER_FWK_APPLICATION_HPP
 #define PIPE_WORKER_FWK_APPLICATION_HPP
 
+#include "./sync_server.hpp"
+
 #include "src/json_io/reader.hpp"
 #include "src/json_io/writer.hpp"
 #include "src/json_rpc/context.hpp"

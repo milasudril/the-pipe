@@ -3,9 +3,11 @@
 
 #include "./socket.hpp"
 #include "src/os_services/error_handling/system_error.hpp"
+#include "src/utils/utils.hpp"
 
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <type_traits>
 
 namespace Pipe::os_services::ipc
 {
@@ -18,6 +20,10 @@ namespace Pipe::os_services::ipc
 		static constexpr auto domain = AF_UNIX;
 	};
 
+	inline constexpr auto sunpath_maxlength = utils::array_size_v<
+		decltype(std::declval<sockaddr_un>().sun_path)
+	> - 3;
+
 	/**
 	 * \brief Creates an abstract sockaddr_un
 	 */
@@ -25,7 +31,7 @@ namespace Pipe::os_services::ipc
 	{
 		sockaddr_un ret{};
 		ret.sun_family = AF_UNIX;
-		if(std::size(path) >= std::size(ret.sun_path) - 2)
+		if(std::size(path) > sunpath_maxlength)
 		{ throw std::runtime_error{"Address to long"}; }
 
 		memcpy(ret.sun_path + 1, std::data(path), std::size(path));
