@@ -7,6 +7,7 @@
 #include "src/worker_ctl/connection.hpp"
 #include "src/worker_ctl/disconnection.hpp"
 #include "src/worker_ctl/worker_application_info.hpp"
+#include "src/worker_ctl/worker_ctl.hpp"
 
 #include <expected>
 
@@ -101,19 +102,40 @@ namespace Pipe::json_rpc
 		static jopp::object params_to_jopp_object(worker_ctl::input_disconnection&& conn)
 		{ return to_jopp_object(std::move(conn)); }
 	};
+
+	template<>
+	struct notification_traits<worker_ctl::worker_ctl_info>
+	{
+		static constexpr char const* method = "pipe_worker_ctl_info";
+
+		static jopp::object params_to_jopp_object(worker_ctl::worker_ctl_info&& obj)
+		{ return to_jopp_object(std::move(obj)); }
+	};
 }
 
 namespace Pipe::worker_ctl
 {
+	inline constexpr std::array supported_methods{
+		json_rpc::request_traits<get_worker_application_info>::method,
+		json_rpc::request_traits<input_connection>::method,
+		json_rpc::request_traits<output_connection>::method
+	};
+
+	inline worker_ctl_info make_worker_ctl_info()
+	{
+		std::vector<std::string> supp_methods;
+		for(auto item :supported_methods)
+		{ supp_methods.push_back(item); }
+
+		return worker_ctl_info{
+			.protocol_version = 0,
+			.supported_methods = std::move(supp_methods)
+		};
+	};
+
 	template<class RequestHandler>
 	[[nodiscard]] jopp::object dispatch_request(json_rpc::received_request&& request, RequestHandler&& handler)
 	{
-		static constexpr std::array supported_methods{
-			json_rpc::request_traits<get_worker_application_info>::method,
-			json_rpc::request_traits<input_connection>::method,
-			json_rpc::request_traits<output_connection>::method
-		};
-
 		static constexpr std::array callbacks{
 			json_rpc::dispatch_request<get_worker_application_info, RequestHandler>,
 			json_rpc::dispatch_request<input_connection, RequestHandler>,

@@ -51,6 +51,8 @@ int main()
 			Pipe::os_services::fd::activity_status::none
 		);
 
+		app->send_worker_ctl_info();
+
 		while(!app->should_exit())
 		{
 			fd_activity_monitor.wait_for_and_distpatch_events();

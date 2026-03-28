@@ -72,6 +72,11 @@ namespace Pipe::worker_fwk
 			fputs(to_string(worker_ctl::to_jopp_object(std::move(connection))).c_str(), stderr);
 		}
 
+		void send_worker_ctl_info()
+		{
+			m_ctl_output.write(json_rpc::make_notification(worker_ctl::make_worker_ctl_info()));
+		}
+
 		virtual ~application() = default;
 
 	private:
