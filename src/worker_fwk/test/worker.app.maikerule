@@ -1,0 +1,7 @@
+{
+	"target":{"name": "worker"},
+	"dependencies":[
+		{"ref":"src/worker_fwk/test/app.o", "rel":"implementation"},
+		{"ref":"src/worker_fwk/main.o", "rel":"implementation"}
+	]
+}

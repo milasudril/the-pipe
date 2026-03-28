@@ -1,12 +1,12 @@
 //@	{"target":{"name":"app.o"}}
 
-#include "src/worker/application.hpp"
+#include "src/worker_fwk/application.hpp"
 #include "src/worker_ctl/data_stream_info.hpp"
 #include "src/worker_ctl/worker_application_info.hpp"
 
 namespace
 {
-	class pipe_application: public Pipe::worker::application
+	class pipe_application: public Pipe::worker_fwk::application
 	{
 		public:
 			virtual Pipe::worker_ctl::worker_application_info get_worker_application_info() const override
@@ -64,8 +64,8 @@ namespace
 	};
 }
 
-std::unique_ptr<Pipe::worker::application> Pipe::worker::application::create()
+std::unique_ptr<Pipe::worker_fwk::application> Pipe::worker_fwk::application::create()
 {
-	return std::unique_ptr<Pipe::worker::application>{new pipe_application};
+	return std::unique_ptr<Pipe::worker_fwk::application>{new pipe_application};
 }
 

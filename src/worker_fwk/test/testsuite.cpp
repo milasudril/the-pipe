@@ -14,7 +14,7 @@ namespace
 {
 	std::filesystem::path testworker_exe()
 	{
-		return std::filesystem::path{MAIKE_BUILDINFO_TARGETDIR}/"src/worker/test/worker";
+		return std::filesystem::path{MAIKE_BUILDINFO_TARGETDIR}/"src/worker_fwk/test/worker";
 	}
 
 	Pipe::log::item fetch_log_item(Pipe::os_services::io::input_file_descriptor_ref output)

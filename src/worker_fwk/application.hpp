@@ -1,5 +1,5 @@
-#ifndef PIPE_WORKER_APPLICATION_HPP
-#define PIPE_WORKER_APPLICATION_HPP
+#ifndef PIPE_WORKER_FWK_APPLICATION_HPP
+#define PIPE_WORKER_FWK_APPLICATION_HPP
 
 #include "src/json_io/reader.hpp"
 #include "src/json_io/writer.hpp"
@@ -13,7 +13,7 @@
 #include <jopp/serializer.hpp>
 #include <memory>
 
-namespace Pipe::worker
+namespace Pipe::worker_fwk
 {
 	class application
 	{
