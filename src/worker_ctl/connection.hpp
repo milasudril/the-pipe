@@ -13,6 +13,7 @@ namespace Pipe::worker_ctl
 	struct input_connection
 	{
 		std::string local_portname;
+		std::string remote_portname;
 		data_stream_info remote_stream_info;
 	};
 
@@ -20,6 +21,7 @@ namespace Pipe::worker_ctl
 	{
 		jopp::object ret;
 		ret.insert("local_portname", std::move(obj.local_portname));
+		ret.insert("remote_portname", std::move(obj.remote_portname));
 		ret.insert("remote_stream_info", to_jopp_object(std::move(obj.remote_stream_info)));
 		return ret;
 	}
@@ -28,6 +30,7 @@ namespace Pipe::worker_ctl
 	{
 		return input_connection{
 			.local_portname = std::move(obj.get_field_as<jopp::string>("local_portname")),
+			.remote_portname = std::move(obj.get_field_as<jopp::string>("remote_portname")),
 			.remote_stream_info = make_data_stream_info(
 				std::move(obj.get_field_as<jopp::object>("remote_stream_info"))
 			)

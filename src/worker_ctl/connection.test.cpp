@@ -19,6 +19,7 @@ TESTCASE(Pipe_worker_ctl_input_connection_to_jopp_object)
 	auto const obj = to_jopp_object(
 		Pipe::worker_ctl::input_connection{
 			.local_portname = "input",
+			.remote_portname = "output",
 			.remote_stream_info = Pipe::worker_ctl::data_stream_info{
 				.format = Pipe::worker_ctl::data_format_info{
 					.type = Pipe::worker_ctl::type_descriptor{
@@ -39,6 +40,7 @@ TESTCASE(Pipe_worker_ctl_input_connection_to_jopp_object)
 	);
 
 	EXPECT_EQ(obj.get_field_as<jopp::string>("local_portname"), "input");
+	EXPECT_EQ(obj.get_field_as<jopp::string>("remote_portname"), "output");
 	auto const& remote_stream_info = obj.get_field_as<jopp::object>("remote_stream_info");
 	{
 		auto const& format = remote_stream_info.get_field_as<jopp::object>("format");
@@ -65,6 +67,7 @@ TESTCASE(Pipe_worker_ctl_make_input_connection)
 {
 	jopp::object obj;
 	obj.insert("local_portname", "input");
+	obj.insert("remote_portname", "output");
 
 	{
 		jopp::object remote_stream_info;
@@ -103,6 +106,7 @@ TESTCASE(Pipe_worker_ctl_make_input_connection)
 
 	auto const input_connection = Pipe::worker_ctl::make_input_connection(std::move(obj));
 	EXPECT_EQ(input_connection.local_portname, "input");
+	EXPECT_EQ(input_connection.remote_portname, "output");
 	EXPECT_EQ(input_connection.remote_stream_info.format.type.name, "mime");
 	EXPECT_EQ(input_connection.remote_stream_info.format.type.ns_path, std::vector<std::string>{"builtins"});
 	EXPECT_EQ(input_connection.remote_stream_info.format.value.get<jopp::string>(), "text/plain");
