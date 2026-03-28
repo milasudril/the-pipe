@@ -7,17 +7,17 @@ namespace Pipe::worker_ctl
 {
 	struct data_format_info_tag{};
 
-	using data_format_info = any<data_format_info_tag, std::vector<std::string>>;
+	using data_format_info = any<data_format_info_tag>;
 
 	inline data_format_info make_data_format_info(jopp::object&& obj)
-	{ return make_any<data_format_info_tag, std::vector<std::string>>(std::move(obj)); }
+	{ return make_any<data_format_info_tag>(std::move(obj)); }
 
 	struct data_transport_info_tag{};
 
-	using data_transport_info = any<data_transport_info_tag, std::vector<std::string>>;
+	using data_transport_info = any<data_transport_info_tag>;
 
 	inline data_transport_info make_data_transport_info(jopp::object&& obj)
-	{ return make_any<data_transport_info_tag, std::vector<std::string>>(std::move(obj)); }
+	{ return make_any<data_transport_info_tag>(std::move(obj)); }
 
 	struct data_stream_info
 	{
@@ -46,14 +46,14 @@ namespace Pipe::worker_ctl
 	struct port_capability
 	{
 		data_format_info format;
-		std::string transport_method;
+		type_descriptor transport_method;
 	};
 
 	inline jopp::object to_jopp_object(port_capability&& obj)
 	{
 		jopp::object ret;
 		ret.insert("format", to_jopp_object(std::move(obj.format)));
-		ret.insert("transport_method", std::move(obj.transport_method));
+		ret.insert("transport_method", to_jopp_object(std::move(obj.transport_method)));
 		return ret;
 	}
 
@@ -61,7 +61,7 @@ namespace Pipe::worker_ctl
 	{
 		return port_capability{
 			.format = make_data_format_info(std::move(obj.get_field_as<jopp::object>("format"))),
-			.transport_method = std::move(obj.get_field_as<jopp::string>("transport_method"))
+			.transport_method = make_type_descriptor(std::move(obj.get_field_as<jopp::object>("transport_method")))
 		};
 	}
 }

@@ -5,73 +5,60 @@
 
 namespace Pipe::worker_ctl
 {
-	template<class Tag, class TypeNameType = std::string>
+	struct type_descriptor
+	{
+		std::vector<std::string> ns_path;
+		std::string name;
+	};
+
+	inline jopp::object to_jopp_object(type_descriptor&& obj)
+	{
+		jopp::object ret;
+		jopp::array ns_path;
+		for(auto& item: obj.ns_path)
+		{ ns_path.push_back(std::move(item)); }
+
+		ret.insert("ns_path", std::move(ns_path));
+		ret.insert("name", std::move(obj.name));
+		return ret;
+	}
+
+	inline type_descriptor make_type_descriptor(jopp::object&& obj)
+	{
+		std::vector<std::string> ns_path;
+		for(auto& item : obj.get_field_as<jopp::array>("ns_path"))
+		{ ns_path.push_back(std::move(item.get<jopp::string>())); }
+
+		return type_descriptor{
+			.ns_path = std::move(ns_path),
+			.name = std::move(obj.get_field_as<jopp::string>("name"))
+		};
+	}
+
+	template<class Tag>
 	struct any
 	{
-		TypeNameType type;
+		type_descriptor type;
 		jopp::value value;
 	};
 
-	template<class Tag, class TypeNameType>
-	inline jopp::object to_jopp_object(any<Tag, TypeNameType>&& obj)
+	template<class Tag>
+	inline jopp::object to_jopp_object(any<Tag>&& obj)
 	{
 		jopp::object ret;
-		ret.insert("type", std::move(obj.type));
+		ret.insert("type", to_jopp_object(std::move(obj.type)));
 		ret.insert("value", std::move(obj.value));
 		return ret;
 	}
 
-	template<class Tag, class TypeNameType>
-	inline jopp::object to_jopp_object(any<Tag, std::vector<TypeNameType>>&& obj)
+	template<class Tag>
+	inline any<Tag> make_any(jopp::object&& obj)
 	{
-		jopp::object ret;
-		jopp::array type;
-		for(auto& obj : obj.type)
-		{ type.push_back(std::move(obj)); }
-
-		ret.insert("type", std::move(type));
-		ret.insert("value", std::move(obj.value));
-		return ret;
-	}
-
-	template<class Tag, class TypeNameType>
-	struct make_any_impl
-	{
-		static any<Tag, TypeNameType> make_any(jopp::object&& obj)
-		{
-			any<Tag, TypeNameType> ret;
-			ret.type = std::move(obj.get_field_as<TypeNameType>("type"));
-
-			auto value = obj.find("value");
-			if(value != std::end(obj))
-			{ ret.value = std::move(value->second); }
-
-			return ret;
-		}
-	};
-
-	template<class Tag, class TypeNameType>
-	struct make_any_impl<Tag, std::vector<TypeNameType>>
-	{
-		static any<Tag, std::vector<TypeNameType>> make_any(jopp::object&& obj)
-		{
-			any<Tag, std::vector<TypeNameType>> ret;
-			auto& type = obj.get_field_as<jopp::array>("type");
-			for(auto& item : type)
-			{ ret.type.push_back(std::move(item.get<TypeNameType>())); }
-
-			auto value = obj.find("value");
-			if(value != std::end(obj))
-			{ ret.value = std::move(value->second); }
-
-			return ret;
-		}
-	};
-
-	template<class Tag, class TypeNameType = std::string>
-	inline any<Tag, TypeNameType> make_any(jopp::object&& obj)
-	{
-		return make_any_impl<Tag, TypeNameType>::make_any(std::move(obj));
+		auto const i = obj.find("value");
+		return any<Tag>{
+			.type = make_type_descriptor(std::move(obj.get_field_as<jopp::object>("type"))),
+			.value = (i != std::end(obj))? std::move(i->second) : jopp::value{}
+		};
 	}
 }
 

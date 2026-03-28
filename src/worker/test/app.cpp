@@ -16,10 +16,16 @@ namespace
 				input_accepts.push_back(
 					Pipe::worker_ctl::port_capability{
 						.format = Pipe::worker_ctl::data_format_info{
-							.type = std::vector<std::string>{"pipe_worker", "mime"},
+							.type = Pipe::worker_ctl::type_descriptor{
+								.ns_path = std::vector<std::string>{"builtins", "data_format_schemata"},
+								.name = "mime",
+							},
 							.value = jopp::value{"text/plain"}
 						},
-						.transport_method = "message_file"
+						.transport_method = Pipe::worker_ctl::type_descriptor{
+							.ns_path = std::vector<std::string>{"builtins", "transport_methods"},
+							.name = "message_file"
+						}
 					}
 				);
 				inputs.insert(
@@ -36,10 +42,16 @@ namespace
 						"result",
 						Pipe::worker_ctl::port_capability{
 							.format = Pipe::worker_ctl::data_format_info{
-								.type = std::vector<std::string>{"pipe_worker", "mime"},
+								.type = Pipe::worker_ctl::type_descriptor{
+									.ns_path = std::vector<std::string>{"builtins", "data_format_schemata"},
+									.name = "mime"
+								},
 								.value = jopp::value{"text/plain"}
 							},
-							.transport_method = "message_file"
+							.transport_method = Pipe::worker_ctl::type_descriptor{
+								.ns_path = std::vector<std::string>{"builtins", "transport_methods"},
+								.name = "message_file"
+							}
 						}
 					}
 				);

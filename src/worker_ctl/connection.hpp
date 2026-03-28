@@ -12,51 +12,25 @@ namespace Pipe::worker_ctl
 {
 	struct input_connection
 	{
-		data_stream_info remote_stream_info;
 		std::string local_portname;
+		data_stream_info remote_stream_info;
 	};
 
 	inline jopp::object to_jopp_object(input_connection&& obj)
 	{
 		jopp::object ret;
-		ret.insert("remote_stream_info", to_jopp_object(std::move(obj.remote_stream_info)));
 		ret.insert("local_portname", std::move(obj.local_portname));
+		ret.insert("remote_stream_info", to_jopp_object(std::move(obj.remote_stream_info)));
 		return ret;
 	}
 
 	inline input_connection make_input_connection(jopp::object&& obj)
 	{
 		return input_connection{
+			.local_portname = std::move(obj.get_field_as<jopp::string>("local_portname")),
 			.remote_stream_info = make_data_stream_info(
 				std::move(obj.get_field_as<jopp::object>("remote_stream_info"))
-			),
-			.local_portname = std::move(obj.get_field_as<jopp::string>("local_portname"))
-		};
-	}
-
-	struct endpoint_path_tag{};
-
-	using endpoint_path = any<endpoint_path_tag>;
-
-	inline endpoint_path make_endpoint_path(jopp::object&& obj)
-	{ return make_any<endpoint_path_tag>(std::move(obj)); }
-
-	struct remote_input_endpoint
-	{
-		endpoint_path address;
-	};
-
-	inline jopp::object to_jopp_object(remote_input_endpoint&& obj)
-	{
-		jopp::object ret;
-		ret.insert("address", to_jopp_object(std::move(obj.address)));
-		return ret;
-	}
-
-	inline remote_input_endpoint make_remote_input_endpoint(jopp::object&& obj)
-	{
-		return remote_input_endpoint{
-			.address = make_endpoint_path(std::move(obj.get_field_as<jopp::object>("address")))
+			)
 		};
 	}
 
@@ -105,8 +79,8 @@ namespace Pipe::worker_ctl
 
 	struct output_connection
 	{
-		remote_input_endpoint remote_endpoint;
 		std::string local_portname;
+		data_transport_info remote_endpoint;
 		endpoint_open_opts remote_endpoint_open_opts;
 	};
 
@@ -123,7 +97,7 @@ namespace Pipe::worker_ctl
 	{
 		output_connection ret;
 		ret.remote_endpoint =
-			make_remote_input_endpoint(std::move(obj.get_field_as<jopp::object>("remote_endpoint"))),
+			make_data_transport_info(std::move(obj.get_field_as<jopp::object>("remote_endpoint")));
 		ret.local_portname = std::move(obj.get_field_as<jopp::string>("local_portname"));
 
 		auto const remote_endpoint_open_opts = obj.try_get_field_as<jopp::object>("remote_endpoint_open_opts");
