@@ -1,3 +1,5 @@
+//@	{"dependencies_extra":[{"ref":"./sync_server.o", "rel":"implementation"}]}
+
 #ifndef PIPE_WORKER_FWK_SYNC_SERVER_HPP
 #define PIPE_WORKER_FWK_SYNC_SERVER_HPP
 
@@ -9,7 +11,7 @@
 
 namespace Pipe::worker_fwk
 {
-	class sync_client
+	class sync_client_connection
 	{
 	public:
 		using fd_tag = os_services::ipc::connected_socket_tag<SOCK_STREAM, sockaddr_un>;
@@ -18,6 +20,11 @@ namespace Pipe::worker_fwk
 		using client_activity_event_handler_registered_event =
 			os_services::fd::activity_event_handler_registered_event<client_activity, fd_tag>;
 		using client_activity_event = os_services::fd::activity_event<client_activity, fd_tag>;
+
+		explicit sync_client_connection(size_t buffer_size = 65536):
+			m_buffer_size{buffer_size},
+			m_input_buffer{std::make_unique<char[]>(buffer_size)}
+		{}
 
 		void handle_event(client_activity_event_handler_registered_event const& event)
 		{
@@ -35,16 +42,20 @@ namespace Pipe::worker_fwk
 
 			if(can_read(event.status))
 			{
-				// TODO: Read data and decode messages
+				read_and_dispatch_requests();
 				return;
 			}
 
 			if(can_write(event.status))
 			{
-				// TODO: Encode messages and write data
+				send_pending_responses();
 				return;
 			}
 		}
+
+		void read_and_dispatch_requests();
+
+		void send_pending_responses();
 
 		void send()
 		{
@@ -52,6 +63,8 @@ namespace Pipe::worker_fwk
 		}
 
 	private:
+		size_t m_buffer_size;
+		std::unique_ptr<char[]> m_input_buffer;
 		client_activity_event_handler_registered_event m_registration;
 	};
 
@@ -72,8 +85,8 @@ namespace Pipe::worker_fwk
 		{
 			if(event.status == os_services::fd::activity_status::read)
 			{
-				std::ignore = m_registration.event_handler_store->add<sync_client::client_activity>(
-					sync_client{},
+				std::ignore = m_registration.event_handler_store->add<sync_client_connection::client_activity>(
+					sync_client_connection{},
 					accept(m_registration.fd),
 					Pipe::os_services::fd::activity_status::read
 				);
@@ -84,19 +97,28 @@ namespace Pipe::worker_fwk
 		server_activity_event_handler_registered_event m_registration;
 	};
 
-	inline auto make_sync_server(
+	struct server_info
+	{
+		os_services::fd::event_handler_id event_handler_id;
+		std::string socket_name;
+	};
+
+	inline server_info make_sync_server(
 		os_services::fd::activity_event_handler_store& event_handler_store
 	)
 	{
-		auto socket_name = utils::random_printable_ascii_string(os_services::ipc::sunpath_maxlength);
-		return event_handler_store.add<sync_server::server_socket_activity>(
-			sync_server{},
-			os_services::ipc::make_server_socket<SOCK_STREAM>(
-				os_services::ipc::make_abstract_sockaddr_un(socket_name),
-				1024
+		auto socket_name = utils::random_printable_ascii_string(os_services::ipc::abstract_sunpath_maxlength);
+		return server_info{
+			.event_handler_id = event_handler_store.add<sync_server::server_socket_activity>(
+				sync_server{},
+				os_services::ipc::make_server_socket<SOCK_STREAM>(
+					os_services::ipc::make_abstract_sockaddr_un(socket_name),
+					1024
+				),
+				Pipe::os_services::fd::activity_status::read
 			),
-			Pipe::os_services::fd::activity_status::read
-		);
+			.socket_name = std::move(socket_name)
+		};
 	}
 }
 

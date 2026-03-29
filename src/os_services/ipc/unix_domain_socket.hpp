@@ -22,7 +22,9 @@ namespace Pipe::os_services::ipc
 
 	inline constexpr auto sunpath_maxlength = utils::array_size_v<
 		decltype(std::declval<sockaddr_un>().sun_path)
-	> - 3;
+	> - 1;
+
+	inline constexpr auto abstract_sunpath_maxlength = sunpath_maxlength - 1;
 
 	/**
 	 * \brief Creates an abstract sockaddr_un
@@ -31,10 +33,19 @@ namespace Pipe::os_services::ipc
 	{
 		sockaddr_un ret{};
 		ret.sun_family = AF_UNIX;
-		if(std::size(path) > sunpath_maxlength)
+		if(std::size(path) > abstract_sunpath_maxlength)
 		{ throw std::runtime_error{"Address to long"}; }
 
 		memcpy(ret.sun_path + 1, std::data(path), std::size(path));
+		return ret;
+	}
+
+	inline std::string to_string(sockaddr_un const& addr)
+	{
+		std::string ret;
+		for(size_t k = 0; k != sunpath_maxlength; ++k)
+		{ ret += addr.sun_path[k]; }
+
 		return ret;
 	}
 
