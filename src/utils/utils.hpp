@@ -12,6 +12,9 @@
 #include <format>
 #include <type_traits>
 #include <variant>
+#include <array>
+#include <utility>
+#include <stdexcept>
 
 /**
  * \brief Contains various utility functions
@@ -376,6 +379,23 @@ namespace Pipe::utils
 
 	template<class VariantType, template<class> class Wrapper>
 	using wrap_variant_element_t = wrap_variant_element<VariantType,Wrapper>::type;
+
+	template<class Variant, class... CtorArgs>
+	Variant make_variant(std::size_t alternative_index, CtorArgs&&... args)
+	{
+		static constexpr auto factories = []<std::size_t... Is>(std::index_sequence<Is...>){
+			return std::array{
+				+[](CtorArgs&&... args){
+						return Variant{std::variant_alternative_t<Is, Variant>{std::move(args)...}};
+				}...
+			};
+		}(std::make_index_sequence<std::variant_size_v<Variant>>{});
+
+		if(alternative_index >= std::size(factories))
+		{ throw std::runtime_error{"Invalid type-id"}; }
+
+		return factories[alternative_index](std::forward<CtorArgs>(args)...);
+	}
 };
 
 template<class T>
