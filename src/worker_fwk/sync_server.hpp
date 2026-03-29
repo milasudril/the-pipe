@@ -3,11 +3,15 @@
 #ifndef PIPE_WORKER_FWK_SYNC_SERVER_HPP
 #define PIPE_WORKER_FWK_SYNC_SERVER_HPP
 
+#include "src/worker_sync/worker_sync.hpp"
+#include "src/utils/utils.hpp"
 #include "src/os_services/ipc/socket.hpp"
 #include "src/os_services/ipc/unix_domain_socket.hpp"
 #include "src/os_services/fd/activity_event_handler_store.hpp"
 
+#include <cstring>
 #include <fcntl.h>
+#include <type_traits>
 
 namespace Pipe::worker_fwk
 {
@@ -23,7 +27,7 @@ namespace Pipe::worker_fwk
 
 		explicit sync_client_connection(size_t buffer_size = 65536):
 			m_buffer_size{buffer_size},
-			m_input_buffer{std::make_unique<char[]>(buffer_size)}
+			m_input_buffer{std::make_unique<std::byte[]>(buffer_size)}
 		{}
 
 		void handle_event(client_activity_event_handler_registered_event const& event)
@@ -62,9 +66,28 @@ namespace Pipe::worker_fwk
 			// TODO: Add stuff to a send queue and drain it as far as possible
 		}
 
+		template<class T>
+		requires(!std::is_same_v<std::remove_cvref_t<T>, worker_sync::msg_header>)
+		void dispatch_request(T&&)
+		{
+		}
+
 	private:
+		void dispatch_request(worker_sync::msg_header const& header)
+		{
+			printf("%zu\n", header.msg_id);
+		}
+
 		size_t m_buffer_size;
-		std::unique_ptr<char[]> m_input_buffer;
+
+		// Decoder
+		std::unique_ptr<std::byte[]> m_input_buffer;
+		std::span<std::byte const> m_bytes_left_to_process;
+		utils::wrap_variant_element_t<
+			utils::variant_push_front_t<worker_sync::client_to_server_message, worker_sync::msg_header>,
+			worker_sync::decoder
+		> m_currently_received_message;
+
 		client_activity_event_handler_registered_event m_registration;
 	};
 

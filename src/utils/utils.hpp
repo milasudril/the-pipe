@@ -11,6 +11,7 @@
 #include <span>
 #include <format>
 #include <type_traits>
+#include <variant>
 
 /**
  * \brief Contains various utility functions
@@ -330,6 +331,51 @@ namespace Pipe::utils
 
 	template<class T>
 	inline constexpr auto array_size_v = array_size<T>::value;
+
+	template<class VariantType, class... TypesToPush>
+	struct variant_push_front
+	{
+	private:
+		template<size_t... I>
+		static consteval auto resolve_type(std::index_sequence<I...>)
+		{
+			return std::type_identity<
+				std::variant<
+					TypesToPush...,
+					std::variant_alternative_t<I, VariantType>...
+				>
+			>{};
+		}
+	public:
+		using type = decltype(
+			resolve_type(std::make_index_sequence<std::variant_size_v<VariantType>>{})
+		)::type;
+	};
+
+	template<class VariantType, class... TypesToPush>
+	using variant_push_front_t = variant_push_front<VariantType,TypesToPush...>::type;
+
+	template<class VariantType, template<class> class Wrapper>
+	struct wrap_variant_element
+	{
+	private:
+		template<size_t... I>
+		static consteval auto resolve_type(std::index_sequence<I...>)
+		{
+			return std::type_identity<
+				std::variant<
+					Wrapper<std::variant_alternative_t<I, VariantType>>...
+				>
+			>{};
+		}
+	public:
+		using type = decltype(
+			resolve_type(std::make_index_sequence<std::variant_size_v<VariantType>>{})
+		)::type;
+	};
+
+	template<class VariantType, template<class> class Wrapper>
+	using wrap_variant_element_t = wrap_variant_element<VariantType,Wrapper>::type;
 };
 
 template<class T>
