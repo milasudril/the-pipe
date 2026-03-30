@@ -386,7 +386,7 @@ namespace Pipe::utils
 		static constexpr auto factories = []<std::size_t... Is>(std::index_sequence<Is...>){
 			return std::array{
 				+[](CtorArgs&&... args){
-						return Variant{std::variant_alternative_t<Is, Variant>{std::move(args)...}};
+					return Variant{std::in_place_index_t<Is>{}, std::forward<CtorArgs>(args)...};
 				}...
 			};
 		}(std::make_index_sequence<std::variant_size_v<Variant>>{});
