@@ -91,7 +91,7 @@ namespace Pipe::worker_sync
 		size_t decode(std::span<std::byte const> buffer)
 		{
 			size_t bytes_consumed = 0;
-			while(!buffer.empty())
+			while(!buffer.empty() && !m_completed)
 			{
 				if(m_header_decoder.has_value()) [[unlikely]]
 				{
@@ -118,6 +118,9 @@ namespace Pipe::worker_sync
 					bytes_consumed += bytes_to_copy;
 					memcpy(ptr, std::data(buffer), bytes_to_copy);
 					buffer = std::span{std::begin(buffer) + bytes_to_copy, std::end(buffer)};
+
+					if(m_write_offset == std::size(server_portname))
+					{ m_completed = true; }
 				}
 			}
 
@@ -125,11 +128,7 @@ namespace Pipe::worker_sync
 		}
 
 		bool completed() const
-		{
-			return
-				!m_header_decoder.has_value() &&
-				m_write_offset == std::size(m_current_object.server_portname);
-		}
+		{ return m_completed; }
 
 		port_activity_subscription_request& get_value()
 		{ return m_current_object; }
@@ -142,6 +141,7 @@ namespace Pipe::worker_sync
 		};
 
 		port_activity_subscription_request m_current_object;
+		bool m_completed = false;
 		size_t m_write_offset{};
 		std::optional<decoder<header>> m_header_decoder{decoder<header>{}};
 	};
