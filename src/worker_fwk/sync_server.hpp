@@ -25,6 +25,11 @@ namespace Pipe::worker_fwk
 			os_services::fd::activity_event_handler_registered_event<client_activity, fd_tag>;
 		using client_activity_event = os_services::fd::activity_event<client_activity, fd_tag>;
 
+		using msg_decoder = utils::wrap_variant_element_t<
+			utils::variant_push_front_t<worker_sync::client_to_server_message, worker_sync::msg_header>,
+			worker_sync::decoder
+		>;
+
 		explicit sync_client_connection(size_t buffer_size = 65536):
 			m_buffer_size{buffer_size},
 			m_input_buffer{std::make_unique<std::byte[]>(buffer_size)}
@@ -66,16 +71,35 @@ namespace Pipe::worker_fwk
 			// TODO: Add stuff to a send queue and drain it as far as possible
 		}
 
-		template<class T>
-		requires(!std::is_same_v<std::remove_cvref_t<T>, worker_sync::msg_header>)
-		void dispatch_request(T&&)
+		void handle_request(Pipe::worker_sync::port_activity_subscription_request&&)
 		{
+			m_currently_received_message = msg_decoder{};
+		}
+
+		void handle_request(Pipe::worker_sync::port_activity_unsubscription)
+		{
+			m_currently_received_message = msg_decoder{};
+		}
+
+		void handle_request(Pipe::worker_sync::client_ready_event)
+		{
+#if __GNUC__ == 13
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfree-nonheap-object"
+#endif
+			m_currently_received_message = msg_decoder{};
+#if __GNUC__ == 13
+#pragma GCC diagnostic pop
+#endif
 		}
 
 	private:
-		void dispatch_request(worker_sync::msg_header const& header)
+		void handle_request(worker_sync::msg_header header)
 		{
-			printf("%zu\n", header.msg_id);
+			if(header.msg_id == std::numeric_limits<decltype(header.msg_id)>::max())
+			{ throw std::runtime_error{"Invalid type-id"}; }
+
+			m_currently_received_message = utils::make_variant<msg_decoder>(header.msg_id + 1);
 		}
 
 		size_t m_buffer_size;
@@ -83,10 +107,7 @@ namespace Pipe::worker_fwk
 		// Decoder
 		std::unique_ptr<std::byte[]> m_input_buffer;
 		std::span<std::byte const> m_bytes_left_to_process;
-		utils::wrap_variant_element_t<
-			utils::variant_push_front_t<worker_sync::client_to_server_message, worker_sync::msg_header>,
-			worker_sync::decoder
-		> m_currently_received_message;
+		msg_decoder m_currently_received_message;
 
 		client_activity_event_handler_registered_event m_registration;
 	};

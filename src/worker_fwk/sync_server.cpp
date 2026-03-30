@@ -25,7 +25,7 @@ void Pipe::worker_fwk::sync_client_connection::read_and_dispatch_requests()
 			[this, bytes_to_process]<class Decoder>(Decoder& item) {
 				auto const ret = item.decode(bytes_to_process);
 				if(item.completed())
-				{ dispatch_request(std::move(item.get_value())); }
+				{ handle_request(std::move(item.get_value())); }
 				return ret;
 			},
 			m_currently_received_message

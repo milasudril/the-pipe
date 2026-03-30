@@ -65,6 +65,9 @@ namespace Pipe::worker_sync
 	public:
 		size_t decode(std::span<std::byte const> src)
 		{
+			if(completed())
+			{ return 0; }
+
 			auto const bytes_left = sizeof(T) - m_write_offset;
 			auto const bytes_to_copy = std::min(bytes_left, std::size(src));
 			auto const ptr = reinterpret_cast<std::byte*>(&m_current_object) + m_write_offset;
@@ -80,7 +83,7 @@ namespace Pipe::worker_sync
 		{ return m_current_object; }
 
 	private:
-		T m_current_object;
+		T m_current_object{};
 		size_t m_write_offset{0};
 	};
 
