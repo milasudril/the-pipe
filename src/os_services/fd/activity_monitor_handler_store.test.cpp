@@ -200,9 +200,12 @@ TESTCASE(Pipe_os_services_fd_activity_event_handler_store_add_fd)
 		std::ref(eh), my_pipe.take_read_end(), Pipe::os_services::fd::activity_status::read
 	);
 	EXPECT_EQ(id, Pipe::os_services::fd::event_handler_id{123});
-	REQUIRE_EQ(
-		*reinterpret_cast<std::byte const* const*>(monitor.get_event_handler_ptr()), static_cast<void*>(&eh)
+
+	auto const event_handler_ptr = std::bit_cast<std::array<std::byte, 8>>(
+		*reinterpret_cast<std::byte const* const*>(monitor.get_event_handler_ptr())
 	);
+	auto const expected_eh_ptr = std::bit_cast<std::array<std::byte, 8>>(&eh);
+	REQUIRE_EQ(event_handler_ptr, expected_eh_ptr);
 
 	EXPECT_NE(eh.saved_event.status, Pipe::os_services::fd::activity_status::read);
 	monitor.trigger();

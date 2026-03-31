@@ -10,6 +10,7 @@
 #include <csignal>
 #include <sys/wait.h>
 #include <filesystem>
+#include <variant>
 
 /**
  * \brief Process management
