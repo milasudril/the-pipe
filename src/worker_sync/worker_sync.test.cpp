@@ -67,6 +67,37 @@ TESTCASE(Pipe_worker_sync_decode_trivially_copyable_type_junk_after_data)
 	EXPECT_EQ(decoder.get_value(), 0x0807060504030201);
 }
 
+TESTCASE(Pipe_worker_sync_encode_trivially_copyable_type)
+{
+	Pipe::worker_sync::encoder<uint64_t> encoder{static_cast<uint64_t>(0x0807060504030201)};
+	EXPECT_EQ(encoder.completed(), false);
+
+	std::array<std::byte, 8> output_bytes{};
+
+	std::span output_range{std::begin(output_bytes), 3};
+	auto res = encoder.encode(output_range);
+	EXPECT_EQ(res, 3);
+	EXPECT_EQ(encoder.completed(), false);
+
+	output_range = std::span{std::begin(output_bytes) + res, std::end(output_bytes)};
+	res = encoder.encode(output_range);
+	EXPECT_EQ(res, 5);
+	EXPECT_EQ(encoder.completed(), true);
+
+	static constexpr std::array<std::byte, 8> expected_output{
+		static_cast<std::byte>(0x01),
+		static_cast<std::byte>(0x02),
+		static_cast<std::byte>(0x03),
+		static_cast<std::byte>(0x04),
+		static_cast<std::byte>(0x05),
+		static_cast<std::byte>(0x06),
+		static_cast<std::byte>(0x07),
+		static_cast<std::byte>(0x08)
+	};
+
+	EXPECT_EQ(output_bytes, expected_output);
+}
+
 TESTCASE(Pipe_worker_sync_decode_port_activity_subscription_request_for_partial_elements)
 {
 	static constexpr std::array<std::byte, 29> input_bytes{

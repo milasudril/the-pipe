@@ -59,6 +59,9 @@ namespace Pipe::worker_sync
 	class decoder{};
 
 	template<class T>
+	class encoder{};
+
+	template<class T>
 	requires(std::is_trivially_copyable_v<T>)
 	class decoder<T>
 	{
@@ -81,6 +84,33 @@ namespace Pipe::worker_sync
 
 		T const& get_value() const
 		{ return m_current_object; }
+
+	private:
+		T m_current_object{};
+		size_t m_write_offset{0};
+	};
+
+	template<class T>
+	requires(std::is_trivially_copyable_v<T>)
+	class encoder<T>
+	{
+	public:
+		explicit encoder(T const& object_to_encode):
+			m_current_object{object_to_encode}
+		{}
+
+		size_t encode(std::span<std::byte> dest)
+		{
+			auto const bytes_left = sizeof(T) - m_write_offset;
+			auto const bytes_to_copy = std::min(bytes_left, std::size(dest));
+			auto const ptr = reinterpret_cast<std::byte const*>(&m_current_object) + m_write_offset;
+			m_write_offset += bytes_to_copy;
+			memcpy(std::data(dest), ptr, bytes_to_copy);
+			return bytes_to_copy;
+		}
+
+		bool completed() const
+		{ return m_write_offset == sizeof(T); }
 
 	private:
 		T m_current_object{};
