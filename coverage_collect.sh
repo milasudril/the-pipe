@@ -1,4 +1,4 @@
 mkdir __targets_gcov/.coverage 2> /dev/null || true
 cd __targets_gcov/.coverage
-gcovr --sort uncovered-percent --html-details coverage.html \
+gcovr --gcov-executable=/usr/bin/gcov-15 --sort uncovered-percent --html-details coverage.html \
 	--exclude '..*\.test.cpp' --exclude '..*testfwk/.*' --exclude '..*testsuite.*' --root ../../
