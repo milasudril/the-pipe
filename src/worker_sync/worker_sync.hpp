@@ -32,7 +32,7 @@ namespace Pipe::worker_sync
 		client_ready_event
 	>;
 
-	struct port_activity_subscription
+	struct port_activity_subscription_response
 	{
 		uint64_t transaction_id;
 		uint64_t subscription_id;
@@ -47,7 +47,7 @@ namespace Pipe::worker_sync
 	{ uint64_t subscription_id; };
 
 	using server_to_client_message = std::variant<
-		port_activity_subscription,
+		port_activity_subscription_response,
 		port_activity_unsubscription_response,
 		data_ready_event
 	>;

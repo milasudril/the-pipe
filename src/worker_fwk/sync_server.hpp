@@ -67,29 +67,38 @@ namespace Pipe::worker_fwk
 
 		void send_pending_responses();
 
-		void send()
+		template<class T>
+		void send(T&&)
 		{
 			// TODO: Add stuff to a send queue and drain it as far as possible
 		}
 
-		void handle_request(Pipe::worker_sync::port_activity_subscription_request&& msg)
+		void handle_request(worker_sync::port_activity_subscription_request&& msg)
 		{
 			m_currently_received_message = msg_decoder{};
-			m_subscriptions.insert(std::pair{m_subscription_id, std::move(msg.server_portname)});
+			auto const id = m_subscription_id;
+			m_subscriptions.insert(std::pair{id, std::move(msg.server_portname)});
 			++m_subscription_id;
-
-			// TODO: Send response
+			send(
+				worker_sync::port_activity_subscription_response{
+					.transaction_id = msg.transaction_id,
+					.subscription_id = id
+				}
+			);
 		}
 
-		void handle_request(Pipe::worker_sync::port_activity_unsubscription msg)
+		void handle_request(worker_sync::port_activity_unsubscription msg)
 		{
 			m_currently_received_message = msg_decoder{};
 			m_subscriptions.erase(msg.subscription_id);
-
-			// TODO: Send response
+			send(
+				worker_sync::port_activity_unsubscription_response{
+					.transaction_id = msg.transaction_id
+				}
+			);
 		}
 
-		void handle_request(Pipe::worker_sync::client_ready_event)
+		void handle_request(worker_sync::client_ready_event)
 		{
 #if __GNUC__ == 13
 #pragma GCC diagnostic push
