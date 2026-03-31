@@ -12,6 +12,7 @@
 #include <cstring>
 #include <fcntl.h>
 #include <type_traits>
+#include <unordered_map>
 
 namespace Pipe::worker_fwk
 {
@@ -71,14 +72,21 @@ namespace Pipe::worker_fwk
 			// TODO: Add stuff to a send queue and drain it as far as possible
 		}
 
-		void handle_request(Pipe::worker_sync::port_activity_subscription_request&&)
+		void handle_request(Pipe::worker_sync::port_activity_subscription_request&& msg)
 		{
 			m_currently_received_message = msg_decoder{};
+			m_subscriptions.insert(std::pair{m_subscription_id, std::move(msg.server_portname)});
+			++m_subscription_id;
+
+			// TODO: Send response
 		}
 
-		void handle_request(Pipe::worker_sync::port_activity_unsubscription)
+		void handle_request(Pipe::worker_sync::port_activity_unsubscription msg)
 		{
 			m_currently_received_message = msg_decoder{};
+			m_subscriptions.erase(msg.subscription_id);
+
+			// TODO: Send response
 		}
 
 		void handle_request(Pipe::worker_sync::client_ready_event)
@@ -91,6 +99,7 @@ namespace Pipe::worker_fwk
 #if __GNUC__ == 13
 #pragma GCC diagnostic pop
 #endif
+			// TODO: dispatch ready event on corresponding port
 		}
 
 	private:
@@ -101,6 +110,9 @@ namespace Pipe::worker_fwk
 
 			m_currently_received_message = utils::make_variant<msg_decoder>(header.msg_id + 1);
 		}
+
+		std::unordered_map<uint64_t, std::string> m_subscriptions;
+		uint64_t m_subscription_id{0};
 
 		size_t m_buffer_size;
 
