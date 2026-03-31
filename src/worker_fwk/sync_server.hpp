@@ -11,8 +11,10 @@
 
 #include <cstring>
 #include <fcntl.h>
+#include <memory>
 #include <type_traits>
 #include <unordered_map>
+#include <queue>
 
 namespace Pipe::worker_fwk
 {
@@ -31,9 +33,15 @@ namespace Pipe::worker_fwk
 			worker_sync::decoder
 		>;
 
+		using msg_encoder = utils::wrap_variant_element_t<
+			utils::variant_push_front_t<worker_sync::server_to_client_message, worker_sync::msg_header>,
+			worker_sync::encoder
+		>;
+
 		explicit sync_client_connection(size_t buffer_size = 65536):
 			m_buffer_size{buffer_size},
-			m_input_buffer{std::make_unique<std::byte[]>(buffer_size)}
+			m_input_buffer{std::make_unique<std::byte[]>(buffer_size)},
+			m_output_buffer{std::make_unique<std::byte[]>(buffer_size)}
 		{}
 
 		void handle_event(client_activity_event_handler_registered_event const& event)
@@ -58,19 +66,31 @@ namespace Pipe::worker_fwk
 
 			if(can_write(event.status))
 			{
-				send_pending_responses();
+				send_pending_messages();
 				return;
 			}
 		}
 
 		void read_and_dispatch_requests();
 
-		void send_pending_responses();
+		void send_pending_messages();
 
 		template<class T>
-		void send(T&&)
+		void send(T&& msg)
 		{
-			// TODO: Add stuff to a send queue and drain it as far as possible
+			auto const msg_id = utils::variant_index_v<T, worker_sync::server_to_client_message>;
+			m_msgs_to_send.push(
+				worker_sync::encoder<worker_sync::msg_header>{
+					worker_sync::msg_header{
+						.msg_id = msg_id
+					}
+				}
+			);
+			m_msgs_to_send.push(
+				worker_sync::encoder<std::remove_cvref_t<T>>{std::forward<T>(msg)}
+			);
+
+			send_pending_messages();
 		}
 
 		void handle_request(worker_sync::port_activity_subscription_request&& msg)
@@ -129,6 +149,11 @@ namespace Pipe::worker_fwk
 		std::unique_ptr<std::byte[]> m_input_buffer;
 		std::span<std::byte const> m_bytes_left_to_process;
 		msg_decoder m_currently_received_message;
+
+		// Encoder
+		std::unique_ptr<std::byte[]> m_output_buffer;
+		std::span<std::byte const> m_bytes_to_write;
+		std::queue<msg_encoder> m_msgs_to_send;
 
 		client_activity_event_handler_registered_event m_registration;
 	};

@@ -396,6 +396,24 @@ namespace Pipe::utils
 
 		return factories[alternative_index](std::forward<CtorArgs>(args)...);
 	}
+
+	template <class T, class Variant>
+	struct variant_index;
+
+	template<class T>
+	struct variant_index_tag{};
+
+	template <class T, class... Types>
+	struct variant_index<T, std::variant<Types...>>
+	{
+
+		static constexpr size_t value =
+			std::variant<variant_index_tag<Types>...>{variant_index_tag<T>{}}.index();
+	};
+
+	template<class T, class... Types>
+	constexpr auto variant_index_v = variant_index<T, Types...>::value;
+
 };
 
 template<class T>
