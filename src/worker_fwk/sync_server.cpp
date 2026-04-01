@@ -1,6 +1,7 @@
 //@	{"target":{"name":"sync_server.o"}}
 
 #include "./sync_server.hpp"
+#include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/os_services/io/io.hpp"
 #include <variant>
 
@@ -39,12 +40,58 @@ void Pipe::worker_fwk::sync_client_connection::read_and_dispatch_requests()
 	}
 }
 
+void Pipe::worker_fwk::sync_client_connection::enable_write_listening()
+{
+	if(!m_is_listening_for_write)
+	{
+		m_registration.event_handler_store->update_listening_status(
+			m_registration.event_handler,
+			os_services::fd::activity_status::read_or_write
+		);
+		m_is_listening_for_write = true;
+	}
+}
+
+void Pipe::worker_fwk::sync_client_connection::disable_write_listening()
+{
+	if(m_is_listening_for_write)
+	{
+		m_registration.event_handler_store->update_listening_status(
+			m_registration.event_handler,
+			os_services::fd::activity_status::read
+		);
+		m_is_listening_for_write = false;
+	}
+}
+
 void Pipe::worker_fwk::sync_client_connection::send_pending_messages()
 {
 	if(!m_bytes_to_write.empty())
 	{
-		// TODO: Write as mutch as possible
+		auto const write_result = Pipe::os_services::io::write_full(
+			m_registration.fd,
+			m_bytes_to_write
+		);
+		m_bytes_to_write = std::span{
+			std::begin(m_bytes_to_write) + write_result.bytes_transferred(),
+			std::end(m_bytes_to_write)
+		};
+
+		if(write_result.operation_would_have_blocked())
+		{
+			enable_write_listening();
+			return;
+		}
+
+		if(write_result.bytes_transferred() == 0)
+		{
+			// TODO: trigger connection closed
+			m_registration.event_handler_store->remove(m_registration.id);
+			return;
+		}
 	}
+
+	assert(m_bytes_to_write.empty());
 
 	std::span serialize_into{m_output_buffer.get(), m_buffer_size};
 	size_t bytes_ready = 0;
@@ -72,6 +119,29 @@ void Pipe::worker_fwk::sync_client_connection::send_pending_messages()
 	std::span write_from{static_cast<std::byte const*>(m_output_buffer.get()), bytes_ready};
 	if(!write_from.empty())
 	{
-		// TODO: Write as mutch as possible
+		auto const write_result = Pipe::os_services::io::write_full(
+			m_registration.fd,
+			write_from
+		);
+		m_bytes_to_write = std::span{
+			std::begin(write_from) + write_result.bytes_transferred(),
+			std::end(write_from)
+		};
+
+		if(write_result.operation_would_have_blocked())
+		{
+			enable_write_listening();
+			return;
+		}
+
+		if(write_result.bytes_transferred() == 0)
+		{
+			// TODO: trigger connection closed
+			m_registration.event_handler_store->remove(m_registration.id);
+			return;
+		}
 	}
+
+	if(m_msgs_to_send.empty() && m_bytes_to_write.empty())
+	{ disable_write_listening(); }
 }

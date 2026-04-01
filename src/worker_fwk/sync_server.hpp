@@ -140,6 +140,10 @@ namespace Pipe::worker_fwk
 			m_currently_received_message = utils::make_variant<msg_decoder>(header.msg_id + 1);
 		}
 
+		void enable_write_listening();
+
+		void disable_write_listening();
+
 		std::unordered_map<uint64_t, std::string> m_subscriptions;
 		uint64_t m_subscription_id{0};
 
@@ -154,6 +158,7 @@ namespace Pipe::worker_fwk
 		std::unique_ptr<std::byte[]> m_output_buffer;
 		std::span<std::byte const> m_bytes_to_write;
 		std::queue<msg_encoder> m_msgs_to_send;
+		bool m_is_listening_for_write{false};
 
 		client_activity_event_handler_registered_event m_registration;
 	};
