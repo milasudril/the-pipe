@@ -173,6 +173,9 @@ namespace Pipe::os_services::io
 		return io_result{std::begin(buffer) - start_at, 0};
 	}
 
+	struct fd_closed{};
+	struct io_blocked{};
+
 	template<class Byte, class OnBlocked, class OnClosed>
 	requires(
 		std::is_same_v<std::remove_cv_t<Byte>, std::byte> ||
@@ -197,13 +200,13 @@ namespace Pipe::os_services::io
 
 		if(write_result.operation_would_have_blocked())
 		{
-			std::forward<OnBlocked>(on_blocked)();
+			std::forward<OnBlocked>(on_blocked)(io_blocked{});
 			return false;
 		}
 
 		if(write_result.bytes_transferred() == 0)
 		{
-			std::forward<OnClosed>(on_closed)();
+			std::forward<OnClosed>(on_closed)(fd_closed{});
 			return false;
 		}
 

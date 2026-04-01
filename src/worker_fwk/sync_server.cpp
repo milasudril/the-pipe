@@ -70,8 +70,8 @@ void Pipe::worker_fwk::sync_client_connection::send_pending_messages()
 		return os_services::io::try_write(
 			m_registration.fd,
 			m_bytes_to_write,
-			[this](){ enable_write_listening(); },
-			[this](){
+			[this](os_services::io::io_blocked){ enable_write_listening(); },
+			[this](os_services::io::fd_closed){
 				// TODO: Notify that connection was closed
 				m_registration.event_handler_store->remove(m_registration.id);
 			}

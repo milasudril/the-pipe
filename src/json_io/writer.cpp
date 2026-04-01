@@ -40,8 +40,8 @@ void Pipe::json_io::writer::handle_event(fd_ready_event const& event)
 		return try_write(
 			m_registration.fd,
 			m_reminder,
-			[this](){ enable_listening(); },
-			[this](){ m_registration.event_handler_store->remove(m_registration.id); }
+			[this](os_services::io::io_blocked){ enable_listening(); },
+			[this](os_services::io::fd_closed){ m_registration.event_handler_store->remove(m_registration.id); }
 		);
 	};
 	if(!flush())
