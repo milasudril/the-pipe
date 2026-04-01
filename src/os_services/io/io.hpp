@@ -8,6 +8,7 @@
 #include <cerrno>
 #include <expected>
 #include <cassert>
+#include <type_traits>
 
 /**
  * \brief Contains basic I/O support functions
@@ -170,6 +171,43 @@ namespace Pipe::os_services::io
 		}
 
 		return io_result{std::begin(buffer) - start_at, 0};
+	}
+
+	template<class Byte, class OnBlocked, class OnClosed>
+	requires(
+		std::is_same_v<std::remove_cv_t<Byte>, std::byte> ||
+		std::is_same_v<std::remove_cv_t<Byte>, char> ||
+		std::is_same_v<std::remove_cv_t<Byte>, char8_t>
+	)
+	bool try_write(
+		output_file_descriptor_ref fd,
+		std::span<Byte>& buffer,
+		OnBlocked&& on_blocked,
+		OnClosed&& on_closed
+	)
+	{
+		if(buffer.empty())
+		{ return true; }
+
+		auto const write_result = Pipe::os_services::io::write_full(fd, std::as_bytes(buffer));
+		buffer = std::span{
+			std::begin(buffer) + write_result.bytes_transferred(),
+			std::end(buffer)
+		};
+
+		if(write_result.operation_would_have_blocked())
+		{
+			std::forward<OnBlocked>(on_blocked)();
+			return false;
+		}
+
+		if(write_result.bytes_transferred() == 0)
+		{
+			std::forward<OnClosed>(on_closed)();
+			return false;
+		}
+
+		return true;
 	}
 }
 

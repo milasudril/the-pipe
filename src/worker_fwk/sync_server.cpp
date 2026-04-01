@@ -66,32 +66,20 @@ void Pipe::worker_fwk::sync_client_connection::disable_write_listening()
 
 void Pipe::worker_fwk::sync_client_connection::send_pending_messages()
 {
-	if(!m_bytes_to_write.empty())
-	{
-		auto const write_result = Pipe::os_services::io::write_full(
+	auto flush = [this](){
+		return os_services::io::try_write(
 			m_registration.fd,
-			m_bytes_to_write
+			m_bytes_to_write,
+			[this](){ enable_write_listening(); },
+			[this](){
+				// TODO: Notify that connection was closed
+				m_registration.event_handler_store->remove(m_registration.id);
+			}
 		);
-		m_bytes_to_write = std::span{
-			std::begin(m_bytes_to_write) + write_result.bytes_transferred(),
-			std::end(m_bytes_to_write)
-		};
+	};
 
-		if(write_result.operation_would_have_blocked())
-		{
-			enable_write_listening();
-			return;
-		}
-
-		if(write_result.bytes_transferred() == 0)
-		{
-			// TODO: trigger connection closed
-			m_registration.event_handler_store->remove(m_registration.id);
-			return;
-		}
-	}
-
-	assert(m_bytes_to_write.empty());
+	if(!flush())
+	{ return; }
 
 	std::span serialize_into{m_output_buffer.get(), m_buffer_size};
 	size_t bytes_ready = 0;
@@ -116,31 +104,9 @@ void Pipe::worker_fwk::sync_client_connection::send_pending_messages()
 		serialize_into = std::span{m_output_buffer.get() + bytes_written, bytes_left_to_use};
 	}
 
-	std::span write_from{static_cast<std::byte const*>(m_output_buffer.get()), bytes_ready};
-	if(!write_from.empty())
-	{
-		auto const write_result = Pipe::os_services::io::write_full(
-			m_registration.fd,
-			write_from
-		);
-		m_bytes_to_write = std::span{
-			std::begin(write_from) + write_result.bytes_transferred(),
-			std::end(write_from)
-		};
-
-		if(write_result.operation_would_have_blocked())
-		{
-			enable_write_listening();
-			return;
-		}
-
-		if(write_result.bytes_transferred() == 0)
-		{
-			// TODO: trigger connection closed
-			m_registration.event_handler_store->remove(m_registration.id);
-			return;
-		}
-	}
+	m_bytes_to_write = std::span{static_cast<std::byte const*>(m_output_buffer.get()), bytes_ready};
+	if(!flush())
+	{ return; }
 
 	if(m_msgs_to_send.empty() && m_bytes_to_write.empty())
 	{ disable_write_listening(); }

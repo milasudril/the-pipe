@@ -36,26 +36,16 @@ void Pipe::json_io::writer::handle_event(fd_ready_event const& event)
 		return;
 	}
 
-	if(!m_reminder.empty())
-	{
-		auto const write_result = write_full(m_registration.fd, std::as_bytes(m_reminder));
-		m_reminder = std::span{
-			std::begin(m_reminder) + write_result.bytes_transferred(), std::end(m_reminder)
-		};
-		if(write_result.operation_would_have_blocked())
-		{
-			enable_listening();
-			return;
-		}
-
-		if(write_result.bytes_transferred() == 0)
-		{
-			m_registration.event_handler_store->remove(m_registration.id);
-			return;
-		}
-	}
-
-	assert(m_reminder.empty());
+	auto flush = [this](){
+		return try_write(
+			m_registration.fd,
+			m_reminder,
+			[this](){ enable_listening(); },
+			[this](){ m_registration.event_handler_store->remove(m_registration.id); }
+		);
+	};
+	if(!flush())
+	{ return; }
 
 	std::span serialize_into{m_output_buffer.get(), m_buffer_size};
 	size_t bytes_ready = 0;
@@ -84,26 +74,9 @@ void Pipe::json_io::writer::handle_event(fd_ready_event const& event)
 		}
 	}
 
-	std::span write_from{static_cast<char const*>(m_output_buffer.get()), bytes_ready};
-	if(!write_from.empty())
-	{
-		auto const write_result = write_full(m_registration.fd, std::as_bytes(write_from));
-		m_reminder = std::span{
-			std::begin(write_from) + write_result.bytes_transferred(),
-			std::end(write_from)
-		};
-		if(write_result.operation_would_have_blocked())
-		{
-			enable_listening();
-			return;
-		}
-
-		if(write_result.bytes_transferred() == 0)
-		{
-			m_registration.event_handler_store->remove(m_registration.id);
-			return;
-		}
-	}
+	m_reminder = std::span{static_cast<char const*>(m_output_buffer.get()), bytes_ready};
+	if(!flush())
+	{ return; }
 
 	if(m_to_serialize.empty() && m_reminder.empty())
 	{ disable_listening(); }
