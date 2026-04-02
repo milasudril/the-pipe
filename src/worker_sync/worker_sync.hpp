@@ -15,6 +15,9 @@ namespace Pipe::worker_sync
 	{
 		uint64_t transaction_id;
 		std::string server_portname;
+		
+		std::string& content()
+		{ return server_portname; }
 	};
 
 	struct port_activity_unsubscription
@@ -116,9 +119,15 @@ namespace Pipe::worker_sync
 		T m_current_object{};
 		size_t m_write_offset{0};
 	};
+	
+	template<class T>
+	concept string_message = requires(T& obj)
+	{
+		{ obj.content() } ->std::same_as<std::string&>;
+	};
 
-	template<>
-	class decoder<port_activity_subscription_request>
+	template<string_message Msg>
+	class decoder<Msg>
 	{
 	public:
 		size_t decode(std::span<std::byte const> buffer)
@@ -135,7 +144,7 @@ namespace Pipe::worker_sync
 					{
 						auto const header = m_header_decoder->get_value();
 						m_current_object.transaction_id = header.transaction_id;
-						m_current_object.server_portname.resize(header.string_length);
+						m_current_object.content().resize(header.string_length);
 						m_header_decoder.reset();
 						m_write_offset = 0;
 					}
@@ -143,16 +152,16 @@ namespace Pipe::worker_sync
 
 				if(!m_header_decoder.has_value()) [[likely]]
 				{
-					auto& server_portname = m_current_object.server_portname;
-					auto const bytes_left = std::size(server_portname) - m_write_offset;
+					auto& content = m_current_object.content();
+					auto const bytes_left = std::size(content) - m_write_offset;
 					auto const bytes_to_copy = std::min(bytes_left, std::size(buffer));
-					auto const ptr = reinterpret_cast<std::byte*>(std::data(server_portname)) + m_write_offset;
+					auto const ptr = reinterpret_cast<std::byte*>(std::data(content)) + m_write_offset;
 					m_write_offset += bytes_to_copy;
 					bytes_consumed += bytes_to_copy;
 					memcpy(ptr, std::data(buffer), bytes_to_copy);
 					buffer = std::span{std::begin(buffer) + bytes_to_copy, std::end(buffer)};
 
-					if(m_write_offset == std::size(server_portname))
+					if(m_write_offset == std::size(content))
 					{ m_completed = true; }
 				}
 			}
@@ -163,7 +172,7 @@ namespace Pipe::worker_sync
 		bool completed() const
 		{ return m_completed; }
 
-		port_activity_subscription_request& get_value()
+		auto& get_value()
 		{ return m_current_object; }
 
 	private:
@@ -173,7 +182,7 @@ namespace Pipe::worker_sync
 			uint64_t string_length;
 		};
 
-		port_activity_subscription_request m_current_object;
+		Msg m_current_object;
 		bool m_completed = false;
 		size_t m_write_offset{};
 		std::optional<decoder<header>> m_header_decoder{decoder<header>{}};
