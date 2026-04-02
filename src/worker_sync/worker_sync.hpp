@@ -17,6 +17,8 @@ namespace Pipe::worker_sync
 	public:
 		static constexpr uint64_t validity_mask = 0x8000'0000'0000'0000;
 		
+		constexpr transaction_id() = default;
+		
 		constexpr explicit transaction_id(uint64_t value):
 			m_value{value | validity_mask}
 		{}
@@ -43,7 +45,6 @@ namespace Pipe::worker_sync
 	
 	struct port_activity_subscription_request
 	{
-		uint64_t transaction_id;
 		std::string server_portname;
 		
 		std::string& content()
@@ -54,10 +55,7 @@ namespace Pipe::worker_sync
 	};
 
 	struct port_activity_unsubscription
-	{
-		uint64_t transaction_id;
-		uint64_t subscription_id;
-	};
+	{ uint64_t subscription_id; };
 
 	struct client_ready_event
 	{ uint64_t subscription_id; };
@@ -70,7 +68,6 @@ namespace Pipe::worker_sync
 	
 	struct error_response
 	{
-		uint64_t transaction_id;
 		std::string message;
 		
 		std::string const& content() const
@@ -81,15 +78,10 @@ namespace Pipe::worker_sync
 	};
 
 	struct port_activity_subscription_response
-	{
-		uint64_t transaction_id;
-		uint64_t subscription_id;
-	};
+	{ uint64_t subscription_id; };
 
 	struct port_activity_unsubscription_response
-	{
-		uint64_t transaction_id;
-	};
+	{ };
 
 	struct data_ready_event
 	{ uint64_t subscription_id; };
@@ -102,7 +94,10 @@ namespace Pipe::worker_sync
 	>;
 
 	struct msg_header
-	{ uint64_t msg_id; };
+	{ 
+		uint64_t msg_id; 
+		transaction_id tx_id;
+	};
 
 	template<class T>
 	class decoder{};
@@ -167,13 +162,7 @@ namespace Pipe::worker_sync
 	};
 
 	template<class T>
-	concept has_transaction_id = requires(T obj)
-	{
-		{ obj.transaction_id } -> std::same_as<uint64_t&>;
-	};
-
-	template<class T>
-	concept decodable_string_message = has_transaction_id<T> && requires(T& obj)
+	concept decodable_string_message = requires(T& obj)
 	{
 		{ obj.content() } ->std::same_as<std::string&>;
 	};
@@ -195,7 +184,6 @@ namespace Pipe::worker_sync
 					if(m_header_decoder->completed())
 					{
 						auto const header = m_header_decoder->get_value();
-						m_current_object.transaction_id = header.transaction_id;
 						m_current_object.content().resize(header.string_length);
 						m_header_decoder.reset();
 						m_write_offset = 0;
@@ -229,10 +217,7 @@ namespace Pipe::worker_sync
 
 	private:
 		struct header
-		{
-			uint64_t transaction_id;
-			uint64_t string_length;
-		};
+		{ uint64_t string_length; };
 
 		Msg m_current_object;
 		bool m_completed = false;
@@ -241,7 +226,7 @@ namespace Pipe::worker_sync
 	};
 	
 	template<class T>
-	concept encodable_string_message = has_transaction_id<T> && requires(T const& obj)
+	concept encodable_string_message = requires(T const& obj)
 	{
 		{obj.content()} -> std::same_as<std::string const&>;
 	};
@@ -255,7 +240,6 @@ namespace Pipe::worker_sync
 			m_header_encoder{
 				encoder<header>{
 					header{
-						.transaction_id = m_current_object.transaction_id,
 						.string_length = std::size(m_current_object.content())
 					}
 				}
@@ -303,10 +287,7 @@ namespace Pipe::worker_sync
 		
 	private:
 		struct header
-		{
-			uint64_t transaction_id;
-			uint64_t string_length;
-		};
+		{ uint64_t string_length; };
 
 		Msg m_current_object;
 		bool m_completed{false};

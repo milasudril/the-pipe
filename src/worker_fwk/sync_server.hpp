@@ -82,7 +82,9 @@ namespace Pipe::worker_fwk
 			m_msgs_to_send.push(
 				worker_sync::encoder<worker_sync::msg_header>{
 					worker_sync::msg_header{
-						.msg_id = msg_id
+						.msg_id = msg_id,
+						// TODO: Send correct transaction_id
+						.tx_id = worker_sync::transaction_id{}
 					}
 				}
 			);
@@ -101,7 +103,6 @@ namespace Pipe::worker_fwk
 			++m_subscription_id;
 			send(
 				worker_sync::port_activity_subscription_response{
-					.transaction_id = msg.transaction_id,
 					.subscription_id = id
 				}
 			);
@@ -113,7 +114,6 @@ namespace Pipe::worker_fwk
 			m_subscriptions.erase(msg.subscription_id);
 			send(
 				worker_sync::port_activity_unsubscription_response{
-					.transaction_id = msg.transaction_id
 				}
 			);
 		}
