@@ -19,6 +19,9 @@ namespace Pipe::worker_sync
 		
 		std::string& content()
 		{ return server_portname; }
+		
+		std::string const& content() const
+		{ return server_portname; }
 	};
 
 	struct port_activity_unsubscription
@@ -141,12 +144,12 @@ namespace Pipe::worker_sync
 	};
 
 	template<class T>
-	concept string_message = has_transaction_id<T> && requires(T& obj)
+	concept decodable_string_message = has_transaction_id<T> && requires(T& obj)
 	{
 		{ obj.content() } ->std::same_as<std::string&>;
 	};
 
-	template<string_message Msg>
+	template<decodable_string_message Msg>
 	class decoder<Msg>
 	{
 	public:
@@ -208,7 +211,13 @@ namespace Pipe::worker_sync
 		std::optional<decoder<header>> m_header_decoder{decoder<header>{}};
 	};
 	
-	template<string_message Msg>
+	template<class T>
+	concept encodable_string_message = has_transaction_id<T> && requires(T const& obj)
+	{
+		{obj.content()} -> std::same_as<std::string const&>;
+	};
+	
+	template<encodable_string_message Msg>
 	class encoder<Msg>
 	{
 	public:
