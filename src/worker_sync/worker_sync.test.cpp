@@ -271,3 +271,131 @@ TESTCASE(Pipe_worker_sync_decode_port_activity_subscription_request_junk_after_d
 	res = decoder.decode(std::span{std::begin(buffer), std::end(buffer)});
 	EXPECT_EQ(res, 0);
 }
+
+TESTCASE(Pipe_worker_sync_encode_error_response_partial_elements)
+{
+	Pipe::worker_sync::encoder<Pipe::worker_sync::error_response> encoder{
+		Pipe::worker_sync::error_response{
+			.transaction_id = 0x0102030405060708,
+			.message = "Hello, World!"
+		}
+	};
+	EXPECT_EQ(encoder.completed(), false);
+	
+	std::array<std::byte, 127> output_bytes{};
+	std::span buffer{std::begin(output_bytes), std::end(output_bytes)};
+	
+	auto res = encoder.encode(std::span{std::begin(buffer), 11});
+	EXPECT_EQ(res, 11);
+	EXPECT_EQ(encoder.completed(), false);
+	buffer = std::span{std::begin(buffer) + res, std::end(buffer)};
+	
+	res = encoder.encode(std::span{std::begin(buffer), 8});
+	EXPECT_EQ(res, 8);
+	EXPECT_EQ(encoder.completed(), false);
+	
+	res = encoder.encode(std::span{std::begin(buffer) + res, std::end(buffer)});
+	EXPECT_EQ(res, 29 - 19);
+	EXPECT_EQ(encoder.completed(), true);
+	
+	std::array<std::byte, 127> expected_result{
+			// Transaction id
+		static_cast<std::byte>(0x08),
+		static_cast<std::byte>(0x07),
+		static_cast<std::byte>(0x06),
+		static_cast<std::byte>(0x05),
+		static_cast<std::byte>(0x04),
+		static_cast<std::byte>(0x03),
+		static_cast<std::byte>(0x02),
+		static_cast<std::byte>(0x01),
+
+	// String length
+		static_cast<std::byte>(13),
+		static_cast<std::byte>(0x00),
+		static_cast<std::byte>(0x00),
+		static_cast<std::byte>(0x00),
+		static_cast<std::byte>(0x00),
+		static_cast<std::byte>(0x00),
+		static_cast<std::byte>(0x00),
+		static_cast<std::byte>(0x00),
+
+	// Actual string
+		static_cast<std::byte>('H'),
+		static_cast<std::byte>('e'),
+		static_cast<std::byte>('l'),
+		static_cast<std::byte>('l'),
+		static_cast<std::byte>('o'),
+		static_cast<std::byte>(','),
+		static_cast<std::byte>(' '),
+		static_cast<std::byte>('W'),
+		static_cast<std::byte>('o'),
+		static_cast<std::byte>('r'),
+		static_cast<std::byte>('l'),
+		static_cast<std::byte>('d'),
+		static_cast<std::byte>('!')
+	};
+	
+	EXPECT_EQ(output_bytes, expected_result);
+}
+
+TESTCASE(Pipe_worker_sync_encode_error_response_full_elements)
+{
+	Pipe::worker_sync::encoder<Pipe::worker_sync::error_response> encoder{
+		Pipe::worker_sync::error_response{
+			.transaction_id = 0x0102030405060708,
+			.message = "Hello, World!"
+		}
+	};
+	EXPECT_EQ(encoder.completed(), false);
+	
+	std::array<std::byte, 127> output_bytes{};
+	std::span buffer{std::begin(output_bytes), std::end(output_bytes)};
+	
+	auto res = encoder.encode(std::span{std::begin(buffer), 16});
+	EXPECT_EQ(res, 16);
+	EXPECT_EQ(encoder.completed(), false);
+	buffer = std::span{std::begin(buffer) + res, std::end(buffer)};
+	
+	res = encoder.encode(std::span{std::begin(buffer), std::end(buffer)});
+	EXPECT_EQ(res, 13);
+	EXPECT_EQ(encoder.completed(), true);
+	
+	std::array<std::byte, 127> expected_result{
+			// Transaction id
+		static_cast<std::byte>(0x08),
+		static_cast<std::byte>(0x07),
+		static_cast<std::byte>(0x06),
+		static_cast<std::byte>(0x05),
+		static_cast<std::byte>(0x04),
+		static_cast<std::byte>(0x03),
+		static_cast<std::byte>(0x02),
+		static_cast<std::byte>(0x01),
+
+	// String length
+		static_cast<std::byte>(13),
+		static_cast<std::byte>(0x00),
+		static_cast<std::byte>(0x00),
+		static_cast<std::byte>(0x00),
+		static_cast<std::byte>(0x00),
+		static_cast<std::byte>(0x00),
+		static_cast<std::byte>(0x00),
+		static_cast<std::byte>(0x00),
+
+	// Actual string
+		static_cast<std::byte>('H'),
+		static_cast<std::byte>('e'),
+		static_cast<std::byte>('l'),
+		static_cast<std::byte>('l'),
+		static_cast<std::byte>('o'),
+		static_cast<std::byte>(','),
+		static_cast<std::byte>(' '),
+		static_cast<std::byte>('W'),
+		static_cast<std::byte>('o'),
+		static_cast<std::byte>('r'),
+		static_cast<std::byte>('l'),
+		static_cast<std::byte>('d'),
+		static_cast<std::byte>('!')
+	};
+	
+	EXPECT_EQ(output_bytes, expected_result);
+}
