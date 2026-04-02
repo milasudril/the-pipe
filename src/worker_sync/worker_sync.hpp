@@ -120,9 +120,15 @@ namespace Pipe::worker_sync
 		T m_current_object{};
 		size_t m_write_offset{0};
 	};
-	
+
 	template<class T>
-	concept string_message = requires(T& obj)
+	concept has_transaction_id = requires(T obj)
+	{
+		{ obj.transaction_id } -> std::same_as<uint64_t&>;
+	};
+
+	template<class T>
+	concept string_message = has_transaction_id<T> && requires(T& obj)
 	{
 		{ obj.content() } ->std::same_as<std::string&>;
 	};
