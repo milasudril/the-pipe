@@ -12,6 +12,35 @@
 
 namespace Pipe::worker_sync
 {	
+	class transaction_id
+	{
+	public:
+		static constexpr uint64_t validity_mask = 0x8000'0000'0000'0000;
+		
+		constexpr explicit transaction_id(uint64_t value):
+			m_value{value | validity_mask}
+		{}
+
+		constexpr transaction_id next()
+		{
+			auto const next = m_value + 1;
+			return transaction_id{next};
+		}
+		
+		constexpr auto const value() const
+		{ return m_value & (~validity_mask); }
+		
+		constexpr auto const is_valid() const
+		{ return m_value & validity_mask; }
+		
+		constexpr auto operator<=>(transaction_id const&) const = default;
+
+	private:
+		uint64_t m_value{};
+	};
+
+	static_assert(std::is_trivially_copyable_v<transaction_id>);
+	
 	struct port_activity_subscription_request
 	{
 		uint64_t transaction_id;
