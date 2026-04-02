@@ -8,6 +8,7 @@
 #include <span>
 #include <cstring>
 #include <optional>
+#include <utility>
 
 namespace Pipe::worker_sync
 {
@@ -186,6 +187,74 @@ namespace Pipe::worker_sync
 		bool m_completed = false;
 		size_t m_write_offset{};
 		std::optional<decoder<header>> m_header_decoder{decoder<header>{}};
+	};
+	
+	template<string_message Msg>
+	class encoder<Msg>
+	{
+	public:
+		explicit encoder(Msg&& msg):
+			m_current_object{std::move(msg)},
+			m_header_encoder{
+				encoder<header>{
+					header{
+						.transaction_id = m_current_object.transaction_id,
+						.string_length = std::size(m_current_object.content())
+					}
+				}
+			}
+		{}
+		
+		size_t encode(std::span<std::byte> buffer)
+		{
+			size_t bytes_written = 0;
+			while(!buffer.empty() && !m_completed)
+			{
+				if(m_header_encoder.has_value()) [[unlikely]]
+				{
+					auto const res = m_header_encoder->encode(buffer);
+					bytes_written += res;
+					buffer = std::span{std::begin(buffer) + res, std::end(buffer)};
+					if(m_header_encoder->completed())
+					{
+						m_header_encoder.reset();
+						m_read_offset= 0;
+					}
+				}
+
+				if(!m_header_encoder.has_value()) [[likely]]
+				{
+					auto& content = std::as_const(m_current_object).content();
+					auto const bytes_left = std::size(content) - m_read_offset;
+					auto const bytes_to_copy = std::min(bytes_left, std::size(buffer));
+					auto const ptr = reinterpret_cast<std::byte*>(std::data(content)) + m_read_offset;
+					m_read_offset += bytes_to_copy;
+					bytes_written += bytes_to_copy;
+					memcpy(std::data(buffer), ptr, bytes_to_copy);
+					buffer = std::span{std::begin(buffer) + bytes_to_copy, std::end(buffer)};
+
+					if(m_read_offset == std::size(content))
+					{ m_completed = true; }
+				}
+			}
+			
+		}
+		
+		bool completed() const
+		{ return m_completed; }
+		
+		
+	private:
+		struct header
+		{
+			uint64_t transaction_id;
+			uint64_t string_length;
+		};
+
+		Msg m_current_object;
+		bool m_completed{false};
+		size_t m_read_offset{};
+		std::optional<encoder<header>> m_header_encoder;
 	};
 }
 
