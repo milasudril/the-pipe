@@ -11,7 +11,7 @@
 #include <utility>
 
 namespace Pipe::worker_sync
-{
+{	
 	struct port_activity_subscription_request
 	{
 		uint64_t transaction_id;
@@ -35,6 +35,18 @@ namespace Pipe::worker_sync
 		port_activity_unsubscription,
 		client_ready_event
 	>;
+	
+	struct error_response
+	{
+		uint64_t transaction_id;
+		std::string message;
+		
+		std::string const& content() const
+		{ return message; }
+		
+		std::string& content()
+		{ return message; }
+	};
 
 	struct port_activity_subscription_response
 	{
@@ -51,6 +63,7 @@ namespace Pipe::worker_sync
 	{ uint64_t subscription_id; };
 
 	using server_to_client_message = std::variant<
+		error_response,
 		port_activity_subscription_response,
 		port_activity_unsubscription_response,
 		data_ready_event
@@ -233,7 +246,7 @@ namespace Pipe::worker_sync
 					auto& content = std::as_const(m_current_object).content();
 					auto const bytes_left = std::size(content) - m_read_offset;
 					auto const bytes_to_copy = std::min(bytes_left, std::size(buffer));
-					auto const ptr = reinterpret_cast<std::byte*>(std::data(content)) + m_read_offset;
+					auto const ptr = reinterpret_cast<std::byte const*>(std::data(content)) + m_read_offset;
 					m_read_offset += bytes_to_copy;
 					bytes_written += bytes_to_copy;
 					memcpy(std::data(buffer), ptr, bytes_to_copy);
@@ -243,7 +256,7 @@ namespace Pipe::worker_sync
 					{ m_completed = true; }
 				}
 			}
-			
+			return bytes_written;			
 		}
 		
 		bool completed() const
