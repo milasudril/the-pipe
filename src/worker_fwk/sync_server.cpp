@@ -3,6 +3,8 @@
 #include "./sync_server.hpp"
 #include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/os_services/io/io.hpp"
+#include "src/worker_sync/worker_sync.hpp"
+#include <type_traits>
 #include <variant>
 
 void Pipe::worker_fwk::sync_client_connection::read_and_dispatch_requests()
@@ -27,7 +29,16 @@ void Pipe::worker_fwk::sync_client_connection::read_and_dispatch_requests()
 			[this, bytes_to_process]<class Decoder>(Decoder& item) {
 				auto const ret = item.decode(bytes_to_process);
 				if(item.completed())
-				{ handle_request(std::move(item.get_value())); }
+				{ 
+					if constexpr(
+						requires{
+							{this->handle_request(std::move(item.get_value()), m_current_transaction_id)};
+						}
+					)
+					{ handle_request(std::move(item.get_value()), m_current_transaction_id); }
+					else
+					{ handle_message(std::move(item.get_value())); }
+				}
 				return ret;
 			},
 			m_currently_received_message

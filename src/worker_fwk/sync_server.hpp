@@ -76,26 +76,27 @@ namespace Pipe::worker_fwk
 		void send_pending_messages();
 
 		template<class T>
-		void send(T&& msg)
+		void send(T&& msg, worker_sync::transaction_id tx_id)
 		{
 			auto const msg_id = utils::variant_index_v<T, worker_sync::server_to_client_message>;
 			m_msgs_to_send.push(
 				worker_sync::encoder<worker_sync::msg_header>{
 					worker_sync::msg_header{
 						.msg_id = msg_id,
-						// TODO: Send correct transaction_id
-						.tx_id = worker_sync::transaction_id{}
+						.tx_id = tx_id
 					}
 				}
 			);
 			m_msgs_to_send.push(
 				worker_sync::encoder<std::remove_cvref_t<T>>{std::forward<T>(msg)}
 			);
-
 			send_pending_messages();
 		}
 
-		void handle_request(worker_sync::port_activity_subscription_request&& msg)
+		void handle_request(
+			worker_sync::port_activity_subscription_request&& msg,
+			worker_sync::transaction_id tx_id
+		)
 		{
 			m_currently_received_message = msg_decoder{};
 			auto const id = m_subscription_id;
@@ -104,21 +105,22 @@ namespace Pipe::worker_fwk
 			send(
 				worker_sync::port_activity_subscription_response{
 					.subscription_id = id
-				}
+				},
+				tx_id
 			);
 		}
 
-		void handle_request(worker_sync::port_activity_unsubscription msg)
+		void handle_request(
+			worker_sync::port_activity_unsubscription msg, 
+			worker_sync::transaction_id tx_id
+		)
 		{
 			m_currently_received_message = msg_decoder{};
 			m_subscriptions.erase(msg.subscription_id);
-			send(
-				worker_sync::port_activity_unsubscription_response{
-				}
-			);
+			send(worker_sync::port_activity_unsubscription_response{}, tx_id);
 		}
 
-		void handle_request(worker_sync::client_ready_event)
+		void handle_message(worker_sync::client_ready_event)
 		{
 #if __GNUC__ == 13
 #pragma GCC diagnostic push
@@ -132,11 +134,13 @@ namespace Pipe::worker_fwk
 		}
 
 	private:
-		void handle_request(worker_sync::msg_header header)
+		void handle_message(worker_sync::msg_header header)
 		{
+			m_current_transaction_id = header.tx_id;
+
 			if(header.msg_id == std::numeric_limits<decltype(header.msg_id)>::max())
 			{ throw std::runtime_error{"Invalid type-id"}; }
-
+		
 			m_currently_received_message = utils::make_variant<msg_decoder>(header.msg_id + 1);
 		}
 
@@ -153,6 +157,7 @@ namespace Pipe::worker_fwk
 		std::unique_ptr<std::byte[]> m_input_buffer;
 		std::span<std::byte const> m_bytes_left_to_process;
 		msg_decoder m_currently_received_message;
+		worker_sync::transaction_id m_current_transaction_id;
 
 		// Encoder
 		std::unique_ptr<std::byte[]> m_output_buffer;
