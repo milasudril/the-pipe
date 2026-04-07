@@ -1,11 +1,21 @@
 //@	{"target":{"name":"./worker_sync.test"}}
 
 #include "./worker_sync.hpp"
-#include "testfwk/testsuite.hpp"
-#include "testfwk/validation.hpp"
 
 #include <array>
 #include <testfwk/testfwk.hpp>
+
+TESTCASE(Pipe_worker_sync_transaction_id_valid_after_wrap_around)
+{
+	Pipe::worker_sync::transaction_id tx_id{0xffff'ffff'ffff'ffff};
+	EXPECT_EQ(tx_id.is_valid(), true);
+	EXPECT_EQ(tx_id.value(), 0x7fff'ffff'ffff'ffff);
+	
+	auto const next_id = tx_id.next();
+	EXPECT_EQ(next_id, Pipe::worker_sync::transaction_id{0xffff'ffff'ffff'ffff});
+	EXPECT_EQ(tx_id.value(), 0);
+	EXPECT_EQ(tx_id.is_valid(), true);
+}
 
 TESTCASE(Pipe_worker_sync_decode_trivially_copyable_type)
 {

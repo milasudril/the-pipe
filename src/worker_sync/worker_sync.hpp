@@ -15,25 +15,26 @@ namespace Pipe::worker_sync
 	class transaction_id
 	{
 	public:
-		static constexpr uint64_t validity_mask = 0x8000'0000'0000'0000;
+		static constexpr uint64_t validity_mask = 0x1;
 		
 		constexpr transaction_id() = default;
 		
 		constexpr explicit transaction_id(uint64_t value):
-			m_value{value | validity_mask}
+			m_value{(value<<1) | validity_mask}
 		{}
 
 		constexpr transaction_id next()
 		{
-			auto const next = m_value + 1;
-			return transaction_id{next};
+			auto const ret = *this;
+			m_value += 2;
+			return ret;
 		}
 		
 		constexpr auto const value() const
-		{ return m_value & (~validity_mask); }
+		{ return m_value >> 1; }
 		
 		constexpr auto const is_valid() const
-		{ return m_value & validity_mask; }
+		{ return static_cast<bool>(m_value & validity_mask); }
 		
 		constexpr auto operator<=>(transaction_id const&) const = default;
 
