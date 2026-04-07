@@ -17,6 +17,12 @@ TESTCASE(Pipe_worker_sync_transaction_id_valid_after_wrap_around)
 	EXPECT_EQ(tx_id.is_valid(), true);
 }
 
+TESTCASE(Pipe_worker_sync_transaction_id_invalid_by_defualt)
+{
+	Pipe::worker_sync::transaction_id tx_id{};
+	EXPECT_EQ(tx_id.is_valid(), false);
+}
+
 TESTCASE(Pipe_worker_sync_decode_trivially_copyable_type)
 {
 	Pipe::worker_sync::decoder<uint64_t> decoder{};
