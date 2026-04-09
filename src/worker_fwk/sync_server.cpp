@@ -27,32 +27,22 @@ void Pipe::worker_fwk::sync_client_connection::read_and_dispatch_requests()
 	{
 		auto const bytes_consumed = std::visit(
 			[this, bytes_to_process]<class Decoder>(Decoder& item) {
-				// TODO: Should be a separate function
-				auto const ret = item.decode(bytes_to_process);
-				if(item.completed())
-				{ 
-					try
-					{
+				return item.decode_and_dispatch(
+					bytes_to_process,
+					[this]<class Msg>(Msg&& item){
 						if constexpr(
 							requires{
-								{this->handle_request(std::move(item.get_value()), m_current_transaction_id)};
+								{this->handle_request(std::forward<Msg>(item), m_current_transaction_id)};
 							}
 						)
-						{ handle_request(std::move(item.get_value()), m_current_transaction_id); }
+						{ handle_request(std::forward<Msg>(item), m_current_transaction_id); }
 						else
-						{ handle_message(std::move(item.get_value())); }
+						{ handle_message(std::forward<Msg>(item)); }
+					},
+					[this](worker_sync::error_response&& response) {
+						send(std::move(response), m_current_transaction_id);
 					}
-					catch(std::exception const& err)
-					{
-						send(
-							worker_sync::error_response{
-								.message = err.what()
-							},
-							m_current_transaction_id
-						);
-					}
-				}
-				return ret;
+				);
 			},
 			m_currently_received_message
 		);

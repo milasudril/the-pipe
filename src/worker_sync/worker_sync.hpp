@@ -11,14 +11,14 @@
 #include <utility>
 
 namespace Pipe::worker_sync
-{	
+{
 	class transaction_id
 	{
 	public:
 		static constexpr uint64_t validity_mask = 0x1;
-		
+
 		constexpr transaction_id() = default;
-		
+
 		constexpr explicit transaction_id(uint64_t value):
 			m_value{(value<<1) | validity_mask}
 		{}
@@ -29,13 +29,13 @@ namespace Pipe::worker_sync
 			m_value += 2;
 			return ret;
 		}
-		
+
 		constexpr auto const value() const
 		{ return m_value >> 1; }
-		
+
 		constexpr auto const is_valid() const
 		{ return static_cast<bool>(m_value & validity_mask); }
-		
+
 		constexpr auto operator<=>(transaction_id const&) const = default;
 
 	private:
@@ -43,14 +43,14 @@ namespace Pipe::worker_sync
 	};
 
 	static_assert(std::is_trivially_copyable_v<transaction_id>);
-	
+
 	struct port_activity_subscription_request
 	{
 		std::string server_portname;
-		
+
 		std::string& content()
 		{ return server_portname; }
-		
+
 		std::string const& content() const
 		{ return server_portname; }
 	};
@@ -66,14 +66,14 @@ namespace Pipe::worker_sync
 		port_activity_unsubscription,
 		client_ready_event
 	>;
-	
+
 	struct error_response
 	{
 		std::string message;
-		
+
 		std::string const& content() const
 		{ return message; }
-		
+
 		std::string& content()
 		{ return message; }
 	};
@@ -95,20 +95,50 @@ namespace Pipe::worker_sync
 	>;
 
 	struct msg_header
-	{ 
-		uint64_t msg_id; 
+	{
+		uint64_t msg_id;
 		transaction_id tx_id;
 	};
 
+	class decoder_base
+	{
+	public:
+		template<class Self, class Func, class ErrorHandler>
+		size_t decode_and_dispatch(
+			this Self&& self,
+			std::span<std::byte const> src,
+			Func&& func,
+			ErrorHandler&& on_error
+		)
+		{
+			auto const ret = self.decode(src);
+			if(self.completed())
+			{
+				try
+				{ std::forward<Func>(func)(std::move(self.get_value())); }
+				catch(std::exception const& err)
+				{
+					std::forward<ErrorHandler>(on_error)(
+						worker_sync::error_response{
+							.message = err.what()
+						}
+					);
+				}
+			}
+			return ret;
+		}
+	};
+
 	template<class T>
-	class decoder{};
+	class decoder
+	{};
 
 	template<class T>
 	class encoder{};
 
 	template<class T>
 	requires(std::is_trivially_copyable_v<T>)
-	class decoder<T>
+	class decoder<T>:public decoder_base
 	{
 	public:
 		size_t decode(std::span<std::byte const> src)
@@ -169,7 +199,7 @@ namespace Pipe::worker_sync
 	};
 
 	template<decodable_string_message Msg>
-	class decoder<Msg>
+	class decoder<Msg>:public decoder_base
 	{
 	public:
 		size_t decode(std::span<std::byte const> buffer)
@@ -225,13 +255,13 @@ namespace Pipe::worker_sync
 		size_t m_write_offset{};
 		std::optional<decoder<header>> m_header_decoder{decoder<header>{}};
 	};
-	
+
 	template<class T>
 	concept encodable_string_message = requires(T const& obj)
 	{
 		{obj.content()} -> std::same_as<std::string const&>;
 	};
-	
+
 	template<encodable_string_message Msg>
 	class encoder<Msg>
 	{
@@ -246,7 +276,7 @@ namespace Pipe::worker_sync
 				}
 			}
 		{}
-		
+
 		size_t encode(std::span<std::byte> buffer)
 		{
 			size_t bytes_written = 0;
@@ -279,13 +309,13 @@ namespace Pipe::worker_sync
 					{ m_completed = true; }
 				}
 			}
-			return bytes_written;			
+			return bytes_written;
 		}
-		
+
 		bool completed() const
 		{ return m_completed; }
-		
-		
+
+
 	private:
 		struct header
 		{ uint64_t string_length; };
