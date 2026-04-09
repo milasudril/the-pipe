@@ -315,6 +315,7 @@ namespace Pipe::json_rpc
 			);
 		}
 	}
+
 	template<class Func, class ErrorHandler>
 	void handle_message(jopp::array&& reqs, Func func, ErrorHandler on_error)
 	{
