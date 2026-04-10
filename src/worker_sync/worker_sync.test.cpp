@@ -434,3 +434,25 @@ TESTCASE(Pipe_worker_sync_decoder_base_decode_completed_callback_throws)
 	REQUIRE_EQ(response.has_value(), true);
 	EXPECT_EQ(response.value().message, "Callback failed");
 }
+
+TESTCASE(Pipe_worker_sync_decoder_base_decode_completed_callback_succeeds)
+{
+	test_decoder decoder{};
+	decoder.is_completed = true;
+	std::array<std::byte, 16> data{};
+	decoder.expected_range = data;
+	decoder.return_size = 13;
+	decoder.return_value = 465;
+	std::optional<Pipe::worker_sync::error_response> response;
+	auto const res = decoder.decode_and_dispatch(
+		data,
+		[](int val){
+			EXPECT_EQ(val, 465);
+		},
+		[&response]<class T>(T&& val){
+			response = std::forward<T>(val);
+		}
+	);
+	EXPECT_EQ(res, 13);
+	EXPECT_EQ(response.has_value(), false);
+}
