@@ -1,8 +1,10 @@
 //@	{"target":{"name":"./worker_sync.test"}}
 
 #include "./worker_sync.hpp"
+#include "testfwk/validation.hpp"
 
 #include <array>
+#include <cstddef>
 #include <testfwk/testfwk.hpp>
 
 TESTCASE(Pipe_worker_sync_transaction_id_valid_after_wrap_around)
@@ -10,7 +12,7 @@ TESTCASE(Pipe_worker_sync_transaction_id_valid_after_wrap_around)
 	Pipe::worker_sync::transaction_id tx_id{0xffff'ffff'ffff'ffff};
 	EXPECT_EQ(tx_id.is_valid(), true);
 	EXPECT_EQ(tx_id.value(), 0x7fff'ffff'ffff'ffff);
-	
+
 	auto const next_id = tx_id.next();
 	EXPECT_EQ(next_id, Pipe::worker_sync::transaction_id{0xffff'ffff'ffff'ffff});
 	EXPECT_EQ(tx_id.value(), 0);
@@ -264,23 +266,23 @@ TESTCASE(Pipe_worker_sync_encode_error_response_partial_elements)
 		}
 	};
 	EXPECT_EQ(encoder.completed(), false);
-	
+
 	std::array<std::byte, 127> output_bytes{};
 	std::span buffer{std::begin(output_bytes), std::end(output_bytes)};
-	
+
 	auto res = encoder.encode(std::span{std::begin(buffer), 11});
 	EXPECT_EQ(res, 11);
 	EXPECT_EQ(encoder.completed(), false);
 	buffer = std::span{std::begin(buffer) + res, std::end(buffer)};
-	
+
 	res = encoder.encode(std::span{std::begin(buffer), 8});
 	EXPECT_EQ(res, 8);
 	EXPECT_EQ(encoder.completed(), false);
-	
+
 	res = encoder.encode(std::span{std::begin(buffer) + res, std::end(buffer)});
 	EXPECT_EQ(res, 21 - 19);
 	EXPECT_EQ(encoder.completed(), true);
-	
+
 	std::array<std::byte, 127> expected_result{
 	// String length
 		static_cast<std::byte>(13),
@@ -307,7 +309,7 @@ TESTCASE(Pipe_worker_sync_encode_error_response_partial_elements)
 		static_cast<std::byte>('d'),
 		static_cast<std::byte>('!')
 	};
-	
+
 	EXPECT_EQ(output_bytes, expected_result);
 }
 
@@ -319,19 +321,19 @@ TESTCASE(Pipe_worker_sync_encode_error_response_full_elements)
 		}
 	};
 	EXPECT_EQ(encoder.completed(), false);
-	
+
 	std::array<std::byte, 127> output_bytes{};
 	std::span buffer{std::begin(output_bytes), std::end(output_bytes)};
-	
+
 	auto res = encoder.encode(std::span{std::begin(buffer), 8});
 	EXPECT_EQ(res, 8);
 	EXPECT_EQ(encoder.completed(), false);
 	buffer = std::span{std::begin(buffer) + res, std::end(buffer)};
-	
+
 	res = encoder.encode(std::span{std::begin(buffer), std::end(buffer)});
 	EXPECT_EQ(res, 13);
 	EXPECT_EQ(encoder.completed(), true);
-	
+
 	std::array<std::byte, 127> expected_result{
 	// String length
 		static_cast<std::byte>(13),
@@ -358,6 +360,53 @@ TESTCASE(Pipe_worker_sync_encode_error_response_full_elements)
 		static_cast<std::byte>('d'),
 		static_cast<std::byte>('!')
 	};
-	
+
 	EXPECT_EQ(output_bytes, expected_result);
+}
+
+namespace
+{
+	class test_decoder:public Pipe::worker_sync::decoder_base
+	{
+	public:
+		bool completed() const
+		{
+			return is_completed.value();
+		}
+
+		size_t decode(std::span<std::byte const> val)
+		{
+			EXPECT_EQ(std::begin(val), std::begin(expected_range.value()));
+			return return_size.value();
+		}
+
+		int get_value() const
+		{
+			return return_value.value();
+		}
+
+		std::optional<bool> is_completed;
+		std::optional<std::span<std::byte const>> expected_range;
+		std::optional<size_t> return_size;
+		std::optional<int> return_value;
+	};
+}
+
+TESTCASE(Pipe_worker_sync_decoder_base_decode_not_completed)
+{
+	test_decoder decoder{};
+	decoder.is_completed = false;
+	std::array<std::byte, 16> data{};
+	decoder.expected_range = data;
+	decoder.return_size = 13;
+	auto const res = decoder.decode_and_dispatch(
+		data,
+		[](auto&&...){
+			throw std::runtime_error{"Unexpected call"};
+		},
+		[](auto&&...){
+			throw std::runtime_error{"Unexpected call"};
+		}
+	);
+	EXPECT_EQ(res, 13);
 }
