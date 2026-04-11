@@ -56,16 +56,16 @@ namespace Pipe::worker_sync
 		{ return server_portname; }
 	};
 
-	class subscription_id
+	class port_activity_subscription_id
 	{
 	public:
-		constexpr subscription_id() = default;
+		constexpr port_activity_subscription_id() = default;
 
-		constexpr explicit subscription_id(uint64_t value):
+		constexpr explicit port_activity_subscription_id(uint64_t value):
 			m_value{value}
 		{}
 
-		constexpr subscription_id next()
+		constexpr port_activity_subscription_id next()
 		{
 			auto const ret = *this;
 			++m_value;
@@ -75,17 +75,17 @@ namespace Pipe::worker_sync
 		constexpr auto value() const
 		{ return m_value; }
 
-		constexpr auto operator<=>(subscription_id const&) const = default;
+		constexpr auto operator<=>(port_activity_subscription_id const&) const = default;
 
 	private:
 		uint64_t m_value{};
 	};
 
 	struct port_activity_unsubscription
-	{ subscription_id id; };
+	{ port_activity_subscription_id id; };
 
 	struct client_ready_event
-	{ subscription_id id; };
+	{ port_activity_subscription_id id; };
 
 	using client_to_server_message = std::variant<
 		port_activity_subscription_request,
@@ -105,13 +105,13 @@ namespace Pipe::worker_sync
 	};
 
 	struct port_activity_subscription_response
-	{ subscription_id id; };
+	{ port_activity_subscription_id id; };
 
 	struct port_activity_unsubscription_response
 	{ };
 
 	struct data_ready_event
-	{ subscription_id id; };
+	{ port_activity_subscription_id id; };
 
 	using server_to_client_message = std::variant<
 		data_ready_event,
@@ -354,9 +354,9 @@ namespace Pipe::worker_sync
 }
 
 template<>
-struct std::hash<Pipe::worker_sync::subscription_id>
+struct std::hash<Pipe::worker_sync::port_activity_subscription_id>
 {
-	static constexpr size_t operator()(Pipe::worker_sync::subscription_id id)
+	static constexpr size_t operator()(Pipe::worker_sync::port_activity_subscription_id id)
 	{ return std::hash<uint64_t>{}(id.value()); }
 };
 

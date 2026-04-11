@@ -43,80 +43,80 @@ namespace Pipe::worker_fwk
 	};
 
 	template<class T>
-	concept subscriber = requires(T& obj, worker_sync::subscription_id id)
+	concept port_activity_subscriber = requires(T& obj, worker_sync::port_activity_subscription_id id)
 	{
 		{ obj.notify_data_ready(id) } -> std::same_as<void>;
 	};
 
-	class subscriber_ref
+	class port_activity_subscriber_ref
 	{
 	public:
-		template<subscriber T>
-		requires(!std::is_same_v<std::remove_cvref_t<T>, subscriber_ref>)
-		explicit subscriber_ref(T& object):
+		template<port_activity_subscriber T>
+		requires(!std::is_same_v<std::remove_cvref_t<T>, port_activity_subscriber_ref>)
+		explicit port_activity_subscriber_ref(T& object):
 			m_object{&object},
 			m_notify_data_ready{
-				[](void* object, worker_sync::subscription_id id) static {
+				[](void* object, worker_sync::port_activity_subscription_id id) static {
 					static_cast<T*>(object)->notify_data_ready(id);
 				}
 			}
 		{}
 
-		void notify_data_ready(worker_sync::subscription_id id) const
+		void notify_data_ready(worker_sync::port_activity_subscription_id id) const
 		{ m_notify_data_ready(m_object, id); }
 
-		bool operator==(subscriber_ref const&) const = default;
-		bool operator!=(subscriber_ref const&) const = default;
+		bool operator==(port_activity_subscriber_ref const&) const = default;
+		bool operator!=(port_activity_subscriber_ref const&) const = default;
 
 	private:
 		void* m_object;
-		void (*m_notify_data_ready)(void*, worker_sync::subscription_id);
+		void (*m_notify_data_ready)(void*, worker_sync::port_activity_subscription_id);
 	};
 
 	template<class T>
-	concept subscriber_registry = requires(
+	concept port_activity_subscriber_registry = requires(
 		T& obj,
 		std::string const& str,
 		port_id port,
-		worker_sync::subscription_id subscription,
-		subscriber_ref subscriber
+		worker_sync::port_activity_subscription_id port_activity_subscription,
+		port_activity_subscriber_ref port_activity_subscriber
 	)
 	{
-		{ obj.add_subscription(str, subscriber, subscription) } -> std::same_as<port_id>;
-		{ obj.remove_subscription(port, subscriber, subscription) } -> std::same_as<void>;
+		{ obj.add_port_activity_subscription(str, port_activity_subscriber, port_activity_subscription) } -> std::same_as<port_id>;
+		{ obj.remove_port_activity_subscription(port, port_activity_subscriber, port_activity_subscription) } -> std::same_as<void>;
 		{ obj.notify_client_ready(port) } -> std::same_as<void>;
 	};
 
-	class subscriber_registry_ref
+	class port_activity_subscriber_registry_ref
 	{
 	public:
-		template<subscriber_registry T>
-		requires(!std::is_same_v<std::remove_cvref_t<T>, subscriber_registry_ref>)
-		explicit subscriber_registry_ref(T& object):
+		template<port_activity_subscriber_registry T>
+		requires(!std::is_same_v<std::remove_cvref_t<T>, port_activity_subscriber_registry_ref>)
+		explicit port_activity_subscriber_registry_ref(T& object):
 			m_object{&object},
 			m_notify_client_ready{
 				[](void* object, port_id id) static {
 					static_cast<T*>(object)->notify_client_ready(id);
 				}
 			},
-			m_add_subscription{
+			m_add_port_activity_subscription{
 				[](
 					void* object,
 					std::string const& port_name,
-					subscriber_ref subscriber,
-					worker_sync::subscription_id subscription
+					port_activity_subscriber_ref port_activity_subscriber,
+					worker_sync::port_activity_subscription_id port_activity_subscription
 				) static {
-					return static_cast<T*>(object)->add_subscription(port_name, subscriber, subscription);
+					return static_cast<T*>(object)->add_port_activity_subscription(port_name, port_activity_subscriber, port_activity_subscription);
 				}
 			},
-			m_remove_subscription{
+			m_remove_port_activity_subscription{
 				[](
 					void* object,
 					port_id id,
-					subscriber_ref subscriber,
-					worker_sync::subscription_id subscription
+					port_activity_subscriber_ref port_activity_subscriber,
+					worker_sync::port_activity_subscription_id port_activity_subscription
 				) static {
-					return static_cast<T*>(object)->remove_subscription(id, subscriber, subscription);
+					return static_cast<T*>(object)->remove_port_activity_subscription(id, port_activity_subscriber, port_activity_subscription);
 				}
 			}
 		{}
@@ -124,25 +124,25 @@ namespace Pipe::worker_fwk
 		void notify_client_ready(port_id id) const
 		{ m_notify_client_ready(m_object, id); }
 
-		port_id add_subscription(
+		port_id add_port_activity_subscription(
 			std::string const& port_name,
-			subscriber_ref subscriber,
-			worker_sync::subscription_id subscription
+			port_activity_subscriber_ref port_activity_subscriber,
+			worker_sync::port_activity_subscription_id port_activity_subscription
 		) const
-		{ return m_add_subscription(m_object, port_name, subscriber, subscription); }
+		{ return m_add_port_activity_subscription(m_object, port_name, port_activity_subscriber, port_activity_subscription); }
 
-		void remove_subscription(
+		void remove_port_activity_subscription(
 			port_id id,
-			subscriber_ref subscriber,
-			worker_sync::subscription_id subscription
+			port_activity_subscriber_ref port_activity_subscriber,
+			worker_sync::port_activity_subscription_id port_activity_subscription
 		) const
-		{ m_remove_subscription(m_object, id, subscriber, subscription); }
+		{ m_remove_port_activity_subscription(m_object, id, port_activity_subscriber, port_activity_subscription); }
 
 	private:
 		void* m_object;
 		void (*m_notify_client_ready)(void*, port_id);
-		port_id (*m_add_subscription)(void*, std::string const&, subscriber_ref, worker_sync::subscription_id);
-		void (*m_remove_subscription)(void*, port_id, subscriber_ref, worker_sync::subscription_id);
+		port_id (*m_add_port_activity_subscription)(void*, std::string const&, port_activity_subscriber_ref, worker_sync::port_activity_subscription_id);
+		void (*m_remove_port_activity_subscription)(void*, port_id, port_activity_subscriber_ref, worker_sync::port_activity_subscription_id);
 	};
 
 	class sync_client_connection
@@ -165,8 +165,8 @@ namespace Pipe::worker_fwk
 			worker_sync::encoder
 		>;
 
-		explicit sync_client_connection(subscriber_registry_ref subscriber_registry, size_t buffer_size = 65536):
-			m_subscriber_registry{subscriber_registry},
+		explicit sync_client_connection(port_activity_subscriber_registry_ref port_activity_subscriber_registry, size_t buffer_size = 65536):
+			m_port_activity_subscriber_registry{port_activity_subscriber_registry},
 			m_buffer_size{buffer_size},
 			m_input_buffer{std::make_unique<std::byte[]>(buffer_size)},
 			m_output_buffer{std::make_unique<std::byte[]>(buffer_size)}
@@ -234,14 +234,14 @@ namespace Pipe::worker_fwk
 		)
 		{
 			m_currently_received_message = msg_decoder{};
-			auto const id = m_subscription_id.next();
+			auto const id = m_port_activity_subscription_id.next();
 			//TODO: This function needs rollback support in case of exception
-			auto const port_id = m_subscriber_registry.add_subscription(
+			auto const port_id = m_port_activity_subscriber_registry.add_port_activity_subscription(
 				msg.server_portname,
-				subscriber_ref{*this},
+				port_activity_subscriber_ref{*this},
 				id
 			);
-			m_subscriptions.insert(
+			m_port_activity_subscriptions.insert(
 				std::pair{
 					id,
 					output_port_info{
@@ -264,11 +264,11 @@ namespace Pipe::worker_fwk
 		)
 		{
 			m_currently_received_message = msg_decoder{};
-			auto const i = m_subscriptions.find(msg.id);
-			if(i != std::end(m_subscriptions))
+			auto const i = m_port_activity_subscriptions.find(msg.id);
+			if(i != std::end(m_port_activity_subscriptions))
 			{
-				m_subscriber_registry.remove_subscription(i->second.id, subscriber_ref{*this}, i->first);
-				m_subscriptions.erase(i);
+				m_port_activity_subscriber_registry.remove_port_activity_subscription(i->second.id, port_activity_subscriber_ref{*this}, i->first);
+				m_port_activity_subscriptions.erase(i);
 			}
 
 			send(worker_sync::port_activity_unsubscription_response{}, tx_id);
@@ -285,21 +285,21 @@ namespace Pipe::worker_fwk
 #pragma GCC diagnostic pop
 #endif
 
-			auto const i = m_subscriptions.find(event.id);
-			if(i == std::end(m_subscriptions))
+			auto const i = m_port_activity_subscriptions.find(event.id);
+			if(i == std::end(m_port_activity_subscriptions))
 			{ throw std::runtime_error{"Subscription id not found"}; }
 
 			if(i->second.client_status == client_status::ready)
 			{ throw std::runtime_error{"Client is already ready"}; }
 
 			i->second.client_status = client_status::ready;
-			m_subscriber_registry.notify_client_ready(i->second.id);
+			m_port_activity_subscriber_registry.notify_client_ready(i->second.id);
 		}
 
-		void notify_data_ready(worker_sync::subscription_id id)
+		void notify_data_ready(worker_sync::port_activity_subscription_id id)
 		{
-			auto const i = m_subscriptions.find(id);
-			assert(i != std::end(m_subscriptions));
+			auto const i = m_port_activity_subscriptions.find(id);
+			assert(i != std::end(m_port_activity_subscriptions));
 			send(
 				worker_sync::data_ready_event{
 					.id = id
@@ -324,7 +324,7 @@ namespace Pipe::worker_fwk
 
 		void disable_write_listening();
 
-		subscriber_registry_ref m_subscriber_registry;
+		port_activity_subscriber_registry_ref m_port_activity_subscriber_registry;
 
 		enum class client_status{ready, busy};
 
@@ -334,8 +334,8 @@ namespace Pipe::worker_fwk
 			enum client_status client_status;
 		};
 
-		std::unordered_map<worker_sync::subscription_id, output_port_info> m_subscriptions;
-		worker_sync::subscription_id m_subscription_id{0};
+		std::unordered_map<worker_sync::port_activity_subscription_id, output_port_info> m_port_activity_subscriptions;
+		worker_sync::port_activity_subscription_id m_port_activity_subscription_id{0};
 
 		size_t m_buffer_size;
 
@@ -357,8 +357,8 @@ namespace Pipe::worker_fwk
 	class sync_server
 	{
 	public:
-		explicit sync_server(subscriber_registry_ref subscriber_registry):
-			m_subscriber_registry{subscriber_registry}
+		explicit sync_server(port_activity_subscriber_registry_ref port_activity_subscriber_registry):
+			m_port_activity_subscriber_registry{port_activity_subscriber_registry}
 		{}
 
 		using fd_tag = os_services::ipc::server_socket_tag<SOCK_STREAM, sockaddr_un>;
@@ -376,7 +376,7 @@ namespace Pipe::worker_fwk
 			if(event.status == os_services::fd::activity_status::read)
 			{
 				std::ignore = m_registration.event_handler_store->add<sync_client_connection::client_activity>(
-					sync_client_connection{m_subscriber_registry},
+					sync_client_connection{m_port_activity_subscriber_registry},
 					accept(m_registration.fd),
 					Pipe::os_services::fd::activity_status::read
 				);
@@ -384,7 +384,7 @@ namespace Pipe::worker_fwk
 		}
 
 	private:
-		subscriber_registry_ref m_subscriber_registry;
+		port_activity_subscriber_registry_ref m_port_activity_subscriber_registry;
 		server_activity_event_handler_registered_event m_registration;
 	};
 
@@ -396,13 +396,13 @@ namespace Pipe::worker_fwk
 
 	inline server_info make_sync_server(
 		os_services::fd::activity_event_handler_store& event_handler_store,
-		subscriber_registry_ref subscriber_registry
+		port_activity_subscriber_registry_ref port_activity_subscriber_registry
 	)
 	{
 		auto socket_name = utils::random_printable_ascii_string(os_services::ipc::abstract_sunpath_maxlength);
 		return server_info{
 			.event_handler_id = event_handler_store.add<sync_server::server_socket_activity>(
-				sync_server{subscriber_registry},
+				sync_server{port_activity_subscriber_registry},
 				os_services::ipc::make_server_socket<SOCK_STREAM>(
 					os_services::ipc::make_abstract_sockaddr_un(socket_name),
 					1024
