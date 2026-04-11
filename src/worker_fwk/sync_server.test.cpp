@@ -72,7 +72,11 @@ namespace
 			return Pipe::worker_fwk::port_id{54};
 		}
 
-		void remove_subscriber(Pipe::worker_fwk::port_id, Pipe::worker_fwk::subscriber_ref)
+		void remove_subscriber(
+			Pipe::worker_fwk::port_id,
+			Pipe::worker_fwk::subscriber_ref,
+			Pipe::worker_sync::subscription_id
+		)
 		{}
 
 		void notify_client_ready(Pipe::worker_fwk::port_id)

@@ -83,7 +83,7 @@ namespace Pipe::worker_fwk
 	)
 	{
 		{ obj.add_subscriber(str, subscriber, subscription) } -> std::same_as<port_id>;
-		{ obj.remove_subscriber(port, subscriber) } -> std::same_as<void>;
+		{ obj.remove_subscriber(port, subscriber, subscription) } -> std::same_as<void>;
 		{ obj.notify_client_ready(port) } -> std::same_as<void>;
 	};
 
@@ -110,8 +110,13 @@ namespace Pipe::worker_fwk
 				}
 			},
 			m_remove_subscriber{
-				[](void* object, port_id id, subscriber_ref subscriber) static {
-					return static_cast<T*>(object)->remove_subscriber(id, subscriber);
+				[](
+					void* object,
+					port_id id,
+					subscriber_ref subscriber,
+					worker_sync::subscription_id subscription
+				) static {
+					return static_cast<T*>(object)->remove_subscriber(id, subscriber, subscription);
 				}
 			}
 		{}
@@ -126,14 +131,18 @@ namespace Pipe::worker_fwk
 		) const
 		{ return m_add_subscriber(m_object, port_name, subscriber, subscription); }
 
-		void remove_subscriber(port_id id, subscriber_ref subscriber) const
-		{ m_remove_subscriber(m_object, id, subscriber); }
+		void remove_subscriber(
+			port_id id,
+			subscriber_ref subscriber,
+			worker_sync::subscription_id subscription
+		) const
+		{ m_remove_subscriber(m_object, id, subscriber, subscription); }
 
 	private:
 		void* m_object;
 		void (*m_notify_client_ready)(void*, port_id);
 		port_id (*m_add_subscriber)(void*, std::string const&, subscriber_ref, worker_sync::subscription_id);
-		void (*m_remove_subscriber)(void*, port_id, subscriber_ref);
+		void (*m_remove_subscriber)(void*, port_id, subscriber_ref, worker_sync::subscription_id);
 	};
 
 	class sync_client_connection
@@ -258,7 +267,7 @@ namespace Pipe::worker_fwk
 			auto const i = m_subscriptions.find(msg.id);
 			if(i != std::end(m_subscriptions))
 			{
-				m_subscriber_registry.remove_subscriber(i->second.id, subscriber_ref{*this});
+				m_subscriber_registry.remove_subscriber(i->second.id, subscriber_ref{*this}, i->first);
 				m_subscriptions.erase(i);
 			}
 
