@@ -456,3 +456,18 @@ TESTCASE(Pipe_worker_sync_decoder_base_decode_completed_callback_succeeds)
 	EXPECT_EQ(res, 13);
 	EXPECT_EQ(response.has_value(), false);
 }
+
+TESTCASE(Pipe_worker_sync_port_activity_subscription_id)
+{
+	Pipe::worker_sync::port_activity_subscription_id id{};
+	EXPECT_EQ(id.value(), 0);
+	auto const id_copy = id;
+	auto const next = id.next();
+	EXPECT_EQ(next, id_copy);
+	EXPECT_EQ(id.value(), next.value() + 1);
+
+	EXPECT_EQ(
+		std::hash<Pipe::worker_sync::port_activity_subscription_id>{}(Pipe::worker_sync::port_activity_subscription_id{254}),
+		std::hash<uint64_t>{}(254)
+	);
+}
