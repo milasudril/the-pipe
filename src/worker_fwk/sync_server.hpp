@@ -70,15 +70,21 @@ namespace Pipe::worker_fwk
 
 	private:
 		void* m_object;
-		void* (*m_notify_data_ready)(void*, worker_sync::subscription_id);
+		void (*m_notify_data_ready)(void*, worker_sync::subscription_id);
 	};
 
 	template<class T>
-	concept subscriber_registry = requires(T& obj, std::string const& str, port_id id)
+	concept subscriber_registry = requires(
+		T& obj,
+		std::string const& str,
+		port_id port,
+		worker_sync::subscription_id subscription,
+		subscriber_ref subscriber
+	)
 	{
-		{ obj.add_subscriber(str) } -> std::same_as<port_id>;
-		{ obj.remove_subscriber(id) } -> std::same_as<void>;
-		{ obj.notify_client_ready(id) } -> std::same_as<void>;
+		{ obj.add_subscriber(str, subscriber, subscription) } -> std::same_as<port_id>;
+		{ obj.remove_subscriber(port, subscriber) } -> std::same_as<void>;
+		{ obj.notify_client_ready(port) } -> std::same_as<void>;
 	};
 
 	class subscriber_registry_ref
@@ -94,13 +100,18 @@ namespace Pipe::worker_fwk
 				}
 			},
 			m_add_subscriber{
-				[](void* object, std::string const& port_name) static {
-					return static_cast<T*>(object)->add_subscriber(port_name);
+				[](
+					void* object,
+					std::string const& port_name,
+					subscriber_ref subscriber,
+					worker_sync::subscription_id subscription
+				) static {
+					return static_cast<T*>(object)->add_subscriber(port_name, subscriber, subscription);
 				}
 			},
 			m_remove_subscriber{
-				[](void* object, port_id id) static {
-					return static_cast<T*>(object)->remove_subscriber(id);
+				[](void* object, port_id id, subscriber_ref subscriber) static {
+					return static_cast<T*>(object)->remove_subscriber(id, subscriber);
 				}
 			}
 		{}
@@ -108,17 +119,21 @@ namespace Pipe::worker_fwk
 		void notify_client_ready(port_id id) const
 		{ m_notify_client_ready(m_object, id); }
 
-		port_id add_subscriber(std::string const& port_name) const
-		{ return m_add_subscriber(m_object, port_name); }
+		port_id add_subscriber(
+			std::string const& port_name,
+			subscriber_ref subscriber,
+			worker_sync::subscription_id subscription
+		) const
+		{ return m_add_subscriber(m_object, port_name, subscriber, subscription); }
 
-		void remove_subscriber(port_id id) const
-		{ m_remove_subscriber(m_object, id); }
+		void remove_subscriber(port_id id, subscriber_ref subscriber) const
+		{ m_remove_subscriber(m_object, id, subscriber); }
 
 	private:
 		void* m_object;
 		void (*m_notify_client_ready)(void*, port_id);
-		port_id (*m_add_subscriber)(void*, std::string const&);
-		void (*m_remove_subscriber)(void*, port_id);
+		port_id (*m_add_subscriber)(void*, std::string const&, subscriber_ref, worker_sync::subscription_id);
+		void (*m_remove_subscriber)(void*, port_id, subscriber_ref);
 	};
 
 	class sync_client_connection
@@ -212,7 +227,11 @@ namespace Pipe::worker_fwk
 			m_currently_received_message = msg_decoder{};
 			auto const id = m_subscription_id.next();
 			//TODO: This function needs rollback support in case of exception
-			auto const port_id = m_subscriber_registry.add_subscriber(msg.server_portname);
+			auto const port_id = m_subscriber_registry.add_subscriber(
+				msg.server_portname,
+				subscriber_ref{*this},
+				id
+			);
 			m_subscriptions.insert(
 				std::pair{
 					id,
@@ -239,7 +258,7 @@ namespace Pipe::worker_fwk
 			auto const i = m_subscriptions.find(msg.id);
 			if(i != std::end(m_subscriptions))
 			{
-				m_subscriber_registry.remove_subscriber(i->second.id);
+				m_subscriber_registry.remove_subscriber(i->second.id, subscriber_ref{*this});
 				m_subscriptions.erase(i);
 			}
 
@@ -266,6 +285,19 @@ namespace Pipe::worker_fwk
 
 			i->second.client_status = client_status::ready;
 			m_subscriber_registry.notify_client_ready(i->second.id);
+		}
+
+		void notify_data_ready(worker_sync::subscription_id id)
+		{
+			auto const i = m_subscriptions.find(id);
+			assert(i != std::end(m_subscriptions));
+			send(
+				worker_sync::data_ready_event{
+					.id = id
+				},
+				worker_sync::transaction_id{}
+			);
+			i->second.client_status = client_status::ready;
 		}
 
 	private:

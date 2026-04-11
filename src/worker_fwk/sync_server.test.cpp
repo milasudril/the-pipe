@@ -4,6 +4,7 @@
 #include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
 #include "src/os_services/ipc/unix_domain_socket.hpp"
+#include "src/worker_sync/worker_sync.hpp"
 #include "testfwk/validation.hpp"
 
 #include <string_view>
@@ -62,12 +63,16 @@ namespace
 
 	struct my_subscriber_registry
 	{
-		Pipe::worker_fwk::port_id add_subscriber(std::string_view)
+		Pipe::worker_fwk::port_id add_subscriber(
+			std::string_view,
+			Pipe::worker_fwk::subscriber_ref,
+			Pipe::worker_sync::subscription_id
+		)
 		{
 			return Pipe::worker_fwk::port_id{54};
 		}
 
-		void remove_subscriber(Pipe::worker_fwk::port_id)
+		void remove_subscriber(Pipe::worker_fwk::port_id, Pipe::worker_fwk::subscriber_ref)
 		{}
 
 		void notify_client_ready(Pipe::worker_fwk::port_id)

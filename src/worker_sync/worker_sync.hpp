@@ -114,6 +114,7 @@ namespace Pipe::worker_sync
 	{ subscription_id id; };
 
 	using server_to_client_message = std::variant<
+		data_ready_event,
 		error_response,
 		port_activity_subscription_response,
 		port_activity_unsubscription_response

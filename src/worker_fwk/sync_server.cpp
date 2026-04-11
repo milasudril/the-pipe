@@ -10,7 +10,7 @@
 Pipe::worker_fwk::sync_client_connection::~sync_client_connection()
 {
 	for(auto const& item :m_subscriptions)
-	{ m_subscriber_registry.remove_subscriber(item.second.id); }
+	{ m_subscriber_registry.remove_subscriber(item.second.id, subscriber_ref{*this}); }
 	// TODO: Add support for connection closed
 }
 
