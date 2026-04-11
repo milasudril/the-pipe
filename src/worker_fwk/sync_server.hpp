@@ -43,7 +43,7 @@ namespace Pipe::worker_fwk
 	};
 
 	template<class T>
-	concept subscriber = requires(T& obj, port_id id)
+	concept subscriber = requires(T& obj, worker_sync::subscription_id id)
 	{
 		{ obj.notify_data_ready(id) } -> std::same_as<void>;
 	};
@@ -56,13 +56,13 @@ namespace Pipe::worker_fwk
 		explicit subscriber_ref(T& object):
 			m_object{&object},
 			m_notify_data_ready{
-				[](void* object, port_id id) static {
+				[](void* object, worker_sync::subscription_id id) static {
 					static_cast<T*>(object)->notify_data_ready(id);
 				}
 			}
 		{}
 
-		void notify_data_ready(port_id id) const
+		void notify_data_ready(worker_sync::subscription_id id) const
 		{ m_notify_data_ready(m_object, id); }
 
 		bool operator==(subscriber_ref const&) const = default;
@@ -70,7 +70,7 @@ namespace Pipe::worker_fwk
 
 	private:
 		void* m_object;
-		void* (*m_notify_data_ready)(void*, port_id);
+		void* (*m_notify_data_ready)(void*, worker_sync::subscription_id);
 	};
 
 	template<class T>
