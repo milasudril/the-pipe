@@ -30,10 +30,10 @@ namespace Pipe::worker_sync
 			return ret;
 		}
 
-		constexpr auto const value() const
+		constexpr auto value() const
 		{ return m_value >> 1; }
 
-		constexpr auto const is_valid() const
+		constexpr auto is_valid() const
 		{ return static_cast<bool>(m_value & validity_mask); }
 
 		constexpr auto operator<=>(transaction_id const&) const = default;

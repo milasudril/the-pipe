@@ -18,6 +18,68 @@
 
 namespace Pipe::worker_fwk
 {
+	// TODO: This should be moved to a different file
+	class port_id
+	{
+	public:
+		constexpr explicit port_id(size_t value):
+			m_value{value}
+		{}
+
+		constexpr port_id next()
+		{
+			auto const ret = *this;
+			++m_value;
+			return ret;
+		}
+
+		constexpr auto value() const
+		{ return m_value; }
+
+		constexpr auto operator<=>(port_id const&) const = default;
+
+	private:
+		size_t m_value;
+	};
+
+	template<class T>
+	concept output_port_provider = requires(T& obj, std::string const& str, port_id id)
+	{
+		{ std::as_const(obj).get_port_id(str) } -> std::same_as<port_id>;
+		{ obj.notify_client_ready(id) } -> std::same_as<void>;
+	};
+
+	class output_port_provider_ref
+	{
+	public:
+		template<output_port_provider T>
+		requires(!std::is_same_v<std::remove_cvref_t<T>, output_port_provider_ref>)
+		explicit output_port_provider_ref(T& controller):
+			m_controller{&controller},
+			m_notify_client_ready{
+				[](port_id id, void* controller) {
+					static_cast<T*>(controller)->notify_client_ready(id);
+				}
+			},
+			m_get_port_id{
+				[](std::string const& port_name, void const* controller) {
+					return static_cast<T const*>(controller)->get_port_id(port_name);
+				}
+			}
+		{}
+
+		void notify_client_ready(port_id id) const
+		{ m_notify_client_ready(id, m_controller); }
+
+		port_id get_port_id(std::string const& port_name) const
+		{ return m_get_port_id(port_name, m_controller); }
+
+	private:
+		void* m_controller;
+		void (*m_notify_client_ready)(port_id, void*);
+		port_id (*m_get_port_id)(std::string const&, void const*);
+	};
+
 	class sync_client_connection
 	{
 	public:
@@ -38,7 +100,8 @@ namespace Pipe::worker_fwk
 			worker_sync::encoder
 		>;
 
-		explicit sync_client_connection(size_t buffer_size = 65536):
+		explicit sync_client_connection(output_port_provider_ref output_port_provider, size_t buffer_size = 65536):
+			m_output_port_provider{output_port_provider},
 			m_buffer_size{buffer_size},
 			m_input_buffer{std::make_unique<std::byte[]>(buffer_size)},
 			m_output_buffer{std::make_unique<std::byte[]>(buffer_size)}
@@ -100,7 +163,7 @@ namespace Pipe::worker_fwk
 		{
 			m_currently_received_message = msg_decoder{};
 			auto const id = m_subscription_id;
-			m_subscriptions.insert(std::pair{id, std::move(msg.server_portname)});
+			m_subscriptions.insert(std::pair{id, m_output_port_provider.get_port_id(msg.server_portname)});
 			++m_subscription_id;
 			send(
 				worker_sync::port_activity_subscription_response{
@@ -111,7 +174,7 @@ namespace Pipe::worker_fwk
 		}
 
 		void handle_request(
-			worker_sync::port_activity_unsubscription msg, 
+			worker_sync::port_activity_unsubscription msg,
 			worker_sync::transaction_id tx_id
 		)
 		{
@@ -140,7 +203,7 @@ namespace Pipe::worker_fwk
 
 			if(header.msg_id == std::numeric_limits<decltype(header.msg_id)>::max())
 			{ throw std::runtime_error{"Invalid type-id"}; }
-		
+
 			m_currently_received_message = utils::make_variant<msg_decoder>(header.msg_id + 1);
 		}
 
@@ -148,7 +211,9 @@ namespace Pipe::worker_fwk
 
 		void disable_write_listening();
 
-		std::unordered_map<uint64_t, std::string> m_subscriptions;
+		output_port_provider_ref m_output_port_provider;
+
+		std::unordered_map<uint64_t, port_id> m_subscriptions;
 		uint64_t m_subscription_id{0};
 
 		size_t m_buffer_size;
@@ -171,6 +236,10 @@ namespace Pipe::worker_fwk
 	class sync_server
 	{
 	public:
+		explicit sync_server(output_port_provider_ref output_port_provider):
+			m_output_port_provider{output_port_provider}
+		{}
+
 		using fd_tag = os_services::ipc::server_socket_tag<SOCK_STREAM, sockaddr_un>;
 
 		struct server_socket_activity{};
@@ -186,7 +255,7 @@ namespace Pipe::worker_fwk
 			if(event.status == os_services::fd::activity_status::read)
 			{
 				std::ignore = m_registration.event_handler_store->add<sync_client_connection::client_activity>(
-					sync_client_connection{},
+					sync_client_connection{m_output_port_provider},
 					accept(m_registration.fd),
 					Pipe::os_services::fd::activity_status::read
 				);
@@ -194,6 +263,7 @@ namespace Pipe::worker_fwk
 		}
 
 	private:
+		output_port_provider_ref m_output_port_provider;
 		server_activity_event_handler_registered_event m_registration;
 	};
 
@@ -204,13 +274,14 @@ namespace Pipe::worker_fwk
 	};
 
 	inline server_info make_sync_server(
-		os_services::fd::activity_event_handler_store& event_handler_store
+		os_services::fd::activity_event_handler_store& event_handler_store,
+		output_port_provider_ref output_port_provider
 	)
 	{
 		auto socket_name = utils::random_printable_ascii_string(os_services::ipc::abstract_sunpath_maxlength);
 		return server_info{
 			.event_handler_id = event_handler_store.add<sync_server::server_socket_activity>(
-				sync_server{},
+				sync_server{output_port_provider},
 				os_services::ipc::make_server_socket<SOCK_STREAM>(
 					os_services::ipc::make_abstract_sockaddr_un(socket_name),
 					1024

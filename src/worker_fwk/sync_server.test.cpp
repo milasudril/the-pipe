@@ -6,6 +6,7 @@
 #include "src/os_services/ipc/unix_domain_socket.hpp"
 #include "testfwk/validation.hpp"
 
+#include <string_view>
 #include <sys/socket.h>
 #include <testfwk/testfwk.hpp>
 
@@ -58,6 +59,17 @@ namespace
 		};
 		std::optional<do_add_call> expected_do_add_call;
 	};
+
+	struct my_output_port_provider
+	{
+		Pipe::worker_fwk::port_id get_port_id(std::string_view) const
+		{
+			return Pipe::worker_fwk::port_id{54};
+		}
+
+		void notify_client_ready(Pipe::worker_fwk::port_id)
+		{}
+	};
 }
 
 TESTCASE(Pipe_worker_fwk_sync_server_init)
@@ -69,7 +81,11 @@ TESTCASE(Pipe_worker_fwk_sync_server_init)
 		Pipe::os_services::fd::event_handler_id{324}
 	};
 
-	auto const server_info = Pipe::worker_fwk::make_sync_server(event_handlers);
+	my_output_port_provider output_port_provider;
+	auto const server_info = Pipe::worker_fwk::make_sync_server(
+		event_handlers,
+		Pipe::worker_fwk::output_port_provider_ref{output_port_provider}
+	);
 	auto registered_fd = std::move(event_handlers.expected_do_add_call->registred_fd);
 
 	EXPECT_EQ(std::size(server_info.socket_name), Pipe::os_services::ipc::abstract_sunpath_maxlength);
