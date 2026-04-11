@@ -45,7 +45,7 @@ namespace Pipe::worker_fwk
 	template<class T>
 	concept output_port_provider = requires(T& obj, std::string const& str, port_id id)
 	{
-		{ std::as_const(obj).get_port_id(str) } -> std::same_as<port_id>;
+		{ std::as_const(obj).add_subscriber(str) } -> std::same_as<port_id>;
 		{ obj.notify_client_ready(id) } -> std::same_as<void>;
 	};
 
@@ -61,9 +61,9 @@ namespace Pipe::worker_fwk
 					static_cast<T*>(controller)->notify_client_ready(id);
 				}
 			},
-			m_get_port_id{
-				[](std::string const& port_name, void const* controller) {
-					return static_cast<T const*>(controller)->get_port_id(port_name);
+			m_add_subscriber{
+				[](std::string const& port_name, void* controller) {
+					return static_cast<T*>(controller)->add_subscriber(port_name);
 				}
 			}
 		{}
@@ -71,13 +71,13 @@ namespace Pipe::worker_fwk
 		void notify_client_ready(port_id id) const
 		{ m_notify_client_ready(id, m_controller); }
 
-		port_id get_port_id(std::string const& port_name) const
-		{ return m_get_port_id(port_name, m_controller); }
+		port_id add_subscriber(std::string const& port_name) const
+		{ return m_add_subscriber(port_name, m_controller); }
 
 	private:
 		void* m_controller;
 		void (*m_notify_client_ready)(port_id, void*);
-		port_id (*m_get_port_id)(std::string const&, void const*);
+		port_id (*m_add_subscriber)(std::string const&, void*);
 	};
 
 	class sync_client_connection
@@ -170,7 +170,7 @@ namespace Pipe::worker_fwk
 		{
 			m_currently_received_message = msg_decoder{};
 			auto const id = m_subscription_id;
-			auto const port_id = m_output_port_provider.get_port_id(msg.server_portname);
+			auto const port_id = m_output_port_provider.add_subscriber(msg.server_portname);
 			m_subscriptions.insert(
 				std::pair{
 					id,
@@ -180,7 +180,6 @@ namespace Pipe::worker_fwk
 					}
 				}
 			);
-			m_output_port_provider.notify_client_ready(port_id);
 			++m_subscription_id;
 			send(
 				worker_sync::port_activity_subscription_response{
