@@ -43,19 +43,19 @@ namespace Pipe::worker_fwk
 	};
 
 	template<class T>
-	concept output_port_provider = requires(T& obj, std::string const& str, port_id id)
+	concept subscriber_registry = requires(T& obj, std::string const& str, port_id id)
 	{
 		{ obj.add_subscriber(str) } -> std::same_as<port_id>;
 		{ obj.remove_subscriber(id) } -> std::same_as<void>;
 		{ obj.notify_client_ready(id) } -> std::same_as<void>;
 	};
 
-	class output_port_provider_ref
+	class subscriber_registry_ref
 	{
 	public:
-		template<output_port_provider T>
-		requires(!std::is_same_v<std::remove_cvref_t<T>, output_port_provider_ref>)
-		explicit output_port_provider_ref(T& controller):
+		template<subscriber_registry T>
+		requires(!std::is_same_v<std::remove_cvref_t<T>, subscriber_registry_ref>)
+		explicit subscriber_registry_ref(T& controller):
 			m_controller{&controller},
 			m_notify_client_ready{
 				[](port_id id, void* controller) {
@@ -110,8 +110,8 @@ namespace Pipe::worker_fwk
 			worker_sync::encoder
 		>;
 
-		explicit sync_client_connection(output_port_provider_ref output_port_provider, size_t buffer_size = 65536):
-			m_output_port_provider{output_port_provider},
+		explicit sync_client_connection(subscriber_registry_ref subscriber_registry, size_t buffer_size = 65536):
+			m_subscriber_registry{subscriber_registry},
 			m_buffer_size{buffer_size},
 			m_input_buffer{std::make_unique<std::byte[]>(buffer_size)},
 			m_output_buffer{std::make_unique<std::byte[]>(buffer_size)}
@@ -181,7 +181,7 @@ namespace Pipe::worker_fwk
 			m_currently_received_message = msg_decoder{};
 			auto const id = m_subscription_id;
 			//TODO: This function needs rollback support in case of exception
-			auto const port_id = m_output_port_provider.add_subscriber(msg.server_portname);
+			auto const port_id = m_subscriber_registry.add_subscriber(msg.server_portname);
 			m_subscriptions.insert(
 				std::pair{
 					id,
@@ -209,7 +209,7 @@ namespace Pipe::worker_fwk
 			auto const i = m_subscriptions.find(msg.subscription_id);
 			if(i != std::end(m_subscriptions))
 			{
-				m_output_port_provider.remove_subscriber(i->second.id);
+				m_subscriber_registry.remove_subscriber(i->second.id);
 				m_subscriptions.erase(i);
 			}
 
@@ -235,7 +235,7 @@ namespace Pipe::worker_fwk
 			{ throw std::runtime_error{"Client is already ready"}; }
 
 			i->second.client_status = client_status::ready;
-			m_output_port_provider.notify_client_ready(i->second.id);
+			m_subscriber_registry.notify_client_ready(i->second.id);
 		}
 
 	private:
@@ -253,7 +253,7 @@ namespace Pipe::worker_fwk
 
 		void disable_write_listening();
 
-		output_port_provider_ref m_output_port_provider;
+		subscriber_registry_ref m_subscriber_registry;
 
 		enum class client_status{ready, busy};
 
@@ -286,8 +286,8 @@ namespace Pipe::worker_fwk
 	class sync_server
 	{
 	public:
-		explicit sync_server(output_port_provider_ref output_port_provider):
-			m_output_port_provider{output_port_provider}
+		explicit sync_server(subscriber_registry_ref subscriber_registry):
+			m_subscriber_registry{subscriber_registry}
 		{}
 
 		using fd_tag = os_services::ipc::server_socket_tag<SOCK_STREAM, sockaddr_un>;
@@ -305,7 +305,7 @@ namespace Pipe::worker_fwk
 			if(event.status == os_services::fd::activity_status::read)
 			{
 				std::ignore = m_registration.event_handler_store->add<sync_client_connection::client_activity>(
-					sync_client_connection{m_output_port_provider},
+					sync_client_connection{m_subscriber_registry},
 					accept(m_registration.fd),
 					Pipe::os_services::fd::activity_status::read
 				);
@@ -313,7 +313,7 @@ namespace Pipe::worker_fwk
 		}
 
 	private:
-		output_port_provider_ref m_output_port_provider;
+		subscriber_registry_ref m_subscriber_registry;
 		server_activity_event_handler_registered_event m_registration;
 	};
 
@@ -325,13 +325,13 @@ namespace Pipe::worker_fwk
 
 	inline server_info make_sync_server(
 		os_services::fd::activity_event_handler_store& event_handler_store,
-		output_port_provider_ref output_port_provider
+		subscriber_registry_ref subscriber_registry
 	)
 	{
 		auto socket_name = utils::random_printable_ascii_string(os_services::ipc::abstract_sunpath_maxlength);
 		return server_info{
 			.event_handler_id = event_handler_store.add<sync_server::server_socket_activity>(
-				sync_server{output_port_provider},
+				sync_server{subscriber_registry},
 				os_services::ipc::make_server_socket<SOCK_STREAM>(
 					os_services::ipc::make_abstract_sockaddr_un(socket_name),
 					1024
