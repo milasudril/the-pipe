@@ -58,36 +58,36 @@ namespace Pipe::worker_fwk
 		explicit subscriber_registry_ref(T& controller):
 			m_controller{&controller},
 			m_notify_client_ready{
-				[](port_id id, void* controller) {
+				[](void* controller, port_id id) static {
 					static_cast<T*>(controller)->notify_client_ready(id);
 				}
 			},
 			m_add_subscriber{
-				[](std::string const& port_name, void* controller) {
+				[](void* controller, std::string const& port_name) static {
 					return static_cast<T*>(controller)->add_subscriber(port_name);
 				}
 			},
 			m_remove_subscriber{
-				[](port_id id, void* controller) {
+				[](void* controller, port_id id) static {
 					return static_cast<T*>(controller)->remove_subscriber(id);
 				}
 			}
 		{}
 
 		void notify_client_ready(port_id id) const
-		{ m_notify_client_ready(id, m_controller); }
+		{ m_notify_client_ready(m_controller, id); }
 
 		port_id add_subscriber(std::string const& port_name) const
-		{ return m_add_subscriber(port_name, m_controller); }
+		{ return m_add_subscriber(m_controller, port_name); }
 
 		void remove_subscriber(port_id id)
-		{ m_remove_subscriber(id, m_controller); }
+		{ m_remove_subscriber(m_controller, id); }
 
 	private:
 		void* m_controller;
-		void (*m_notify_client_ready)(port_id, void*);
-		port_id (*m_add_subscriber)(std::string const&, void*);
-		void (*m_remove_subscriber)(port_id, void*);
+		void (*m_notify_client_ready)(void*, port_id);
+		port_id (*m_add_subscriber)(void*, std::string const&);
+		void (*m_remove_subscriber)(void*, port_id);
 	};
 
 	class sync_client_connection
