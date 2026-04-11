@@ -183,7 +183,7 @@ namespace Pipe::worker_fwk
 			send(worker_sync::port_activity_unsubscription_response{}, tx_id);
 		}
 
-		void handle_message(worker_sync::client_ready_event)
+		void handle_message(worker_sync::client_ready_event event)
 		{
 #if __GNUC__ == 13
 #pragma GCC diagnostic push
@@ -193,7 +193,12 @@ namespace Pipe::worker_fwk
 #if __GNUC__ == 13
 #pragma GCC diagnostic pop
 #endif
-			// TODO: dispatch ready event on corresponding port
+
+			auto const i = m_subscriptions.find(event.subscription_id);
+			if(i == std::end(m_subscriptions))
+			{ throw std::runtime_error{"Subscription id not found"}; }
+
+			m_output_port_provider.notify_client_ready(i->second);
 		}
 
 	private:
