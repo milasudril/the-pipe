@@ -82,8 +82,8 @@ namespace Pipe::worker_fwk
 		subscriber_ref subscriber
 	)
 	{
-		{ obj.add_subscriber(str, subscriber, subscription) } -> std::same_as<port_id>;
-		{ obj.remove_subscriber(port, subscriber, subscription) } -> std::same_as<void>;
+		{ obj.add_subscription(str, subscriber, subscription) } -> std::same_as<port_id>;
+		{ obj.remove_subscription(port, subscriber, subscription) } -> std::same_as<void>;
 		{ obj.notify_client_ready(port) } -> std::same_as<void>;
 	};
 
@@ -99,24 +99,24 @@ namespace Pipe::worker_fwk
 					static_cast<T*>(object)->notify_client_ready(id);
 				}
 			},
-			m_add_subscriber{
+			m_add_subscription{
 				[](
 					void* object,
 					std::string const& port_name,
 					subscriber_ref subscriber,
 					worker_sync::subscription_id subscription
 				) static {
-					return static_cast<T*>(object)->add_subscriber(port_name, subscriber, subscription);
+					return static_cast<T*>(object)->add_subscription(port_name, subscriber, subscription);
 				}
 			},
-			m_remove_subscriber{
+			m_remove_subscription{
 				[](
 					void* object,
 					port_id id,
 					subscriber_ref subscriber,
 					worker_sync::subscription_id subscription
 				) static {
-					return static_cast<T*>(object)->remove_subscriber(id, subscriber, subscription);
+					return static_cast<T*>(object)->remove_subscription(id, subscriber, subscription);
 				}
 			}
 		{}
@@ -124,25 +124,25 @@ namespace Pipe::worker_fwk
 		void notify_client_ready(port_id id) const
 		{ m_notify_client_ready(m_object, id); }
 
-		port_id add_subscriber(
+		port_id add_subscription(
 			std::string const& port_name,
 			subscriber_ref subscriber,
 			worker_sync::subscription_id subscription
 		) const
-		{ return m_add_subscriber(m_object, port_name, subscriber, subscription); }
+		{ return m_add_subscription(m_object, port_name, subscriber, subscription); }
 
-		void remove_subscriber(
+		void remove_subscription(
 			port_id id,
 			subscriber_ref subscriber,
 			worker_sync::subscription_id subscription
 		) const
-		{ m_remove_subscriber(m_object, id, subscriber, subscription); }
+		{ m_remove_subscription(m_object, id, subscriber, subscription); }
 
 	private:
 		void* m_object;
 		void (*m_notify_client_ready)(void*, port_id);
-		port_id (*m_add_subscriber)(void*, std::string const&, subscriber_ref, worker_sync::subscription_id);
-		void (*m_remove_subscriber)(void*, port_id, subscriber_ref, worker_sync::subscription_id);
+		port_id (*m_add_subscription)(void*, std::string const&, subscriber_ref, worker_sync::subscription_id);
+		void (*m_remove_subscription)(void*, port_id, subscriber_ref, worker_sync::subscription_id);
 	};
 
 	class sync_client_connection
@@ -236,7 +236,7 @@ namespace Pipe::worker_fwk
 			m_currently_received_message = msg_decoder{};
 			auto const id = m_subscription_id.next();
 			//TODO: This function needs rollback support in case of exception
-			auto const port_id = m_subscriber_registry.add_subscriber(
+			auto const port_id = m_subscriber_registry.add_subscription(
 				msg.server_portname,
 				subscriber_ref{*this},
 				id
@@ -267,7 +267,7 @@ namespace Pipe::worker_fwk
 			auto const i = m_subscriptions.find(msg.id);
 			if(i != std::end(m_subscriptions))
 			{
-				m_subscriber_registry.remove_subscriber(i->second.id, subscriber_ref{*this}, i->first);
+				m_subscriber_registry.remove_subscription(i->second.id, subscriber_ref{*this}, i->first);
 				m_subscriptions.erase(i);
 			}
 

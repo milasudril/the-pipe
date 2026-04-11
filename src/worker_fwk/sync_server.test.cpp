@@ -63,7 +63,7 @@ namespace
 
 	struct my_subscriber_registry
 	{
-		Pipe::worker_fwk::port_id add_subscriber(
+		Pipe::worker_fwk::port_id add_subscription(
 			std::string_view,
 			Pipe::worker_fwk::subscriber_ref,
 			Pipe::worker_sync::subscription_id
@@ -72,7 +72,7 @@ namespace
 			return Pipe::worker_fwk::port_id{54};
 		}
 
-		void remove_subscriber(
+		void remove_subscription(
 			Pipe::worker_fwk::port_id,
 			Pipe::worker_fwk::subscriber_ref,
 			Pipe::worker_sync::subscription_id
