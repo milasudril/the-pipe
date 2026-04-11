@@ -43,6 +43,37 @@ namespace Pipe::worker_fwk
 	};
 
 	template<class T>
+	concept subscriber = requires(T& obj, port_id id)
+	{
+		{ obj.notify_data_ready(id) } -> std::same_as<void>;
+	};
+
+	class subscriber_ref
+	{
+	public:
+		template<subscriber T>
+		requires(!std::is_same_v<std::remove_cvref_t<T>, subscriber_ref>)
+		explicit subscriber_ref(T& object):
+			m_object{&object},
+			m_notify_data_ready{
+				[](void* object, port_id id) static {
+					static_cast<T*>(object)->notify_data_ready(id);
+				}
+			}
+		{}
+
+		void notify_data_ready(port_id id) const
+		{ m_notify_data_ready(m_object, id); }
+
+		bool operator==(subscriber_ref const&) const = default;
+		bool operator!=(subscriber_ref const&) const = default;
+
+	private:
+		void* m_object;
+		void* (*m_notify_data_ready)(void*, port_id);
+	};
+
+	template<class T>
 	concept subscriber_registry = requires(T& obj, std::string const& str, port_id id)
 	{
 		{ obj.add_subscriber(str) } -> std::same_as<port_id>;
@@ -55,36 +86,36 @@ namespace Pipe::worker_fwk
 	public:
 		template<subscriber_registry T>
 		requires(!std::is_same_v<std::remove_cvref_t<T>, subscriber_registry_ref>)
-		explicit subscriber_registry_ref(T& controller):
-			m_controller{&controller},
+		explicit subscriber_registry_ref(T& object):
+			m_object{&object},
 			m_notify_client_ready{
-				[](void* controller, port_id id) static {
-					static_cast<T*>(controller)->notify_client_ready(id);
+				[](void* object, port_id id) static {
+					static_cast<T*>(object)->notify_client_ready(id);
 				}
 			},
 			m_add_subscriber{
-				[](void* controller, std::string const& port_name) static {
-					return static_cast<T*>(controller)->add_subscriber(port_name);
+				[](void* object, std::string const& port_name) static {
+					return static_cast<T*>(object)->add_subscriber(port_name);
 				}
 			},
 			m_remove_subscriber{
-				[](void* controller, port_id id) static {
-					return static_cast<T*>(controller)->remove_subscriber(id);
+				[](void* object, port_id id) static {
+					return static_cast<T*>(object)->remove_subscriber(id);
 				}
 			}
 		{}
 
 		void notify_client_ready(port_id id) const
-		{ m_notify_client_ready(m_controller, id); }
+		{ m_notify_client_ready(m_object, id); }
 
 		port_id add_subscriber(std::string const& port_name) const
-		{ return m_add_subscriber(m_controller, port_name); }
+		{ return m_add_subscriber(m_object, port_name); }
 
-		void remove_subscriber(port_id id)
-		{ m_remove_subscriber(m_controller, id); }
+		void remove_subscriber(port_id id) const
+		{ m_remove_subscriber(m_object, id); }
 
 	private:
-		void* m_controller;
+		void* m_object;
 		void (*m_notify_client_ready)(void*, port_id);
 		port_id (*m_add_subscriber)(void*, std::string const&);
 		void (*m_remove_subscriber)(void*, port_id);
