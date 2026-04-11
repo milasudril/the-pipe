@@ -107,6 +107,13 @@ namespace Pipe::worker_fwk
 			m_output_buffer{std::make_unique<std::byte[]>(buffer_size)}
 		{}
 
+		~sync_client_connection();
+
+		sync_client_connection(sync_client_connection&&) = default;
+		sync_client_connection& operator=(sync_client_connection&&) = default;
+		sync_client_connection(sync_client_connection const&) = delete;
+		sync_client_connection& operator=(sync_client_connection const&) = delete;
+
 		void handle_event(client_activity_event_handler_registered_event const& event)
 		{
 			::fcntl(event.fd.native_handle(), F_SETFD, O_NONBLOCK);
@@ -163,7 +170,17 @@ namespace Pipe::worker_fwk
 		{
 			m_currently_received_message = msg_decoder{};
 			auto const id = m_subscription_id;
-			m_subscriptions.insert(std::pair{id, m_output_port_provider.get_port_id(msg.server_portname)});
+			auto const port_id = m_output_port_provider.get_port_id(msg.server_portname);
+			m_subscriptions.insert(
+				std::pair{
+					id,
+					output_port_info{
+						.id = port_id,
+						.client_status = client_status::ready
+					}
+				}
+			);
+			m_output_port_provider.notify_client_ready(port_id);
 			++m_subscription_id;
 			send(
 				worker_sync::port_activity_subscription_response{
@@ -179,7 +196,14 @@ namespace Pipe::worker_fwk
 		)
 		{
 			m_currently_received_message = msg_decoder{};
-			m_subscriptions.erase(msg.subscription_id);
+			auto const i = m_subscriptions.find(msg.subscription_id);
+			if(i != std::end(m_subscriptions))
+			{
+				if(i->second.client_status != client_status::ready)
+				{ m_output_port_provider.notify_client_ready(i->second.id); }
+				m_subscriptions.erase(i);
+			}
+
 			send(worker_sync::port_activity_unsubscription_response{}, tx_id);
 		}
 
@@ -198,7 +222,11 @@ namespace Pipe::worker_fwk
 			if(i == std::end(m_subscriptions))
 			{ throw std::runtime_error{"Subscription id not found"}; }
 
-			m_output_port_provider.notify_client_ready(i->second);
+			if(i->second.client_status == client_status::ready)
+			{ throw std::runtime_error{"Client is already ready"}; }
+
+			i->second.client_status = client_status::ready;
+			m_output_port_provider.notify_client_ready(i->second.id);
 		}
 
 	private:
@@ -218,7 +246,15 @@ namespace Pipe::worker_fwk
 
 		output_port_provider_ref m_output_port_provider;
 
-		std::unordered_map<uint64_t, port_id> m_subscriptions;
+		enum class client_status{ready, busy};
+
+		struct output_port_info
+		{
+			port_id id;
+			enum client_status client_status;
+		};
+
+		std::unordered_map<uint64_t, output_port_info> m_subscriptions;
 		uint64_t m_subscription_id{0};
 
 		size_t m_buffer_size;

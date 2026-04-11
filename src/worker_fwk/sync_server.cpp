@@ -7,6 +7,16 @@
 #include <type_traits>
 #include <variant>
 
+Pipe::worker_fwk::sync_client_connection::~sync_client_connection()
+{
+	for(auto const& item :m_subscriptions)
+	{
+		if(item.second.client_status != client_status::ready)
+		{ m_output_port_provider.notify_client_ready(item.second.id); }
+	}
+	// TODO: Add support for connection closed
+}
+
 void Pipe::worker_fwk::sync_client_connection::read_and_dispatch_requests()
 {
 	auto const read_result = Pipe::os_services::io::read_full(
@@ -15,10 +25,7 @@ void Pipe::worker_fwk::sync_client_connection::read_and_dispatch_requests()
 	if(read_result.bytes_transferred() == 0)
 	{
 		if(!read_result.operation_would_have_blocked())
-		{
-			// TODO: trigger connection closed
-			m_registration.event_handler_store->remove(m_registration.id);
-		}
+		{ m_registration.event_handler_store->remove(m_registration.id); }
 		return;
 	}
 
@@ -86,7 +93,6 @@ void Pipe::worker_fwk::sync_client_connection::send_pending_messages()
 			m_bytes_to_write,
 			[this](os_services::io::io_blocked){ enable_write_listening(); },
 			[this](os_services::io::fd_closed){
-				// TODO: Notify that connection was closed
 				m_registration.event_handler_store->remove(m_registration.id);
 			}
 		);
