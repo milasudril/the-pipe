@@ -9,6 +9,7 @@
 #include <cstring>
 #include <optional>
 #include <utility>
+#include <functional>
 
 namespace Pipe::worker_sync
 {
@@ -55,11 +56,36 @@ namespace Pipe::worker_sync
 		{ return server_portname; }
 	};
 
+	class subscription_id
+	{
+	public:
+		constexpr subscription_id() = default;
+
+		constexpr explicit subscription_id(uint64_t value):
+			m_value{value}
+		{}
+
+		constexpr subscription_id next()
+		{
+			auto const ret = *this;
+			++m_value;
+			return ret;
+		}
+
+		constexpr auto value() const
+		{ return m_value; }
+
+		constexpr auto operator<=>(subscription_id const&) const = default;
+
+	private:
+		uint64_t m_value{};
+	};
+
 	struct port_activity_unsubscription
-	{ uint64_t subscription_id; };
+	{ subscription_id id; };
 
 	struct client_ready_event
-	{ uint64_t subscription_id; };
+	{ subscription_id id; };
 
 	using client_to_server_message = std::variant<
 		port_activity_subscription_request,
@@ -79,19 +105,18 @@ namespace Pipe::worker_sync
 	};
 
 	struct port_activity_subscription_response
-	{ uint64_t subscription_id; };
+	{ subscription_id id; };
 
 	struct port_activity_unsubscription_response
 	{ };
 
 	struct data_ready_event
-	{ uint64_t subscription_id; };
+	{ subscription_id id; };
 
 	using server_to_client_message = std::variant<
 		error_response,
 		port_activity_subscription_response,
-		port_activity_unsubscription_response,
-		data_ready_event
+		port_activity_unsubscription_response
 	>;
 
 	struct msg_header
@@ -326,5 +351,12 @@ namespace Pipe::worker_sync
 		std::optional<encoder<header>> m_header_encoder;
 	};
 }
+
+template<>
+struct std::hash<Pipe::worker_sync::subscription_id>
+{
+	static constexpr size_t operator()(Pipe::worker_sync::subscription_id id)
+	{ return std::hash<uint64_t>{}(id.value()); }
+};
 
 #endif

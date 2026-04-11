@@ -210,7 +210,7 @@ namespace Pipe::worker_fwk
 		)
 		{
 			m_currently_received_message = msg_decoder{};
-			auto const id = m_subscription_id;
+			auto const id = m_subscription_id.next();
 			//TODO: This function needs rollback support in case of exception
 			auto const port_id = m_subscriber_registry.add_subscriber(msg.server_portname);
 			m_subscriptions.insert(
@@ -222,10 +222,9 @@ namespace Pipe::worker_fwk
 					}
 				}
 			);
-			++m_subscription_id;
 			send(
 				worker_sync::port_activity_subscription_response{
-					.subscription_id = id
+					.id = id
 				},
 				tx_id
 			);
@@ -237,7 +236,7 @@ namespace Pipe::worker_fwk
 		)
 		{
 			m_currently_received_message = msg_decoder{};
-			auto const i = m_subscriptions.find(msg.subscription_id);
+			auto const i = m_subscriptions.find(msg.id);
 			if(i != std::end(m_subscriptions))
 			{
 				m_subscriber_registry.remove_subscriber(i->second.id);
@@ -258,7 +257,7 @@ namespace Pipe::worker_fwk
 #pragma GCC diagnostic pop
 #endif
 
-			auto const i = m_subscriptions.find(event.subscription_id);
+			auto const i = m_subscriptions.find(event.id);
 			if(i == std::end(m_subscriptions))
 			{ throw std::runtime_error{"Subscription id not found"}; }
 
@@ -294,8 +293,8 @@ namespace Pipe::worker_fwk
 			enum client_status client_status;
 		};
 
-		std::unordered_map<uint64_t, output_port_info> m_subscriptions;
-		uint64_t m_subscription_id{0};
+		std::unordered_map<worker_sync::subscription_id, output_port_info> m_subscriptions;
+		worker_sync::subscription_id m_subscription_id{0};
 
 		size_t m_buffer_size;
 
