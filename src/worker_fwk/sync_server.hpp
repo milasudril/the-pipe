@@ -45,7 +45,8 @@ namespace Pipe::worker_fwk
 	template<class T>
 	concept output_port_provider = requires(T& obj, std::string const& str, port_id id)
 	{
-		{ std::as_const(obj).add_subscriber(str) } -> std::same_as<port_id>;
+		{ obj.add_subscriber(str) } -> std::same_as<port_id>;
+		{ obj.remove_subscriber(id) } -> std::same_as<void>;
 		{ obj.notify_client_ready(id) } -> std::same_as<void>;
 	};
 
@@ -65,6 +66,11 @@ namespace Pipe::worker_fwk
 				[](std::string const& port_name, void* controller) {
 					return static_cast<T*>(controller)->add_subscriber(port_name);
 				}
+			},
+			m_remove_subscriber{
+				[](port_id id, void* controller) {
+					return static_cast<T*>(controller)->remove_subscriber(id);
+				}
 			}
 		{}
 
@@ -74,10 +80,14 @@ namespace Pipe::worker_fwk
 		port_id add_subscriber(std::string const& port_name) const
 		{ return m_add_subscriber(port_name, m_controller); }
 
+		void remove_subscriber(port_id id)
+		{ m_remove_subscriber(id, m_controller); }
+
 	private:
 		void* m_controller;
 		void (*m_notify_client_ready)(port_id, void*);
 		port_id (*m_add_subscriber)(std::string const&, void*);
+		void (*m_remove_subscriber)(port_id, void*);
 	};
 
 	class sync_client_connection
@@ -170,6 +180,7 @@ namespace Pipe::worker_fwk
 		{
 			m_currently_received_message = msg_decoder{};
 			auto const id = m_subscription_id;
+			//TODO: This function needs rollback support in case of exception
 			auto const port_id = m_output_port_provider.add_subscriber(msg.server_portname);
 			m_subscriptions.insert(
 				std::pair{
@@ -198,8 +209,7 @@ namespace Pipe::worker_fwk
 			auto const i = m_subscriptions.find(msg.subscription_id);
 			if(i != std::end(m_subscriptions))
 			{
-				if(i->second.client_status != client_status::ready)
-				{ m_output_port_provider.notify_client_ready(i->second.id); }
+				m_output_port_provider.remove_subscriber(i->second.id);
 				m_subscriptions.erase(i);
 			}
 

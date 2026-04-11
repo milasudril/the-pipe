@@ -62,10 +62,13 @@ namespace
 
 	struct my_output_port_provider
 	{
-		Pipe::worker_fwk::port_id add_subscriber(std::string_view) const
+		Pipe::worker_fwk::port_id add_subscriber(std::string_view)
 		{
 			return Pipe::worker_fwk::port_id{54};
 		}
+
+		void remove_subscriber(Pipe::worker_fwk::port_id)
+		{}
 
 		void notify_client_ready(Pipe::worker_fwk::port_id)
 		{}

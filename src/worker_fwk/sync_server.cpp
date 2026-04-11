@@ -10,10 +10,7 @@
 Pipe::worker_fwk::sync_client_connection::~sync_client_connection()
 {
 	for(auto const& item :m_subscriptions)
-	{
-		if(item.second.client_status != client_status::ready)
-		{ m_output_port_provider.notify_client_ready(item.second.id); }
-	}
+	{ m_output_port_provider.remove_subscriber(item.second.id); }
 	// TODO: Add support for connection closed
 }
 
