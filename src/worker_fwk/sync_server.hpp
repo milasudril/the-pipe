@@ -190,12 +190,18 @@ namespace Pipe::worker_fwk
 	private:
 		void handle_message(worker_sync::msg_header header)
 		{
-			m_current_transaction_id = header.tx_id;
+			utils::maybe_at_scope_exit on_exit{
+				[this](){
+					m_currently_received_message = msg_decoder{};
+				}
+			};
 
+			m_current_transaction_id = header.tx_id;
 			if(header.msg_id == std::numeric_limits<decltype(header.msg_id)>::max())
 			{ throw std::runtime_error{"Invalid type-id"}; }
 
 			m_currently_received_message = utils::make_variant<msg_decoder>(header.msg_id + 1);
+			on_exit.reset();
 		}
 
 		void enable_write_listening();

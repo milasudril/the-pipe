@@ -3,12 +3,16 @@
 #include "./sync_server.hpp"
 #include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
+#include "src/os_services/io/io.hpp"
 #include "src/os_services/ipc/unix_domain_socket.hpp"
 #include "src/os_services/ipc/socket_pair.hpp"
 #include "src/worker_fwk/port_activity_subscription.hpp"
 #include "src/worker_sync/worker_sync.hpp"
+#include "src/utils/utils.hpp"
+#include "testfwk/testsuite.hpp"
 #include "testfwk/validation.hpp"
 
+#include <source_location>
 #include <string_view>
 #include <sys/socket.h>
 #include <testfwk/testfwk.hpp>
@@ -29,7 +33,7 @@ namespace
 			Pipe::os_services::fd::activity_status new_status
 		) override
 		{
-			EXPECT_EQ(expected_update_listening_status_call.has_value(), true);
+			REQUIRE_EQ(expected_update_listening_status_call.has_value(), true);
 			EXPECT_EQ(handle.get(), expected_update_listening_status_call->handle.get());
 			EXPECT_EQ(new_status, expected_update_listening_status_call->new_status);
 		}
@@ -172,6 +176,107 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_handle_client_activity_event_wit
 				|Pipe::os_services::fd::activity_status::read_or_write
 		}
 	);
+}
+
+TESTCASE(Pipe_worker_fw_sync_client_connection_handle_activity_event_with_read_no_error)
+{
+	my_port_activity_subscriber_registry subscriber_registry;
+	Pipe::worker_fwk::sync_client_connection connection{
+		Pipe::worker_fwk::port_activity_subscriber_registry_ref{subscriber_registry}
+	};
+
+	Pipe::os_services::ipc::socket_pair<SOCK_STREAM> sockets;
+	my_event_handler_registry event_handlers;
+	connection.handle_event(
+		Pipe::worker_fwk::sync_client_connection::client_activity_event_handler_registered_event{
+			.fd = sockets.socket_a(),
+			.id = Pipe::os_services::fd::event_handler_id{345},
+			.event_handler = {},
+			.event_handler_store = &event_handlers
+		}
+	);
+
+	{
+		auto const flags = ::fcntl(sockets.socket_b().native_handle(), F_GETFL);
+		REQUIRE_NE(flags, -1);
+		auto const res = ::fcntl(sockets.socket_b().native_handle(), F_SETFL, O_NONBLOCK);
+		REQUIRE_NE(res, -1);
+	}
+
+	static constexpr std::array<std::byte, sizeof(Pipe::worker_sync::msg_header)> junk{
+		std::byte{0x4A}, std::byte{0x2F}, std::byte{0xA1}, std::byte{0xB9},
+    std::byte{0x0C}, std::byte{0x8E}, std::byte{0x33}, std::byte{0x7D},
+    std::byte{0x66}, std::byte{0x12}, std::byte{0x99}, std::byte{0x44},
+    std::byte{0xED}, std::byte{0x5B}, std::byte{0x00}, std::byte{0xCC}
+	};
+
+	auto check_response = [&](std::source_location src_loc = std::source_location::current()){
+		printf("Check response: %s:%d\n", src_loc.file_name(), src_loc.line());
+		fflush(stdout);
+		std::array<std::byte, 39> bytes_sent{};
+		auto const read_res = Pipe::os_services::io::read_full(sockets.socket_b(), bytes_sent);
+		REQUIRE_EQ(read_res.operation_would_have_blocked(), false);
+		REQUIRE_EQ(read_res.bytes_transferred(), std::size(bytes_sent));
+		std::array<std::byte, 1> other_buffer{};
+		auto const read_res_2 = Pipe::os_services::io::read_full(sockets.socket_b(), other_buffer);
+		EXPECT_EQ(read_res_2.operation_would_have_blocked(), true);
+		EXPECT_EQ(read_res_2.bytes_transferred(), 0);
+
+		Pipe::worker_sync::decoder<Pipe::worker_sync::msg_header> header_decoder{};
+		auto const res = header_decoder.decode(bytes_sent);
+		EXPECT_EQ(res, sizeof(Pipe::worker_sync::msg_header));
+		EXPECT_EQ(header_decoder.completed(), true);
+		auto const header = header_decoder.get_value();
+		REQUIRE_EQ(
+			header.msg_id,
+			(
+				Pipe::utils::variant_index_v<
+					Pipe::worker_sync::error_response,
+					Pipe::worker_sync::server_to_client_message
+				>
+			)
+		);
+
+		Pipe::worker_sync::decoder<Pipe::worker_sync::error_response> msg_decoder{};
+		auto const new_res = msg_decoder.decode(
+			std::span{std::begin(bytes_sent) + res, std::end(bytes_sent)}
+		);
+		EXPECT_EQ(new_res + res, read_res.bytes_transferred());
+		EXPECT_EQ(msg_decoder.completed(), true);
+		auto const msg = msg_decoder.get_value();
+		EXPECT_EQ(msg.message, "Invalid type-id");
+	};
+
+	{
+		auto const write_res = Pipe::os_services::io::write_full(sockets.socket_b(), junk);
+		REQUIRE_EQ(write_res.operation_would_have_blocked(), false);
+		REQUIRE_EQ(write_res.bytes_transferred(), sizeof(Pipe::worker_sync::msg_header));
+
+		connection.handle_event(
+			Pipe::worker_fwk::sync_client_connection::client_activity_event{
+				.status = Pipe::os_services::fd::activity_status::read
+			}
+		);
+		check_response();
+	}
+
+	{
+		auto const write_res = Pipe::os_services::io::write_full(sockets.socket_b(), junk);
+		REQUIRE_EQ(write_res.operation_would_have_blocked(), false);
+		REQUIRE_EQ(write_res.bytes_transferred(), sizeof(Pipe::worker_sync::msg_header));
+
+		event_handlers.expected_update_listening_status_call =
+			my_event_handler_registry::update_listening_status_call{
+				.handle = {},
+				.new_status = Pipe::os_services::fd::activity_status::read
+			};
+		connection.handle_event(
+			Pipe::worker_fwk::sync_client_connection::client_activity_event{
+				.status = Pipe::os_services::fd::activity_status::read_or_write
+			}
+		);
+		check_response();
+	}
 }
 
 TESTCASE(Pipe_worker_fwk_sync_server_init)

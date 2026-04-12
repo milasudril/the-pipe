@@ -317,6 +317,32 @@ namespace Pipe::utils
 		Callable m_func;
 	};
 
+	template<class Callable>
+	class maybe_at_scope_exit
+	{
+	public:
+		explicit maybe_at_scope_exit(Callable&& func):
+			m_func{std::move(func)}
+		{}
+
+		maybe_at_scope_exit(maybe_at_scope_exit const&) = delete;
+		maybe_at_scope_exit(maybe_at_scope_exit&&) = delete;
+		maybe_at_scope_exit& operator=(maybe_at_scope_exit const&) = delete;
+		maybe_at_scope_exit& operator=(maybe_at_scope_exit&&) = delete;
+
+		~maybe_at_scope_exit()
+		{
+			if(m_func.has_value())
+			{ (*m_func)();  }
+		}
+
+		void reset()
+		{ m_func.reset(); }
+
+	private:
+		std::optional<Callable> m_func;
+	};
+
 	template<class... Ts>
 	struct overload : Ts...
 	{
