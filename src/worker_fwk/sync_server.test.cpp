@@ -4,6 +4,8 @@
 #include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
 #include "src/os_services/ipc/unix_domain_socket.hpp"
+#include "src/os_services/ipc/socket_pair.hpp"
+#include "src/worker_fwk/port_activity_subscription.hpp"
 #include "src/worker_sync/worker_sync.hpp"
 #include "testfwk/validation.hpp"
 
@@ -19,6 +21,7 @@ namespace
 		{
 			EXPECT_EQ(expected_remove_id.has_value(), true);
 			EXPECT_EQ(id, expected_remove_id);
+			expected_remove_id.reset();
 		}
 
 		void update_listening_status(
@@ -82,6 +85,93 @@ namespace
 		void notify_client_ready(Pipe::worker_fwk::port_id)
 		{}
 	};
+}
+
+TESTCASE(Pipe_worker_fwk_sync_client_connection_handle_event_handler_registred_event)
+{
+	my_port_activity_subscriber_registry subscriber_registry;
+	Pipe::worker_fwk::sync_client_connection connection{
+		Pipe::worker_fwk::port_activity_subscriber_registry_ref{subscriber_registry}
+	};
+
+	Pipe::os_services::ipc::socket_pair<SOCK_STREAM> sockets;
+	{
+		auto const is_blocking = ::fcntl(sockets.socket_a().native_handle(), F_GETFL);
+		REQUIRE_NE(is_blocking, -1);
+		EXPECT_EQ(is_blocking&O_NONBLOCK, 0);
+	}
+
+	my_event_handler_registry event_handlers;
+	connection.handle_event(
+		Pipe::worker_fwk::sync_client_connection::client_activity_event_handler_registered_event{
+			.fd = sockets.socket_a(),
+			.id = Pipe::os_services::fd::event_handler_id{345},
+			.event_handler = {},
+			.event_handler_store = &event_handlers,
+		}
+	);
+	{
+		auto const is_blocking = ::fcntl(sockets.socket_a().native_handle(), F_GETFL);
+		REQUIRE_NE(is_blocking, -1);
+		EXPECT_EQ(is_blocking&O_NONBLOCK, O_NONBLOCK);
+	}
+
+	event_handlers.expected_remove_id = Pipe::os_services::fd::event_handler_id{345};
+	connection.handle_event(
+		Pipe::worker_fwk::sync_client_connection::client_activity_event{
+			.status = Pipe::os_services::fd::activity_status::error
+		}
+	);
+}
+
+TESTCASE(Pipe_worker_fwk_sync_client_connection_handle_client_activity_event_with_error)
+{
+	my_port_activity_subscriber_registry subscriber_registry;
+	Pipe::worker_fwk::sync_client_connection connection{
+		Pipe::worker_fwk::port_activity_subscriber_registry_ref{subscriber_registry}
+	};
+
+	Pipe::os_services::ipc::socket_pair<SOCK_STREAM> sockets;
+	my_event_handler_registry event_handlers;
+	connection.handle_event(
+		Pipe::worker_fwk::sync_client_connection::client_activity_event_handler_registered_event{
+			.fd = sockets.socket_a(),
+			.id = Pipe::os_services::fd::event_handler_id{345},
+			.event_handler = {},
+			.event_handler_store = &event_handlers,
+		}
+	);
+
+	event_handlers.expected_remove_id = Pipe::os_services::fd::event_handler_id{345};
+	connection.handle_event(
+		Pipe::worker_fwk::sync_client_connection::client_activity_event{
+			.status = Pipe::os_services::fd::activity_status::error
+		}
+	);
+
+	event_handlers.expected_remove_id = Pipe::os_services::fd::event_handler_id{345};
+	connection.handle_event(
+		Pipe::worker_fwk::sync_client_connection::client_activity_event{
+			.status = Pipe::os_services::fd::activity_status::error
+				|Pipe::os_services::fd::activity_status::read
+		}
+	);
+
+	event_handlers.expected_remove_id = Pipe::os_services::fd::event_handler_id{345};
+	connection.handle_event(
+		Pipe::worker_fwk::sync_client_connection::client_activity_event{
+			.status = Pipe::os_services::fd::activity_status::error
+				|Pipe::os_services::fd::activity_status::write
+		}
+	);
+
+	event_handlers.expected_remove_id = Pipe::os_services::fd::event_handler_id{345};
+	connection.handle_event(
+		Pipe::worker_fwk::sync_client_connection::client_activity_event{
+			.status = Pipe::os_services::fd::activity_status::error
+				|Pipe::os_services::fd::activity_status::read_or_write
+		}
+	);
 }
 
 TESTCASE(Pipe_worker_fwk_sync_server_init)

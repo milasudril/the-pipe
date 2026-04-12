@@ -19,6 +19,8 @@ namespace Pipe::os_services::fd
 		error = 0x8000'0000  /**< An error has occurred on the file descriptor */
 	};
 
+	consteval void enable_bitmask_operators(activity_status){}
+
 	/**
 	 * \brief Checks whether or not the read flag has been set in status
 	 */

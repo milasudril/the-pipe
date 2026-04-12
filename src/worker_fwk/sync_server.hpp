@@ -54,12 +54,17 @@ namespace Pipe::worker_fwk
 
 		void handle_event(client_activity_event_handler_registered_event const& event)
 		{
-			::fcntl(event.fd.native_handle(), F_SETFD, O_NONBLOCK);
+			auto const fd = event.fd.native_handle();
+			auto const flags = ::fcntl(fd, F_GETFL);
+			assert(flags != -1);
+			::fcntl(event.fd.native_handle(), F_SETFL, O_NONBLOCK|flags);
 			m_registration = event;
 		}
 
 		void handle_event(client_activity_event event)
 		{
+			assert(m_registration.event_handler_store != nullptr);
+
 			if(has_error(event.status)) [[unlikely]]
 			{
 				m_registration.event_handler_store->remove(m_registration.id);
