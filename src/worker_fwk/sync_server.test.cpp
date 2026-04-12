@@ -279,6 +279,122 @@ TESTCASE(Pipe_worker_fw_sync_client_connection_handle_activity_event_with_read_n
 	}
 }
 
+TESTCASE(Pipe_worker_fw_sync_client_connection_handle_activity_event_with_write_no_error)
+{
+	my_port_activity_subscriber_registry subscriber_registry;
+	Pipe::worker_fwk::sync_client_connection connection{
+		Pipe::worker_fwk::port_activity_subscriber_registry_ref{subscriber_registry}
+	};
+
+	Pipe::os_services::ipc::socket_pair<SOCK_STREAM> sockets;
+	my_event_handler_registry event_handlers;
+	connection.handle_event(
+		Pipe::worker_fwk::sync_client_connection::client_activity_event_handler_registered_event{
+			.fd = sockets.socket_a(),
+			.id = Pipe::os_services::fd::event_handler_id{345},
+			.event_handler = {},
+			.event_handler_store = &event_handlers
+		}
+	);
+
+	{
+		auto const flags = ::fcntl(sockets.socket_b().native_handle(), F_GETFL);
+		REQUIRE_NE(flags, -1);
+		auto const res = ::fcntl(sockets.socket_b().native_handle(), F_SETFL, O_NONBLOCK);
+		REQUIRE_NE(res, -1);
+	}
+
+	 auto test = [&](Pipe::os_services::fd::activity_status event_status) {
+		// Pre-fill the output buffer to make sure next write will block
+		size_t junk_byte_count = 0;
+		while(true)
+		{
+			std::array<std::byte, 4096> blocks{};
+			auto const write_result = Pipe::os_services::io::write_full(sockets.socket_a(), blocks);
+			junk_byte_count += write_result.bytes_transferred();
+			if(write_result.operation_would_have_blocked())
+			{ break; }
+		}
+
+		event_handlers.expected_update_listening_status_call =
+			my_event_handler_registry::update_listening_status_call{
+				.handle = {},
+				.new_status = Pipe::os_services::fd::activity_status::read_or_write
+			};
+		connection.send(
+			Pipe::worker_sync::data_ready_event{
+				.id = Pipe::worker_sync::port_activity_subscription_id{346}
+			},
+			Pipe::worker_sync::transaction_id{213}
+		);
+
+		// Drain junk
+		while(true)
+		{
+			std::array<std::byte, 4096> blocks{};
+			std::span read_into{std::begin(blocks), std::min(junk_byte_count, std::size(blocks))};
+			auto const read_result = Pipe::os_services::io::read_full(sockets.socket_b(), read_into);
+			junk_byte_count -= read_result.bytes_transferred();
+			if(read_result.operation_would_have_blocked() || junk_byte_count == 0)
+			{ break; }
+		}
+
+		// TODO: Currently, read and write events are not handled from the same context. This is because
+		// read could trigger an error which causes the handler to be deleted
+		if(!can_read(event_status))
+		{
+			event_handlers.expected_update_listening_status_call =
+				my_event_handler_registry::update_listening_status_call{
+					.handle = {},
+					.new_status = Pipe::os_services::fd::activity_status::read
+				};
+		}
+		connection.handle_event(
+			Pipe::worker_fwk::sync_client_connection::client_activity_event{
+				.status = event_status
+			}
+		);
+
+		if(can_read(event_status))
+		{ return; }
+
+		std::array<std::byte, 24> bytes_written{};
+		auto const write_result = Pipe::os_services::io::read_full(sockets.socket_b(), bytes_written);
+		EXPECT_EQ(write_result.operation_would_have_blocked(), false);
+		EXPECT_EQ(write_result.bytes_transferred(), 24);
+
+		{
+			Pipe::worker_sync::decoder<Pipe::worker_sync::msg_header> decoder{};
+			auto const res = decoder.decode(bytes_written);
+			EXPECT_EQ(res, sizeof(Pipe::worker_sync::msg_header));
+			EXPECT_EQ(decoder.completed(), true);
+			auto const header = decoder.get_value();
+			REQUIRE_EQ(
+				header.msg_id,
+				(
+					Pipe::utils::variant_index_v<
+						Pipe::worker_sync::data_ready_event,
+						Pipe::worker_sync::server_to_client_message
+					>
+				)
+			);
+			EXPECT_EQ(header.tx_id, Pipe::worker_sync::transaction_id{213});
+		}
+
+		{
+			Pipe::worker_sync::decoder<Pipe::worker_sync::data_ready_event> decoder{};
+			auto const res = decoder.decode(std::span{ std::begin(bytes_written) + 16, std::end(bytes_written)});
+			EXPECT_EQ(res, 8);
+			EXPECT_EQ(decoder.completed(), true);
+			auto const msg = decoder.get_value();
+			EXPECT_EQ(msg.id,Pipe::worker_sync::port_activity_subscription_id{346});
+		}
+	};
+
+	test(Pipe::os_services::fd::activity_status::write);
+	test(Pipe::os_services::fd::activity_status::read_or_write);
+}
+
 TESTCASE(Pipe_worker_fwk_sync_server_init)
 {
 	my_event_handler_registry event_handlers;
