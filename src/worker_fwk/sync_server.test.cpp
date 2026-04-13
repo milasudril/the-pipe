@@ -389,6 +389,52 @@ TESTCASE(Pipe_worker_fw_sync_client_connection_handle_activity_event_with_write_
 	test(Pipe::os_services::fd::activity_status::read_or_write);
 }
 
+TESTCASE(Pipe_worker_fw_sync_client_connection_read_and_dispatch_requests_no_bytes_to_read_blocking)
+{
+	my_port_activity_subscriber_registry subscriber_registry;
+	Pipe::worker_fwk::sync_client_connection connection{
+		Pipe::worker_fwk::port_activity_subscriber_registry_ref{subscriber_registry}
+	};
+
+	Pipe::os_services::ipc::socket_pair<SOCK_STREAM> sockets;
+	my_event_handler_registry event_handlers;
+	connection.handle_event(
+		Pipe::worker_fwk::sync_client_connection::client_activity_event_handler_registered_event{
+			.fd = sockets.socket_a(),
+			.id = Pipe::os_services::fd::event_handler_id{345},
+			.event_handler = {},
+			.event_handler_store = &event_handlers
+		}
+	);
+
+	auto const res = connection.read_and_dispatch_requests();
+	EXPECT_EQ(res, Pipe::worker_fwk::sync_client_connection::connection_status::ok);
+}
+
+TESTCASE(Pipe_worker_fw_sync_client_connection_read_and_dispatch_requests_no_bytes_to_read_closed)
+{
+	my_port_activity_subscriber_registry subscriber_registry;
+	Pipe::worker_fwk::sync_client_connection connection{
+		Pipe::worker_fwk::port_activity_subscriber_registry_ref{subscriber_registry}
+	};
+
+	Pipe::os_services::ipc::socket_pair<SOCK_STREAM> sockets;
+	my_event_handler_registry event_handlers;
+	connection.handle_event(
+		Pipe::worker_fwk::sync_client_connection::client_activity_event_handler_registered_event{
+			.fd = sockets.socket_a(),
+			.id = Pipe::os_services::fd::event_handler_id{345},
+			.event_handler = {},
+			.event_handler_store = &event_handlers
+		}
+	);
+	sockets.take_socket_b().reset();
+
+	event_handlers.expected_remove_id = Pipe::os_services::fd::event_handler_id{345};
+	auto const res = connection.read_and_dispatch_requests();
+	EXPECT_EQ(res, Pipe::worker_fwk::sync_client_connection::connection_status::closed);
+}
+
 TESTCASE(Pipe_worker_fwk_sync_server_init)
 {
 	my_event_handler_registry event_handlers;
