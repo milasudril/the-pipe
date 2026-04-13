@@ -14,7 +14,8 @@ Pipe::worker_fwk::sync_client_connection::~sync_client_connection()
 	// TODO: Add support for connection closed
 }
 
-void Pipe::worker_fwk::sync_client_connection::read_and_dispatch_requests()
+Pipe::worker_fwk::sync_client_connection::connection_status
+Pipe::worker_fwk::sync_client_connection::read_and_dispatch_requests()
 {
 	auto const read_result = Pipe::os_services::io::read_full(
 		m_registration.fd, std::span{m_input_buffer.get(), m_buffer_size}
@@ -22,8 +23,11 @@ void Pipe::worker_fwk::sync_client_connection::read_and_dispatch_requests()
 	if(read_result.bytes_transferred() == 0)
 	{
 		if(!read_result.operation_would_have_blocked())
-		{ m_registration.event_handler_store->remove(m_registration.id); }
-		return;
+		{
+			m_registration.event_handler_store->remove(m_registration.id);
+			return Pipe::worker_fwk::sync_client_connection::connection_status::closed;
+		}
+		return Pipe::worker_fwk::sync_client_connection::connection_status::ok;
 	}
 
 	auto bytes_to_process = std::span{m_input_buffer.get(), read_result.bytes_transferred()};
@@ -56,6 +60,8 @@ void Pipe::worker_fwk::sync_client_connection::read_and_dispatch_requests()
 			std::end(bytes_to_process)
 		};
 	}
+
+	return Pipe::worker_fwk::sync_client_connection::connection_status::ok;
 }
 
 void Pipe::worker_fwk::sync_client_connection::enable_write_listening()
@@ -82,7 +88,8 @@ void Pipe::worker_fwk::sync_client_connection::disable_write_listening()
 	}
 }
 
-void Pipe::worker_fwk::sync_client_connection::send_pending_messages()
+Pipe::worker_fwk::sync_client_connection::connection_status
+Pipe::worker_fwk::sync_client_connection::send_pending_messages()
 {
 	auto flush = [this](){
 		return os_services::io::try_write(
@@ -98,7 +105,7 @@ void Pipe::worker_fwk::sync_client_connection::send_pending_messages()
 	};
 
 	if(!flush())
-	{ return; }
+	{ return Pipe::worker_fwk::sync_client_connection::connection_status::closed; }
 
 	std::span serialize_into{m_output_buffer.get(), m_buffer_size};
 	size_t bytes_ready = 0;
@@ -125,8 +132,10 @@ void Pipe::worker_fwk::sync_client_connection::send_pending_messages()
 
 	m_bytes_to_write = std::span{static_cast<std::byte const*>(m_output_buffer.get()), bytes_ready};
 	if(!flush())
-	{ return; }
+	{ return Pipe::worker_fwk::sync_client_connection::connection_status::closed; }
 
 	if(m_msgs_to_send.empty() && m_bytes_to_write.empty())
 	{ disable_write_listening(); }
+
+	return Pipe::worker_fwk::sync_client_connection::connection_status::ok;
 }

@@ -36,6 +36,7 @@ namespace
 			REQUIRE_EQ(expected_update_listening_status_call.has_value(), true);
 			EXPECT_EQ(handle.get(), expected_update_listening_status_call->handle.get());
 			EXPECT_EQ(new_status, expected_update_listening_status_call->new_status);
+			expected_update_listening_status_call.reset();
 		}
 
 		Pipe::os_services::fd::event_handler_id do_add(
@@ -339,24 +340,17 @@ TESTCASE(Pipe_worker_fw_sync_client_connection_handle_activity_event_with_write_
 			{ break; }
 		}
 
-		// TODO: Currently, read and write events are not handled from the same context. This is because
-		// read could trigger an error which causes the handler to be deleted
-		if(!can_read(event_status))
-		{
-			event_handlers.expected_update_listening_status_call =
-				my_event_handler_registry::update_listening_status_call{
-					.handle = {},
-					.new_status = Pipe::os_services::fd::activity_status::read
-				};
-		}
+		// Handling event status should now send the message
+		event_handlers.expected_update_listening_status_call =
+		my_event_handler_registry::update_listening_status_call{
+			.handle = {},
+			.new_status = Pipe::os_services::fd::activity_status::read
+		};
 		connection.handle_event(
 			Pipe::worker_fwk::sync_client_connection::client_activity_event{
 				.status = event_status
 			}
 		);
-
-		if(can_read(event_status))
-		{ return; }
 
 		std::array<std::byte, 24> bytes_written{};
 		auto const write_result = Pipe::os_services::io::read_full(sockets.socket_b(), bytes_written);

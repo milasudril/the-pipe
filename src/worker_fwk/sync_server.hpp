@@ -71,22 +71,19 @@ namespace Pipe::worker_fwk
 				return;
 			}
 
+			auto connection_status = connection_status::ok;
 			if(can_read(event.status))
-			{
-				read_and_dispatch_requests();
-				return;
-			}
+			{ connection_status = read_and_dispatch_requests(); }
 
-			if(can_write(event.status))
-			{
-				send_pending_messages();
-				return;
-			}
+			if(can_write(event.status) && connection_status == connection_status::ok)
+			{ std::ignore = send_pending_messages(); }
 		}
 
-		void read_and_dispatch_requests();
+		enum class connection_status{ok, closed};
 
-		void send_pending_messages();
+		[[nodiscard]] connection_status read_and_dispatch_requests();
+
+		[[nodiscard]] connection_status send_pending_messages();
 
 		template<class T>
 		void send(T&& msg, worker_sync::transaction_id tx_id)
@@ -103,7 +100,7 @@ namespace Pipe::worker_fwk
 			m_msgs_to_send.push(
 				worker_sync::encoder<std::remove_cvref_t<T>>{std::forward<T>(msg)}
 			);
-			send_pending_messages();
+			std::ignore = send_pending_messages();
 		}
 
 		void handle_request(
