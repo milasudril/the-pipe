@@ -109,28 +109,50 @@ namespace Pipe::worker_fwk
 		)
 		{
 			m_currently_received_message = msg_decoder{};
-			auto const id = m_port_activity_subscription_id.next();
-			//TODO: This function needs rollback support in case of exception
+			utils::maybe_at_scope_exit restore_subscription_id{
+				[this, subcription_id = m_port_activity_subscription_id](){
+					m_port_activity_subscription_id = subcription_id;
+				}
+			};
+			auto const subscription_id = m_port_activity_subscription_id.next();
 			auto const port_id = m_port_activity_subscriber_registry.add_port_activity_subscription(
 				msg.server_portname,
 				port_activity_subscriber_ref{*this},
-				id
+				subscription_id
 			);
-			m_port_activity_subscriptions.insert(
+			utils::maybe_at_scope_exit remove_port_activity_subscription{
+				[this, port_id, subscription_id](){
+					m_port_activity_subscriber_registry.remove_port_activity_subscription(
+						port_id,
+						port_activity_subscriber_ref{*this},
+						subscription_id
+					);
+				}
+			};
+			auto const i = m_port_activity_subscriptions.insert(
 				std::pair{
-					id,
+					subscription_id,
 					output_port_info{
 						.id = port_id,
 						.client_status = client_status::ready
 					}
 				}
-			);
+			).first;
+			utils::maybe_at_scope_exit remove_subscription{
+				[this, i](){
+					m_port_activity_subscriptions.erase(i);
+				}
+			};
 			send(
 				worker_sync::port_activity_subscription_response{
-					.id = id
+					.id = subscription_id
 				},
 				tx_id
 			);
+
+			remove_subscription.reset();
+			remove_port_activity_subscription.reset();
+			restore_subscription_id.reset();
 		}
 
 		void handle_request(
