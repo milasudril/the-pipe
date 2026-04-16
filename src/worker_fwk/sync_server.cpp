@@ -3,6 +3,7 @@
 #include "./sync_server.hpp"
 #include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/os_services/io/io.hpp"
+#include "src/utils/utils.hpp"
 #include "src/worker_sync/worker_sync.hpp"
 #include <type_traits>
 #include <variant>
@@ -145,7 +146,11 @@ void Pipe::worker_fwk::sync_client_connection::handle_request(
 	worker_sync::transaction_id tx_id
 )
 {
-	m_currently_received_message = msg_decoder{};
+	utils::at_scope_exit clear_decoder{
+		[this](){
+			m_currently_received_message = msg_decoder{};
+		}
+	};
 	utils::maybe_at_scope_exit restore_subscription_id{
 		[this, subcription_id = m_port_activity_subscription_id](){
 			m_port_activity_subscription_id = subcription_id;

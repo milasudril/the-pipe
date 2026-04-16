@@ -351,6 +351,9 @@ namespace Pipe::worker_sync
 		size_t m_read_offset{};
 		std::optional<encoder<header>> m_header_encoder;
 	};
+
+	template<class T>
+	encoder(T&&) -> encoder<T>;
 }
 
 template<>
