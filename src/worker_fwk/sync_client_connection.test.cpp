@@ -89,7 +89,7 @@ namespace
 			if(fail_port_activity_subscription)
 			{
 				fail_port_activity_subscription = false;
-				throw std::runtime_error{"Failed to add port activity_subscription"};
+				throw std::runtime_error{"Failed to add port activity subscription"};
 			}
 			return Pipe::worker_fwk::port_id{54};
 		}
@@ -576,6 +576,6 @@ TESTCASE(Pipe_worker_fwk_read_and_dispatch_requests_port_activity_subscription_r
 	{
 		auto const msg =
 		recive_message<Pipe::worker_sync::error_response, 40 + 8>(sockets.socket_b());
-		EXPECT_EQ(msg.message, "Failed to add port activity_subscription");
+		EXPECT_EQ(msg.message, "Failed to add port activity subscription");
 	}
 }
