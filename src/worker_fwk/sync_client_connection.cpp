@@ -1,12 +1,6 @@
-//@	{"target":{"name":"sync_server.o"}}
+//@	{"target":{"name":"sync_client_connection.o"}}
 
 #include "./sync_server.hpp"
-#include "src/os_services/fd/activity_event_handler_store.hpp"
-#include "src/os_services/io/io.hpp"
-#include "src/utils/utils.hpp"
-#include "src/worker_sync/worker_sync.hpp"
-#include <type_traits>
-#include <variant>
 
 Pipe::worker_fwk::sync_client_connection::~sync_client_connection()
 {
