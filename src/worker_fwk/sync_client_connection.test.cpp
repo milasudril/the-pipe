@@ -106,6 +106,16 @@ namespace
 		void notify_client_ready(Pipe::worker_fwk::port_id)
 		{}
 	};
+
+	auto make_sockets()
+	{
+		Pipe::os_services::ipc::socket_pair<SOCK_STREAM> sockets;
+		auto const flags = ::fcntl(sockets.socket_b().native_handle(), F_GETFL);
+		REQUIRE_NE(flags, -1);
+		auto const res = ::fcntl(sockets.socket_b().native_handle(), F_SETFL, O_NONBLOCK);
+		REQUIRE_NE(res, -1);
+		return sockets;
+	}
 }
 
 TESTCASE(Pipe_worker_fwk_sync_client_connection_handle_event_handler_registred_event)
@@ -115,7 +125,8 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_handle_event_handler_registred_e
 		Pipe::worker_fwk::port_activity_subscriber_registry_ref{subscriber_registry}
 	};
 
-	Pipe::os_services::ipc::socket_pair<SOCK_STREAM> sockets;
+	auto sockets = make_sockets();
+
 	{
 		auto const is_blocking = ::fcntl(sockets.socket_a().native_handle(), F_GETFL);
 		REQUIRE_NE(is_blocking, -1);
@@ -152,7 +163,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_handle_client_activity_event_wit
 		Pipe::worker_fwk::port_activity_subscriber_registry_ref{subscriber_registry}
 	};
 
-	Pipe::os_services::ipc::socket_pair<SOCK_STREAM> sockets;
+	auto sockets = make_sockets();
 	my_event_handler_registry event_handlers;
 	connection.handle_event(
 		Pipe::worker_fwk::sync_client_connection::client_activity_event_handler_registered_event{
@@ -202,7 +213,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_handle_activity_event_with_read_
 		Pipe::worker_fwk::port_activity_subscriber_registry_ref{subscriber_registry}
 	};
 
-	Pipe::os_services::ipc::socket_pair<SOCK_STREAM> sockets;
+	auto sockets = make_sockets();
 	my_event_handler_registry event_handlers;
 	connection.handle_event(
 		Pipe::worker_fwk::sync_client_connection::client_activity_event_handler_registered_event{
@@ -212,13 +223,6 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_handle_activity_event_with_read_
 			.event_handler_store = &event_handlers
 		}
 	);
-
-	{
-		auto const flags = ::fcntl(sockets.socket_b().native_handle(), F_GETFL);
-		REQUIRE_NE(flags, -1);
-		auto const res = ::fcntl(sockets.socket_b().native_handle(), F_SETFL, O_NONBLOCK);
-		REQUIRE_NE(res, -1);
-	}
 
 	static constexpr std::array<std::byte, sizeof(Pipe::worker_sync::msg_header)> junk{
 		std::byte{0x4A}, std::byte{0x2F}, std::byte{0xA1}, std::byte{0xB9},
@@ -303,7 +307,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_handle_activity_event_with_write
 		Pipe::worker_fwk::port_activity_subscriber_registry_ref{subscriber_registry}
 	};
 
-	Pipe::os_services::ipc::socket_pair<SOCK_STREAM> sockets;
+		auto sockets = make_sockets();
 	my_event_handler_registry event_handlers;
 	connection.handle_event(
 		Pipe::worker_fwk::sync_client_connection::client_activity_event_handler_registered_event{
@@ -313,13 +317,6 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_handle_activity_event_with_write
 			.event_handler_store = &event_handlers
 		}
 	);
-
-	{
-		auto const flags = ::fcntl(sockets.socket_b().native_handle(), F_GETFL);
-		REQUIRE_NE(flags, -1);
-		auto const res = ::fcntl(sockets.socket_b().native_handle(), F_SETFL, O_NONBLOCK);
-		REQUIRE_NE(res, -1);
-	}
 
 	 auto test = [&](Pipe::os_services::fd::activity_status event_status) {
 		// Pre-fill the output buffer to make sure next write will block
@@ -412,7 +409,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_read_and_dispatch_requests_no_by
 		Pipe::worker_fwk::port_activity_subscriber_registry_ref{subscriber_registry}
 	};
 
-	Pipe::os_services::ipc::socket_pair<SOCK_STREAM> sockets;
+	auto sockets = make_sockets();
 	my_event_handler_registry event_handlers;
 	connection.handle_event(
 		Pipe::worker_fwk::sync_client_connection::client_activity_event_handler_registered_event{
@@ -434,7 +431,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_read_and_dispatch_requests_no_by
 		Pipe::worker_fwk::port_activity_subscriber_registry_ref{subscriber_registry}
 	};
 
-	Pipe::os_services::ipc::socket_pair<SOCK_STREAM> sockets;
+	auto sockets = make_sockets();
 	my_event_handler_registry event_handlers;
 	connection.handle_event(
 		Pipe::worker_fwk::sync_client_connection::client_activity_event_handler_registered_event{
@@ -458,13 +455,8 @@ TESTCASE(Pipe_worker_fwk_read_and_dispatch_requests_recv_request_in_wrong_state)
 		Pipe::worker_fwk::port_activity_subscriber_registry_ref{subscriber_registry}
 	};
 
-	Pipe::os_services::ipc::socket_pair<SOCK_STREAM> sockets;
-	{
-		auto const flags = ::fcntl(sockets.socket_b().native_handle(), F_GETFL);
-		REQUIRE_NE(flags, -1);
-		auto const res = ::fcntl(sockets.socket_b().native_handle(), F_SETFL, O_NONBLOCK);
-		REQUIRE_NE(res, -1);
-	}
+	auto sockets = make_sockets();
+
 	my_event_handler_registry event_handlers;
 	connection.handle_event(
 		Pipe::worker_fwk::sync_client_connection::client_activity_event_handler_registered_event{
@@ -532,13 +524,7 @@ TESTCASE(Pipe_worker_fwk_read_and_dispatch_requests_port_activity_subscription_r
 		Pipe::worker_fwk::port_activity_subscriber_registry_ref{subscriber_registry}
 	};
 
-	Pipe::os_services::ipc::socket_pair<SOCK_STREAM> sockets;
-	{
-		auto const flags = ::fcntl(sockets.socket_b().native_handle(), F_GETFL);
-		REQUIRE_NE(flags, -1);
-		auto const res = ::fcntl(sockets.socket_b().native_handle(), F_SETFL, O_NONBLOCK);
-		REQUIRE_NE(res, -1);
-	}
+	auto sockets = make_sockets();
 	my_event_handler_registry event_handlers;
 	connection.handle_event(
 		Pipe::worker_fwk::sync_client_connection::client_activity_event_handler_registered_event{
