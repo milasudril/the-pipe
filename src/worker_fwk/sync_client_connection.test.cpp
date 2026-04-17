@@ -116,6 +116,20 @@ namespace
 		REQUIRE_NE(res, -1);
 		return sockets;
 	}
+
+	template<class MsgType, size_t ExpectedByteCount>
+	MsgType recive_message(Pipe::os_services::io::input_file_descriptor_ref fd)
+	{
+		std::array<std::byte, ExpectedByteCount> buffer;
+		auto const read_result = read_full(fd, buffer);
+		REQUIRE_EQ(read_result.operation_would_have_blocked(), false);
+		REQUIRE_EQ(read_result.bytes_transferred(), ExpectedByteCount);
+		Pipe::worker_sync::decoder<MsgType> decoder{};
+		auto const res = decoder.decode(buffer);
+		EXPECT_EQ(res, ExpectedByteCount);
+		EXPECT_EQ(decoder.completed(), true);
+		return decoder.get_value();
+	}
 }
 
 TESTCASE(Pipe_worker_fwk_sync_client_connection_handle_event_handler_registred_event)
@@ -365,19 +379,10 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_handle_activity_event_with_write
 			}
 		);
 
-		std::array<std::byte, 24> bytes_written{};
-		auto const write_result = Pipe::os_services::io::read_full(sockets.socket_b(), bytes_written);
-		EXPECT_EQ(write_result.operation_would_have_blocked(), false);
-		EXPECT_EQ(write_result.bytes_transferred(), 24);
-
 		{
-			Pipe::worker_sync::decoder<Pipe::worker_sync::msg_header> decoder{};
-			auto const res = decoder.decode(bytes_written);
-			EXPECT_EQ(res, sizeof(Pipe::worker_sync::msg_header));
-			EXPECT_EQ(decoder.completed(), true);
-			auto const header = decoder.get_value();
+			auto const msg_header = recive_message<Pipe::worker_sync::msg_header, 16>(sockets.socket_b());
 			REQUIRE_EQ(
-				header.msg_id,
+				msg_header.msg_id,
 				(
 					Pipe::utils::variant_index_v<
 						Pipe::worker_sync::data_ready_event,
@@ -385,15 +390,11 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_handle_activity_event_with_write
 					>
 				)
 			);
-			EXPECT_EQ(header.tx_id, Pipe::worker_sync::transaction_id{213});
+			EXPECT_EQ(msg_header.tx_id, Pipe::worker_sync::transaction_id{213});
 		}
 
 		{
-			Pipe::worker_sync::decoder<Pipe::worker_sync::data_ready_event> decoder{};
-			auto const res = decoder.decode(std::span{ std::begin(bytes_written) + 16, std::end(bytes_written)});
-			EXPECT_EQ(res, 8);
-			EXPECT_EQ(decoder.completed(), true);
-			auto const msg = decoder.get_value();
+			const auto msg = recive_message<Pipe::worker_sync::data_ready_event, 8>(sockets.socket_b());
 			EXPECT_EQ(msg.id,Pipe::worker_sync::port_activity_subscription_id{346});
 		}
 	};
@@ -486,18 +487,9 @@ TESTCASE(Pipe_worker_fwk_read_and_dispatch_requests_recv_request_in_wrong_state)
 	EXPECT_EQ(res, Pipe::worker_fwk::sync_client_connection::connection_status::ok);
 
 	{
-		std::array<std::byte, 39> response_buffer{};
-		auto const read_result = Pipe::os_services::io::read_full(sockets.socket_b(), response_buffer);
-		REQUIRE_EQ(read_result.operation_would_have_blocked(), false);
-		REQUIRE_EQ(read_result.bytes_transferred(), std::size(response_buffer));
-
-		Pipe::worker_sync::decoder<Pipe::worker_sync::msg_header> header_decoder{};
-		auto const res = header_decoder.decode(response_buffer);
-		EXPECT_EQ(res, sizeof(Pipe::worker_sync::msg_header));
-		EXPECT_EQ(header_decoder.completed(), true);
-		auto const header = header_decoder.get_value();
+		auto const msg_header = recive_message<Pipe::worker_sync::msg_header, 16>(sockets.socket_b());
 		REQUIRE_EQ(
-			header.msg_id,
+			msg_header.msg_id,
 			(
 				Pipe::utils::variant_index_v<
 					Pipe::worker_sync::error_response,
@@ -505,14 +497,10 @@ TESTCASE(Pipe_worker_fwk_read_and_dispatch_requests_recv_request_in_wrong_state)
 				>
 			)
 		);
+	}
 
-		Pipe::worker_sync::decoder<Pipe::worker_sync::error_response> msg_decoder{};
-		auto const new_res = msg_decoder.decode(
-			std::span{std::begin(response_buffer) + res, std::end(response_buffer)}
-		);
-		EXPECT_EQ(new_res + res, read_result.bytes_transferred());
-		EXPECT_EQ(msg_decoder.completed(), true);
-		auto const msg = msg_decoder.get_value();
+	{
+		auto const msg = recive_message<Pipe::worker_sync::error_response, 8 + 15>(sockets.socket_b());
 		EXPECT_EQ(msg.message, "Invalid type-id");
 	}
 }
@@ -572,16 +560,7 @@ TESTCASE(Pipe_worker_fwk_read_and_dispatch_requests_port_activity_subscription_r
 	EXPECT_EQ(res, Pipe::worker_fwk::sync_client_connection::connection_status::ok);
 
 	{
-		std::array<std::byte, 64> response_buffer{};
-		auto const read_result = Pipe::os_services::io::read_full(sockets.socket_b(), response_buffer);
-		REQUIRE_EQ(read_result.operation_would_have_blocked(), false);
-		REQUIRE_EQ(read_result.bytes_transferred(), std::size(response_buffer));
-
-		Pipe::worker_sync::decoder<Pipe::worker_sync::msg_header> header_decoder{};
-		auto const res = header_decoder.decode(response_buffer);
-		EXPECT_EQ(res, sizeof(Pipe::worker_sync::msg_header));
-		EXPECT_EQ(header_decoder.completed(), true);
-		auto const header = header_decoder.get_value();
+		auto const header = recive_message<Pipe::worker_sync::msg_header, 16>(sockets.socket_b());
 		REQUIRE_EQ(
 			header.msg_id,
 			(
@@ -591,14 +570,12 @@ TESTCASE(Pipe_worker_fwk_read_and_dispatch_requests_port_activity_subscription_r
 				>
 			)
 		);
+		EXPECT_EQ(header.tx_id, Pipe::worker_sync::transaction_id{34});
+	}
 
-		Pipe::worker_sync::decoder<Pipe::worker_sync::error_response> msg_decoder{};
-		auto const new_res = msg_decoder.decode(
-			std::span{std::begin(response_buffer) + res, std::end(response_buffer)}
-		);
-		EXPECT_EQ(new_res + res, read_result.bytes_transferred());
-		EXPECT_EQ(msg_decoder.completed(), true);
-		auto const msg = msg_decoder.get_value();
+	{
+		auto const msg =
+		recive_message<Pipe::worker_sync::error_response, 40 + 8>(sockets.socket_b());
 		EXPECT_EQ(msg.message, "Failed to add port activity_subscription");
 	}
 }
