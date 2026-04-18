@@ -130,6 +130,22 @@ namespace
 		EXPECT_EQ(decoder.completed(), true);
 		return decoder.get_value();
 	}
+	
+	template<size_t BuffSize, class MsgType>
+	void send_message(
+		MsgType&& msg,
+		Pipe::os_services::io::output_file_descriptor_ref fd
+	)
+	{
+		std::array<std::byte, BuffSize> buffer;
+		Pipe::worker_sync::encoder<MsgType> encoder{std::forward<MsgType>(msg)};
+		auto const res = encoder.encode(buffer);
+		REQUIRE_EQ(res, BuffSize);
+		REQUIRE_EQ(encoder.completed(), true);
+		auto const write_result = write_full(fd, buffer);
+		REQUIRE_EQ(write_result.bytes_transferred(), BuffSize);
+		REQUIRE_EQ(write_result.operation_would_have_blocked(), false);
+	}
 }
 
 TESTCASE(Pipe_worker_fwk_sync_client_connection_handle_event_handler_registred_event)
@@ -468,20 +484,12 @@ TESTCASE(Pipe_worker_fwk_read_and_dispatch_requests_recv_request_in_wrong_state)
 		}
 	);
 
-	std::array<std::byte, 16> request_buffer{};
-	size_t bytes_written = 0;
-	{
-		Pipe::worker_sync::encoder encoder{
-			Pipe::worker_sync::port_activity_subscription_request{
-				.server_portname = "fooobaar"
-			}
-		};
-		bytes_written += encoder.encode(request_buffer);
-		REQUIRE_EQ(encoder.completed(), true);
-	}
-	REQUIRE_EQ(bytes_written, std::size(request_buffer));
-	auto const write_result = Pipe::os_services::io::write_full(sockets.socket_b(), request_buffer);
-	REQUIRE_EQ(write_result.bytes_transferred(), bytes_written);
+	send_message<16>(
+		Pipe::worker_sync::port_activity_subscription_request{
+			.server_portname = "fooobaar"
+		}, 
+		sockets.socket_b()
+	);
 
 	auto const res = connection.read_and_dispatch_requests();
 	EXPECT_EQ(res, Pipe::worker_fwk::sync_client_connection::connection_status::ok);
@@ -523,36 +531,23 @@ TESTCASE(Pipe_worker_fwk_read_and_dispatch_requests_port_activity_subscription_r
 		}
 	);
 
-	std::array<std::byte, 30> request_buffer{};
-	size_t bytes_written = 0;
-	{
-		Pipe::worker_sync::encoder encoder{
-			Pipe::worker_sync::msg_header{
-				.msg_id = Pipe::utils::variant_index_v<
-					Pipe::worker_sync::port_activity_subscription_request,
-					Pipe::worker_sync::client_to_server_message
-				>,
-				.tx_id = Pipe::worker_sync::transaction_id{34}
-			}
-		};
-		bytes_written += encoder.encode(request_buffer);
-		REQUIRE_EQ(encoder.completed(), true);
-	}
+	send_message<16>(
+		Pipe::worker_sync::msg_header{
+			.msg_id = Pipe::utils::variant_index_v<
+				Pipe::worker_sync::port_activity_subscription_request,
+				Pipe::worker_sync::client_to_server_message
+			>,
+			.tx_id = Pipe::worker_sync::transaction_id{34}
+		},
+		sockets.socket_b()
+	);
 
-	{
-		Pipe::worker_sync::encoder encoder{
-			Pipe::worker_sync::port_activity_subscription_request{
-				.server_portname = "foobar"
-			}
-		};
-		bytes_written += encoder.encode(
-			std::span{std::begin(request_buffer) + bytes_written, std::end(request_buffer)}
-		);
-		REQUIRE_EQ(encoder.completed(), true);
-	}
-	REQUIRE_EQ(bytes_written, std::size(request_buffer));
-	auto const write_result = Pipe::os_services::io::write_full(sockets.socket_b(), request_buffer);
-	REQUIRE_EQ(write_result.bytes_transferred(), bytes_written);
+	send_message<8 + 6>(
+		Pipe::worker_sync::port_activity_subscription_request{
+			.server_portname = "foobar"
+		},
+		sockets.socket_b()
+	);
 
 	subscriber_registry.expected_server_portname = "foobar";
 	subscriber_registry.fail_port_activity_subscription = true;
