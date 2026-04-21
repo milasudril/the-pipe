@@ -112,10 +112,11 @@ namespace Pipe::worker_fwk
 			auto const i = m_port_activity_subscriptions.find(msg.id);
 			if(i != std::end(m_port_activity_subscriptions))
 			{
-				m_port_activity_subscriber_registry.remove_port_activity_subscription(i->second.id, port_activity_subscriber_ref{*this}, i->first);
+				m_port_activity_subscriber_registry.remove_port_activity_subscription(
+					i->second.id, port_activity_subscriber_ref{*this}, i->first
+				);
 				m_port_activity_subscriptions.erase(i);
 			}
-
 			send(worker_sync::port_activity_unsubscription_response{}, tx_id);
 		}
 

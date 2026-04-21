@@ -1,5 +1,6 @@
 //@	{"target":{"name":"sync_client_connection.test"}}
 
+#include "src/worker_fwk/sync_client_connection.hpp"
 #include "./sync_server.hpp"
 #include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
@@ -130,7 +131,7 @@ namespace
 		EXPECT_EQ(decoder.completed(), true);
 		return decoder.get_value();
 	}
-	
+
 	template<size_t BuffSize, class MsgType>
 	void send_message(
 		MsgType&& msg,
@@ -487,7 +488,7 @@ TESTCASE(Pipe_worker_fwk_read_and_dispatch_requests_recv_request_in_wrong_state)
 	send_message<16>(
 		Pipe::worker_sync::port_activity_subscription_request{
 			.server_portname = "fooobaar"
-		}, 
+		},
 		sockets.socket_b()
 	);
 
@@ -573,4 +574,85 @@ TESTCASE(Pipe_worker_fwk_read_and_dispatch_requests_port_activity_subscription_r
 		recive_message<Pipe::worker_sync::error_response, 40 + 8>(sockets.socket_b());
 		EXPECT_EQ(msg.message, "Failed to add port activity subscription");
 	}
+}
+
+TESTCASE(Pipe_worker_fwk_read_and_dispatch_two_requests)
+{
+	my_port_activity_subscriber_registry subscriber_registry;
+	Pipe::worker_fwk::sync_client_connection connection{
+		Pipe::worker_fwk::port_activity_subscriber_registry_ref{subscriber_registry}
+	};
+
+	auto sockets = make_sockets();
+	my_event_handler_registry event_handlers;
+	connection.handle_event(
+		Pipe::worker_fwk::sync_client_connection::client_activity_event_handler_registered_event{
+			.fd = sockets.socket_a(),
+			.id = Pipe::os_services::fd::event_handler_id{345},
+			.event_handler = {},
+			.event_handler_store = &event_handlers
+		}
+	);
+
+	send_message<16>(
+		Pipe::worker_sync::msg_header{
+			.msg_id = Pipe::utils::variant_index_v<
+				Pipe::worker_sync::port_activity_subscription_request,
+				Pipe::worker_sync::client_to_server_message
+			>,
+			.tx_id = Pipe::worker_sync::transaction_id{34}
+		},
+		sockets.socket_b()
+	);
+	send_message<8 + 6>(
+		Pipe::worker_sync::port_activity_subscription_request{
+			.server_portname = "foobar"
+		},
+		sockets.socket_b()
+	);
+
+	subscriber_registry.expected_server_portname = "foobar";
+	connection.handle_event(
+		Pipe::worker_fwk::sync_client_connection::client_activity_event{
+			.status = Pipe::os_services::fd::activity_status::read
+		}
+	);
+
+
+	std::ignore = recive_message<Pipe::worker_sync::msg_header, 16>(sockets.socket_b());
+	auto const subscription_response = recive_message<
+		Pipe::worker_sync::port_activity_subscription_response,
+		8
+	>(sockets.socket_b());
+
+	send_message<16>(
+		Pipe::worker_sync::msg_header{
+			.msg_id = Pipe::utils::variant_index_v<
+				Pipe::worker_sync::port_activity_unsubscription,
+				Pipe::worker_sync::client_to_server_message
+			>,
+			.tx_id = Pipe::worker_sync::transaction_id{35}
+		},
+		sockets.socket_b()
+	);
+	send_message<8>(
+		Pipe::worker_sync::port_activity_unsubscription{
+			.id = subscription_response.id
+		},
+		sockets.socket_b()
+	);
+	subscriber_registry.expected_port_id = Pipe::worker_fwk::port_id{54};
+	connection.handle_event(
+		Pipe::worker_fwk::sync_client_connection::client_activity_event{
+			.status = Pipe::os_services::fd::activity_status::read
+		}
+	);
+	subscriber_registry.expected_port_id.reset();
+
+	std::ignore = recive_message<Pipe::worker_sync::msg_header, 16>(sockets.socket_b());
+	auto const unsubscription_response =  recive_message<
+		Pipe::worker_sync::port_activity_unsubscription_response,
+		8
+	>(sockets.socket_b());
+	EXPECT_EQ(unsubscription_response.id, subscription_response.id);
 }

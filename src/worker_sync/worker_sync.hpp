@@ -108,7 +108,7 @@ namespace Pipe::worker_sync
 	{ port_activity_subscription_id id; };
 
 	struct port_activity_unsubscription_response
-	{ };
+	{ port_activity_subscription_id id; };
 
 	struct data_ready_event
 	{ port_activity_subscription_id id; };
