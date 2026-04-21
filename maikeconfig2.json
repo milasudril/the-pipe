@@ -41,7 +41,7 @@
               "-Wsuggest-override",
               "-Wno-error=deprecated-declarations",
               "-I.",
-              "-fconcepts-diagnostics-depth=3",
+              "-fconcepts-diagnostics-depth=10",
               "-fno-pie",
               "-fno-pic"
             ],
