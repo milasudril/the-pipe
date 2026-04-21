@@ -466,7 +466,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_read_and_dispatch_requests_no_by
 	EXPECT_EQ(res, Pipe::worker_fwk::sync_client_connection::connection_status::closed);
 }
 
-TESTCASE(Pipe_worker_fwk_read_and_dispatch_requests_recv_request_in_wrong_state)
+TESTCASE(Pipe_worker_fwk_sync_client_connection_read_and_dispatch_requests_recv_request_in_wrong_state)
 {
 	my_port_activity_subscriber_registry subscriber_registry;
 	Pipe::worker_fwk::sync_client_connection connection{
@@ -514,7 +514,7 @@ TESTCASE(Pipe_worker_fwk_read_and_dispatch_requests_recv_request_in_wrong_state)
 	}
 }
 
-TESTCASE(Pipe_worker_fwk_read_and_dispatch_requests_port_activity_subscription_request_fail_to_add_subscriber)
+TESTCASE(Pipe_worker_fwk_sync_client_connection_read_and_dispatch_requests_port_activity_subscription_request_fail_to_add_subscriber)
 {
 	my_port_activity_subscriber_registry subscriber_registry;
 	Pipe::worker_fwk::sync_client_connection connection{
@@ -576,7 +576,7 @@ TESTCASE(Pipe_worker_fwk_read_and_dispatch_requests_port_activity_subscription_r
 	}
 }
 
-TESTCASE(Pipe_worker_fwk_read_and_dispatch_two_requests)
+TESTCASE(Pipe_worker_fwk_sync_client_conection_subscribe_and_unsubscribe_to_port)
 {
 	my_port_activity_subscriber_registry subscriber_registry;
 	Pipe::worker_fwk::sync_client_connection connection{
