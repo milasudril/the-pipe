@@ -8,7 +8,6 @@
 #include "src/os_services/ipc/socket_pair.hpp"
 #include "src/worker_sync/worker_sync.hpp"
 
-#include <cwchar>
 #include <testfwk/testfwk.hpp>
 
 namespace
@@ -143,4 +142,25 @@ TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_no_bytes_read
 
 	auto const result = codec.read_and_dispatch_requests();
 	EXPECT_EQ(result, msg_handler::connection_status::ok);
+}
+
+TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_no_bytes_ready_fd_closed)
+{
+	event_handlers eh_registry;
+	msg_handler codec{65536};
+
+	auto sockets = make_sockets();
+	codec.handle_event(
+		msg_codec_traits::sync_fd_activity_event_handler_registred_event{
+			.fd = sockets.socket_a(),
+			.id = Pipe::os_services::fd::event_handler_id{345},
+			.event_handler = {},
+			.event_handler_store = &eh_registry,
+		}
+	);
+
+	sockets.close_socket_b();
+	eh_registry.id_to_remove = Pipe::os_services::fd::event_handler_id{345};
+	auto const result = codec.read_and_dispatch_requests();
+	EXPECT_EQ(result, msg_handler::connection_status::closed);
 }
