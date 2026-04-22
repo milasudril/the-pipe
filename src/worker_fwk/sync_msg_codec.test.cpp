@@ -6,8 +6,9 @@
 #include "src/os_services/ipc/socket.hpp"
 #include "src/os_services/ipc/unix_domain_socket.hpp"
 #include "src/os_services/ipc/socket_pair.hpp"
-#include "testfwk/validation.hpp"
+#include "src/worker_sync/worker_sync.hpp"
 
+#include <cwchar>
 #include <testfwk/testfwk.hpp>
 
 namespace
@@ -22,11 +23,16 @@ namespace
 		int value;
 	};
 
+	struct notification
+	{
+		int value;
+	};
+
 	struct msg_codec_traits
 	{
 		using fd_tag = Pipe::os_services::ipc::connected_socket_tag<SOCK_STREAM, sockaddr_un>;
 		using incoming_sync_msg_type = std::variant<request>;
-		using outgoing_sync_msg_type = std::variant<response>;
+		using outgoing_sync_msg_type = std::variant<response, Pipe::worker_sync::error_response>;
 		struct client_activity{};
 		using sync_fd_activity_event_handler_registred_event =
 			Pipe::os_services::fd::activity_event_handler_registered_event<client_activity, fd_tag>;
@@ -72,14 +78,38 @@ namespace
 			throw std::runtime_error{"Unexpected function call"};
 		}
 	};
+
+	struct msg_handler:Pipe::worker_fwk::sync_msg_codec<msg_codec_traits>
+	{
+		using Pipe::worker_fwk::sync_msg_codec<msg_codec_traits>::sync_msg_codec;
+		using Pipe::worker_fwk::sync_msg_codec<msg_codec_traits>::handle_message;
+
+		std::optional<int> expected_request_value;
+		std::optional<Pipe::worker_sync::transaction_id> expected_transaction_id;
+		std::optional<int> expected_notification_value;
+
+		void handle_request(request req, Pipe::worker_sync::transaction_id id)
+		{
+			EXPECT_EQ(req.value, expected_request_value);
+			expected_request_value.reset();
+			EXPECT_EQ(id, expected_transaction_id);
+			expected_transaction_id.reset();
+		}
+
+		void handle_message(notification notification)
+		{
+			EXPECT_EQ(notification.value, expected_notification_value);
+			expected_request_value.reset();
+		}
+	};
 }
 
 TESTCASE(Pipe_worker_fwk_sync_msg_codec_handle_event_fd_activity_event_handler_registered_event)
 {
-	auto const sockets = make_sockets();
-
 	event_handlers eh_registry;
 	Pipe::worker_fwk::sync_msg_codec<msg_codec_traits> codec{65536};
+
+	auto const sockets = make_sockets();
 	codec.handle_event(
 		msg_codec_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
@@ -95,16 +125,22 @@ TESTCASE(Pipe_worker_fwk_sync_msg_codec_handle_event_fd_activity_event_handler_r
 		EXPECT_EQ(is_blocking&O_NONBLOCK, O_NONBLOCK);
 	}
 }
-#if 0
+
 TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_no_bytes_ready_operation_would_have_blocked)
 {
-	auto const sockets = make_sockets();
+	event_handlers eh_registry;
+	msg_handler codec{65536};
 
-	Pipe::worker_fwk::sync_msg_codec<msg_codec_traits> codec{65536};
+	auto const sockets = make_sockets();
 	codec.handle_event(
-		msg_codec_traits::sync_fd_activity_registred_event{
-			.fd = sockets.socket_a()
+		msg_codec_traits::sync_fd_activity_event_handler_registred_event{
+			.fd = sockets.socket_a(),
+			.id = Pipe::os_services::fd::event_handler_id{345},
+			.event_handler = {},
+			.event_handler_store = &eh_registry,
 		}
 	);
+
+	auto const result = codec.read_and_dispatch_requests();
+	EXPECT_EQ(result, msg_handler::connection_status::ok);
 }
-#endif

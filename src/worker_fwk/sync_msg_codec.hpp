@@ -22,11 +22,11 @@ namespace Pipe::worker_fwk
 		using incoming_msg_type = typename taits::incoming_sync_msg_type;
 		using outgoing_msg_type = typename taits::outgoing_sync_msg_type;
 		using msg_decoder = utils::wrap_variant_element_t<
-			utils::variant_push_front_t<worker_sync::client_to_server_message, worker_sync::msg_header>,
+			utils::variant_push_front_t<incoming_msg_type, worker_sync::msg_header>,
 			worker_sync::decoder
 		>;
 		using msg_encoder = utils::wrap_variant_element_t<
-			utils::variant_push_front_t<worker_sync::server_to_client_message, worker_sync::msg_header>,
+			utils::variant_push_front_t<outgoing_msg_type, worker_sync::msg_header>,
 			worker_sync::encoder
 		>;
 		using transaction_id = worker_sync::transaction_id;
