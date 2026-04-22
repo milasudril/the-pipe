@@ -21,17 +21,17 @@ namespace Pipe::worker_fwk
 		using incoming_sync_msg_type = worker_sync::client_to_server_message;
 		using outgoing_sync_msg_type = worker_sync::server_to_client_message;
 		struct client_activity{};
-		using sync_fd_activity_registred_event = 
+		using sync_fd_activity_event_handler_registred_event =
 			os_services::fd::activity_event_handler_registered_event<client_activity, fd_tag>;
 		using sync_fd_activity_event = os_services::fd::activity_event<client_activity, fd_tag>;
 	};
-	
+
 	class sync_client_connection:
 		public sync_msg_codec<sync_msg_codec_server_traits>,
 		public sync_msg_codec_server_traits
 	{
 	public:
-		using client_activity_event_handler_registered_event = sync_fd_activity_registred_event;
+		using client_activity_event_handler_registered_event = sync_fd_activity_event_handler_registred_event;
 		using client_activity_event = sync_fd_activity_event;
 
 		explicit sync_client_connection(port_activity_subscriber_registry_ref port_activity_subscriber_registry, size_t buffer_size = 65536):
@@ -92,7 +92,7 @@ namespace Pipe::worker_fwk
 			);
 			i->second.client_status = client_status::ready;
 		}
-		
+
 		using sync_msg_codec<sync_msg_codec_server_traits>::handle_message;
 
 	private:

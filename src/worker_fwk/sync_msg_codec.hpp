@@ -30,7 +30,7 @@ namespace Pipe::worker_fwk
 			worker_sync::encoder
 		>;
 		using transaction_id = worker_sync::transaction_id;
-		using fd_activity_registred_event = typename taits::sync_fd_activity_registred_event;
+		using fd_activity_event_handler_registred_event = typename taits::sync_fd_activity_event_handler_registred_event;
 		using fd_activity_event = typename taits::sync_fd_activity_event;
 
 	public:
@@ -40,7 +40,7 @@ namespace Pipe::worker_fwk
 			m_output_buffer{std::make_unique<std::byte[]>(buffer_size)}
 		{}
 
-		void handle_event(fd_activity_registred_event reg_event)
+		void handle_event(fd_activity_event_handler_registred_event reg_event)
 		{
 			auto const fd = reg_event.fd.native_handle();
 			auto const flags = ::fcntl(fd, F_GETFL);
@@ -227,7 +227,7 @@ namespace Pipe::worker_fwk
 		std::queue<msg_encoder> m_msgs_to_send;
 		bool m_is_listening_for_write{false};
 
-		fd_activity_registred_event m_registration;
+		fd_activity_event_handler_registred_event m_registration;
 
 		void enable_write_listening()
 		{
