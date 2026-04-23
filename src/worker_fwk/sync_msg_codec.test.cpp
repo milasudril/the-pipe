@@ -6,6 +6,7 @@
 #include "src/os_services/ipc/socket.hpp"
 #include "src/os_services/ipc/unix_domain_socket.hpp"
 #include "src/os_services/ipc/socket_pair.hpp"
+#include "src/utils/utils.hpp"
 #include "src/worker_sync/worker_sync.hpp"
 
 #include <testfwk/testfwk.hpp>
@@ -30,7 +31,7 @@ namespace
 	struct msg_codec_traits
 	{
 		using fd_tag = Pipe::os_services::ipc::connected_socket_tag<SOCK_STREAM, sockaddr_un>;
-		using incoming_sync_msg_type = std::variant<request>;
+		using incoming_sync_msg_type = std::variant<request, notification>;
 		using outgoing_sync_msg_type = std::variant<response, Pipe::worker_sync::error_response>;
 		struct client_activity{};
 		using sync_fd_activity_event_handler_registred_event =
@@ -101,6 +102,37 @@ namespace
 			expected_request_value.reset();
 		}
 	};
+#if 0
+	template<class MsgType, size_t ExpectedByteCount>
+	MsgType recive_message(Pipe::os_services::io::input_file_descriptor_ref fd)
+	{
+		std::array<std::byte, ExpectedByteCount> buffer;
+		auto const read_result = read_full(fd, buffer);
+		REQUIRE_EQ(read_result.operation_would_have_blocked(), false);
+		REQUIRE_EQ(read_result.bytes_transferred(), ExpectedByteCount);
+		Pipe::worker_sync::decoder<MsgType> decoder{};
+		auto const res = decoder.decode(buffer);
+		EXPECT_EQ(res, ExpectedByteCount);
+		EXPECT_EQ(decoder.completed(), true);
+		return decoder.get_value();
+	}
+#endif
+
+	template<size_t BuffSize, class MsgType>
+	void send_message(
+		MsgType&& msg,
+		Pipe::os_services::io::output_file_descriptor_ref fd
+	)
+	{
+		std::array<std::byte, BuffSize> buffer;
+		Pipe::worker_sync::encoder<MsgType> encoder{std::forward<MsgType>(msg)};
+		auto const res = encoder.encode(buffer);
+		REQUIRE_EQ(res, BuffSize);
+		REQUIRE_EQ(encoder.completed(), true);
+		auto const write_result = write_full(fd, buffer);
+		REQUIRE_EQ(write_result.bytes_transferred(), BuffSize);
+		REQUIRE_EQ(write_result.operation_would_have_blocked(), false);
+	}
 }
 
 TESTCASE(Pipe_worker_fwk_sync_msg_codec_handle_event_fd_activity_event_handler_registered_event)
@@ -163,4 +195,61 @@ TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_no_bytes_read
 	eh_registry.id_to_remove = Pipe::os_services::fd::event_handler_id{345};
 	auto const result = codec.read_and_dispatch_requests();
 	EXPECT_EQ(result, msg_handler::connection_status::closed);
+}
+
+TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_process_request)
+{
+	event_handlers eh_registry;
+	msg_handler codec{65536};
+
+	auto sockets = make_sockets();
+	codec.handle_event(
+		msg_codec_traits::sync_fd_activity_event_handler_registred_event{
+			.fd = sockets.socket_a(),
+			.id = Pipe::os_services::fd::event_handler_id{345},
+			.event_handler = {},
+			.event_handler_store = &eh_registry,
+		}
+	);
+
+	send_message<16>(
+		Pipe::worker_sync::msg_header{
+			.msg_id = Pipe::utils::variant_index_v<request, msg_codec_traits::incoming_sync_msg_type>,
+			.tx_id = Pipe::worker_sync::transaction_id{325}
+		},
+		sockets.socket_b()
+	);
+	send_message<4>(request{.value = 43}, sockets.socket_b());
+	codec.expected_transaction_id = Pipe::worker_sync::transaction_id{325};
+	codec.expected_request_value = 43;
+	auto const result = codec.read_and_dispatch_requests();
+	EXPECT_EQ(result, msg_handler::connection_status::ok);
+}
+
+TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_process_notification)
+{
+	event_handlers eh_registry;
+	msg_handler codec{65536};
+
+	auto sockets = make_sockets();
+	codec.handle_event(
+		msg_codec_traits::sync_fd_activity_event_handler_registred_event{
+			.fd = sockets.socket_a(),
+			.id = Pipe::os_services::fd::event_handler_id{345},
+			.event_handler = {},
+			.event_handler_store = &eh_registry,
+		}
+	);
+
+	send_message<16>(
+		Pipe::worker_sync::msg_header{
+			.msg_id = Pipe::utils::variant_index_v<notification, msg_codec_traits::incoming_sync_msg_type>,
+			.tx_id = Pipe::worker_sync::transaction_id{325}
+		},
+		sockets.socket_b()
+	);
+	send_message<4>(notification{.value = 43}, sockets.socket_b());
+	codec.expected_notification_value = 43;
+	auto const result = codec.read_and_dispatch_requests();
+	EXPECT_EQ(result, msg_handler::connection_status::ok);
 }

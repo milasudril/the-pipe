@@ -1,4 +1,4 @@
-//@	{"target":{"name":"sync_client_connection.test"}}
+//	{"target":{"name":"sync_client_connection.test"}}
 
 #include "src/worker_fwk/sync_client_connection.hpp"
 #include "./sync_server.hpp"
