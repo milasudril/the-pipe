@@ -62,12 +62,23 @@ namespace Pipe::worker_fwk
 				return;
 			}
 
-			auto io_status = io_status::ok;
 			if(can_read(event.status))
-			{ io_status = self.read_and_dispatch_requests(); }
+			{
+				if(self.read_and_dispatch_requests() == io_status::remote_endpoint_closed)
+				{
+					self.m_registration.event_handler_store->remove(self. m_registration.id);
+					return;
+				}
+			}
 
-			if(can_write(event.status) && io_status == io_status::ok)
-			{ std::ignore = self.send_pending_messages(); }
+			if(can_write(event.status))
+			{
+				if(self.send_pending_messages() == io_status::remote_endpoint_closed)
+				{
+					self.m_registration.event_handler_store->remove(self. m_registration.id);
+					return;
+				}
+			}
 		}
 
 		template<class Self>
@@ -80,7 +91,6 @@ namespace Pipe::worker_fwk
 			{
 				if(read_result.operation_would_have_blocked())
 				{ return io_status::operation_would_have_blocked; }
-				self.m_registration.event_handler_store->remove(self.m_registration.id);
 				return io_status::remote_endpoint_closed;;
 			}
 
@@ -151,7 +161,6 @@ namespace Pipe::worker_fwk
 					enable_write_listening();
 					return io_status::operation_would_have_blocked;
 				}
-				m_registration.event_handler_store->remove(m_registration.id);
 				return io_status::remote_endpoint_closed;
 			}
 
@@ -212,7 +221,12 @@ namespace Pipe::worker_fwk
 			m_msgs_to_send.push(
 				worker_sync::encoder<std::remove_cvref_t<T>>{std::forward<T>(msg)}
 			);
-			std::ignore = send_pending_messages();
+
+			if(send_pending_messages() == io_status::remote_endpoint_closed)
+			{
+				m_registration.event_handler_store->remove(m_registration.id);
+				return;
+			}
 		}
 
 	protected:

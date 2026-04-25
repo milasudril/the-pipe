@@ -51,7 +51,7 @@ namespace
 		return sockets;
 	}
 
-	struct event_handlers:Pipe::os_services::fd::activity_event_handler_store
+	struct event_handler_store:Pipe::os_services::fd::activity_event_handler_store
 	{
 		std::optional<Pipe::os_services::fd::event_handler_id> id_to_remove;
 		std::optional<Pipe::os_services::fd::activity_status> new_listening_status;
@@ -78,6 +78,12 @@ namespace
 		) override
 		{
 			throw std::runtime_error{"Unexpected function call"};
+		}
+
+		~event_handler_store()
+		{
+			EXPECT_EQ(id_to_remove.has_value(), false);
+			EXPECT_EQ(new_listening_status.has_value(), false);
 		}
 	};
 
@@ -138,7 +144,7 @@ namespace
 
 TESTCASE(Pipe_worker_fwk_sync_msg_codec_handle_event_fd_activity_event_handler_registered_event)
 {
-	event_handlers eh_registry;
+	event_handler_store eh_registry;
 	Pipe::worker_fwk::sync_msg_codec<msg_codec_traits> codec{65536};
 
 	auto const sockets = make_sockets();
@@ -160,7 +166,7 @@ TESTCASE(Pipe_worker_fwk_sync_msg_codec_handle_event_fd_activity_event_handler_r
 
 TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_no_bytes_ready_operation_would_have_blocked)
 {
-	event_handlers eh_registry;
+	event_handler_store eh_registry;
 	msg_handler codec{65536};
 
 	auto const sockets = make_sockets();
@@ -179,7 +185,7 @@ TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_no_bytes_read
 
 TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_no_bytes_ready_fd_closed)
 {
-	event_handlers eh_registry;
+	event_handler_store eh_registry;
 	msg_handler codec{65536};
 
 	auto sockets = make_sockets();
@@ -193,14 +199,13 @@ TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_no_bytes_read
 	);
 
 	sockets.close_socket_b();
-	eh_registry.id_to_remove = Pipe::os_services::fd::event_handler_id{345};
 	auto const result = codec.read_and_dispatch_requests();
 	EXPECT_EQ(result, msg_handler::io_status::remote_endpoint_closed);
 }
 
 TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_process_request)
 {
-	event_handlers eh_registry;
+	event_handler_store eh_registry;
 	msg_handler codec{65536};
 
 	auto sockets = make_sockets();
@@ -229,7 +234,7 @@ TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_process_reque
 
 TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_process_notification)
 {
-	event_handlers eh_registry;
+	event_handler_store eh_registry;
 	msg_handler codec{65536};
 
 	auto sockets = make_sockets();
@@ -257,7 +262,7 @@ TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_process_notif
 
 TESTCASE(Pipe_worker_fwk_sync_msg_codec_send_pending_messages_bytes_are_pending_but_operation_would_have_blocked)
 {
-	event_handlers eh_registry;
+	event_handler_store eh_registry;
 	msg_handler codec{65536};
 
 	auto sockets = make_sockets();
