@@ -107,7 +107,14 @@ namespace
 		void handle_message(notification notification)
 		{
 			EXPECT_EQ(notification.value, expected_notification_value);
-			expected_request_value.reset();
+			expected_notification_value.reset();
+		}
+
+		~msg_handler()
+		{
+			EXPECT_EQ(expected_request_value.has_value(), false);
+			EXPECT_EQ(expected_transaction_id.has_value(), false);
+			EXPECT_EQ(expected_notification_value.has_value(), false);
 		}
 	};
 
