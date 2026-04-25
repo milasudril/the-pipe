@@ -204,10 +204,10 @@ namespace Pipe::worker_fwk
 			{ disable_write_listening(); }
 
 			return io_status::ok;
-	}
+		}
 
 		template<class T>
-		void send(T&& msg, worker_sync::transaction_id tx_id)
+		io_status send(T&& msg, worker_sync::transaction_id tx_id)
 		{
 			auto const msg_id = utils::variant_index_v<T, outgoing_msg_type>;
 			m_msgs_to_send.push(
@@ -222,11 +222,10 @@ namespace Pipe::worker_fwk
 				worker_sync::encoder<std::remove_cvref_t<T>>{std::forward<T>(msg)}
 			);
 
-			if(send_pending_messages() == io_status::remote_endpoint_closed)
-			{
-				m_registration.event_handler_store->remove(m_registration.id);
-				return;
-			}
+			auto const send_result = send_pending_messages();
+			if(send_result == io_status::remote_endpoint_closed)
+			{ m_registration.event_handler_store->remove(m_registration.id); }
+			return send_result;
 		}
 
 	protected:

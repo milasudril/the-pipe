@@ -12,6 +12,7 @@
 #include "testfwk/validation.hpp"
 
 #include <testfwk/testfwk.hpp>
+#include <signal.h>
 
 namespace
 {
@@ -267,7 +268,7 @@ TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_process_notif
 	EXPECT_EQ(result, msg_handler::io_status::ok);
 }
 
-TESTCASE(Pipe_worker_fwk_sync_msg_codec_send_pending_messages_bytes_are_pending_but_operation_would_have_blocked)
+TESTCASE(Pipe_worker_fwk_sync_msg_codec_send_pending_messages_operation_would_have_blocked)
 {
 	event_handler_store eh_registry;
 	msg_handler codec{65536};
@@ -284,19 +285,65 @@ TESTCASE(Pipe_worker_fwk_sync_msg_codec_send_pending_messages_bytes_are_pending_
 
 	{
 		std::array<std::byte, 65536> junk{};
-		while(true)
-		{
-			auto const write_result = Pipe::os_services::io::write_full(sockets.socket_a(), junk);
-			if(write_result.operation_would_have_blocked())
-			{
-				break;
-			}
-		}
+		while(!Pipe::os_services::io::write_full(sockets.socket_a(), junk).operation_would_have_blocked());
 	}
 
 	eh_registry.new_listening_status = Pipe::os_services::fd::activity_status::read_or_write;
-	codec.send(response{.value = 57}, Pipe::worker_sync::transaction_id{325});
+	auto const send_res = codec.send(response{.value = 57}, Pipe::worker_sync::transaction_id{325});
+	EXPECT_EQ(send_res, msg_handler::io_status::operation_would_have_blocked);
 
 	auto const result = codec.send_pending_messages();
 	EXPECT_EQ(result, msg_handler::io_status::operation_would_have_blocked);
+}
+
+TESTCASE(Pipe_worker_fwk_sync_msg_codec_send_pending_messages_closed_before_send)
+{
+	signal(SIGPIPE, SIG_IGN);
+	event_handler_store eh_registry;
+	msg_handler codec{65536};
+
+	auto sockets = make_sockets();
+	codec.handle_event(
+		msg_codec_traits::sync_fd_activity_event_handler_registred_event{
+			.fd = sockets.socket_a(),
+			.id = Pipe::os_services::fd::event_handler_id{345},
+			.event_handler = {},
+			.event_handler_store = &eh_registry,
+		}
+	);
+
+	sockets.close_socket_b();
+	eh_registry.id_to_remove = Pipe::os_services::fd::event_handler_id{345};
+	auto const send_res = codec.send(response{.value = 57}, Pipe::worker_sync::transaction_id{325});
+	EXPECT_EQ(send_res, msg_handler::io_status::remote_endpoint_closed);
+}
+
+TESTCASE(Pipe_worker_fwk_sync_msg_codec_send_pending_messages_closed_after_send)
+{
+	signal(SIGPIPE, SIG_IGN);
+	event_handler_store eh_registry;
+	msg_handler codec{65536};
+
+	auto sockets = make_sockets();
+	codec.handle_event(
+		msg_codec_traits::sync_fd_activity_event_handler_registred_event{
+			.fd = sockets.socket_a(),
+			.id = Pipe::os_services::fd::event_handler_id{345},
+			.event_handler = {},
+			.event_handler_store = &eh_registry,
+		}
+	);
+
+	{
+		std::array<std::byte, 65536> junk{};
+		while(!Pipe::os_services::io::write_full(sockets.socket_a(), junk).operation_would_have_blocked());
+	}
+
+	eh_registry.new_listening_status = Pipe::os_services::fd::activity_status::read_or_write;
+	auto const send_res = codec.send(response{.value = 57}, Pipe::worker_sync::transaction_id{325});
+	EXPECT_EQ(send_res, msg_handler::io_status::operation_would_have_blocked);
+
+	sockets.close_socket_b();
+	auto const result = codec.send_pending_messages();
+	EXPECT_EQ(result, msg_handler::io_status::remote_endpoint_closed);
 }
