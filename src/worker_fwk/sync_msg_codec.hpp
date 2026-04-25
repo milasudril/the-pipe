@@ -84,62 +84,63 @@ namespace Pipe::worker_fwk
 		template<class Self>
 		[[nodiscard]] io_status read_and_dispatch_requests(this Self& self)
 		{
-			auto const read_result = Pipe::os_services::io::read_full(
-				self.m_registration.fd, std::span{self.m_input_buffer.get(), self.m_buffer_size}
-			);
-			if(read_result.bytes_transferred() == 0)
+			while(true)
 			{
-				if(read_result.operation_would_have_blocked())
-				{ return io_status::operation_would_have_blocked; }
-				return io_status::remote_endpoint_closed;;
-			}
-
-			auto bytes_to_process = std::span{self.m_input_buffer.get(), read_result.bytes_transferred()};
-			while(!bytes_to_process.empty())
-			{
-				auto const bytes_consumed = std::visit(
-					[&self, bytes_to_process]<class Decoder>(Decoder& item) {
-						return item.decode_and_dispatch(
-							bytes_to_process,
-							[&self]<class Msg>(Msg&& item){
-								utils::maybe_at_scope_exit reset_decoder{
-									[&self](){
-										self.m_currently_received_message = {};
-									}
-								};
-
-								if constexpr(std::is_same_v<std::remove_cvref_t<Msg>, worker_sync::msg_header>)
-								{ reset_decoder.reset(); }
-
-								if constexpr(
-									requires{
-										{self.handle_request(std::forward<Msg>(item), self.m_current_transaction_id)};
-									}
-								)
-								{ self.handle_request(std::forward<Msg>(item), self.m_current_transaction_id); }
-								else
-								{ self.handle_message(std::forward<Msg>(item)); }
-							},
-							[&self](worker_sync::error_response&& response) {
-								utils::at_scope_exit reset_decoder{
-									[&self](){
-										self.m_currently_received_message = {};
-									}
-								};
-								self.send(std::move(response), self.m_current_transaction_id);
-							}
-						);
-					},
-					self.m_currently_received_message
+				auto const read_result = Pipe::os_services::io::read_full(
+					self.m_registration.fd, std::span{self.m_input_buffer.get(), self.m_buffer_size}
 				);
+				if(read_result.bytes_transferred() == 0)
+				{
+					if(read_result.operation_would_have_blocked())
+					{ return io_status::operation_would_have_blocked; }
+					return io_status::remote_endpoint_closed;
+				}
 
-				bytes_to_process = std::span{
-					std::begin(bytes_to_process) + bytes_consumed,
-					std::end(bytes_to_process)
-				};
+				auto bytes_to_process = std::span{self.m_input_buffer.get(), read_result.bytes_transferred()};
+				while(!bytes_to_process.empty())
+				{
+					auto const bytes_consumed = std::visit(
+						[&self, bytes_to_process]<class Decoder>(Decoder& item) {
+							return item.decode_and_dispatch(
+								bytes_to_process,
+								[&self]<class Msg>(Msg&& item){
+									utils::maybe_at_scope_exit reset_decoder{
+										[&self](){
+											self.m_currently_received_message = {};
+										}
+									};
+
+									if constexpr(std::is_same_v<std::remove_cvref_t<Msg>, worker_sync::msg_header>)
+									{ reset_decoder.reset(); }
+
+									if constexpr(
+										requires{
+											{self.handle_request(std::forward<Msg>(item), self.m_current_transaction_id)};
+										}
+									)
+									{ self.handle_request(std::forward<Msg>(item), self.m_current_transaction_id); }
+									else
+									{ self.handle_message(std::forward<Msg>(item)); }
+								},
+								[&self](worker_sync::error_response&& response) {
+									utils::at_scope_exit reset_decoder{
+										[&self](){
+											self.m_currently_received_message = {};
+										}
+									};
+									self.send(std::move(response), self.m_current_transaction_id);
+								}
+							);
+						},
+						self.m_currently_received_message
+					);
+
+					bytes_to_process = std::span{
+						std::begin(bytes_to_process) + bytes_consumed,
+						std::end(bytes_to_process)
+					};
+				}
 			}
-
-			return io_status::ok;
 		}
 
 		[[nodiscard]] io_status flush_output_buffer()
