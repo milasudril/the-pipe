@@ -11,6 +11,8 @@
 #include "src/worker_sync/worker_sync.hpp"
 #include "testfwk/validation.hpp"
 
+#include <limits>
+#include <sys/syscall.h>
 #include <testfwk/testfwk.hpp>
 #include <signal.h>
 
@@ -120,7 +122,7 @@ namespace
 	};
 
 	template<class MsgType, size_t ExpectedByteCount>
-	MsgType recive_message(Pipe::os_services::io::input_file_descriptor_ref fd)
+	MsgType receive_message(Pipe::os_services::io::input_file_descriptor_ref fd)
 	{
 		std::array<std::byte, ExpectedByteCount> buffer;
 		auto const read_result = read_full(fd, buffer);
@@ -147,6 +149,45 @@ namespace
 		auto const write_result = write_full(fd, buffer);
 		REQUIRE_EQ(write_result.bytes_transferred(), BuffSize);
 		REQUIRE_EQ(write_result.operation_would_have_blocked(), false);
+	}
+
+	struct fd_props
+	{
+		size_t bytes_written{0};
+		size_t fake_eagain_above = std::numeric_limits<size_t>::max();
+	};
+
+	std::unordered_map<int, fd_props> fd_map;
+}
+
+extern "C"
+{
+	int close(int fd)
+	{
+		fd_map.erase(fd);
+		return static_cast<int>(syscall(SYS_close, fd));
+	}
+
+	ssize_t write(int fd, void const* buffer, size_t buff_size)
+	{
+		if(fd <= 2)
+		{ return syscall(SYS_write, fd, buffer, buff_size); }
+
+
+		auto const fd_entry = fd_map.insert(std::pair{fd, fd_props{}});
+		auto const max_size = fd_entry.first->second.fake_eagain_above;
+		if(fd_entry.first->second.bytes_written >= max_size)
+		{
+			errno = EAGAIN;
+			return - 1;
+		}
+
+		auto const res = syscall(SYS_write, fd, buffer, std::min(buff_size, max_size));
+		if(res == -1)
+		{ return res; }
+
+		fd_entry.first->second.bytes_written += res;
+		return res;
 	}
 }
 
@@ -346,4 +387,121 @@ TESTCASE(Pipe_worker_fwk_sync_msg_codec_send_pending_messages_closed_after_send)
 	sockets.close_socket_b();
 	auto const result = codec.send_pending_messages();
 	EXPECT_EQ(result, msg_handler::io_status::remote_endpoint_closed);
+}
+
+TESTCASE(Pipe_worker_fwk_sync_msg_codec_send_successful_no_more_messages_no_more_bytes_to_write_not_listening_for_write)
+{
+	event_handler_store eh_registry;
+	msg_handler codec{65536};
+
+	auto sockets = make_sockets();
+	codec.handle_event(
+		msg_codec_traits::sync_fd_activity_event_handler_registred_event{
+			.fd = sockets.socket_a(),
+			.id = Pipe::os_services::fd::event_handler_id{345},
+			.event_handler = {},
+			.event_handler_store = &eh_registry,
+		}
+	);
+
+	auto const send_res = codec.send(response{.value = 57}, Pipe::worker_sync::transaction_id{325});
+	EXPECT_EQ(send_res, msg_handler::io_status::ok);
+
+	auto const header = receive_message<Pipe::worker_sync::msg_header, 16>(sockets.socket_b());
+	EXPECT_EQ(
+		header.msg_id,
+		(Pipe::utils::variant_index_v<response, msg_codec_traits::outgoing_sync_msg_type>)
+	);
+	EXPECT_EQ(header.tx_id, Pipe::worker_sync::transaction_id{325});
+	auto const payload = receive_message<response, 4>(sockets.socket_b());
+	EXPECT_EQ(payload.value, 57);
+}
+
+TESTCASE(Pipe_worker_fwk_sync_msg_codec_send_successful_no_more_messages_no_more_bytes_to_write_is_listening_for_write)
+{
+	event_handler_store eh_registry;
+	msg_handler codec{65536};
+
+	auto sockets = make_sockets();
+	codec.handle_event(
+		msg_codec_traits::sync_fd_activity_event_handler_registred_event{
+			.fd = sockets.socket_a(),
+			.id = Pipe::os_services::fd::event_handler_id{345},
+			.event_handler = {},
+			.event_handler_store = &eh_registry,
+		}
+	);
+
+	{
+		std::array<std::byte, 65536> junk{};
+		while(!Pipe::os_services::io::write_full(sockets.socket_a(), junk).operation_would_have_blocked());
+	}
+
+	eh_registry.new_listening_status = Pipe::os_services::fd::activity_status::read_or_write;
+	auto const send_res = codec.send(response{.value = 57}, Pipe::worker_sync::transaction_id{325});
+	EXPECT_EQ(send_res, msg_handler::io_status::operation_would_have_blocked);
+
+	{
+		std::array<std::byte, 65536> junk{};
+		while(!Pipe::os_services::io::read_full(sockets.socket_b(), junk).operation_would_have_blocked());
+	}
+
+	eh_registry.new_listening_status = Pipe::os_services::fd::activity_status::read;
+	auto const result = codec.send_pending_messages();
+	EXPECT_EQ(result, msg_handler::io_status::ok);
+}
+
+TESTCASE(Pipe_worker_fwk_sync_msg_codec_send_blocking_no_more_messages_more_bytes_to_write_is_listening_for_write)
+{
+	event_handler_store eh_registry;
+	msg_handler codec{65536};
+
+	auto sockets = make_sockets();
+	codec.handle_event(
+		msg_codec_traits::sync_fd_activity_event_handler_registred_event{
+			.fd = sockets.socket_a(),
+			.id = Pipe::os_services::fd::event_handler_id{345},
+			.event_handler = {},
+			.event_handler_store = &eh_registry,
+		}
+	);
+
+	auto const i = fd_map.insert(
+		std::pair{
+			sockets.socket_a().native_handle(),
+			fd_props{.bytes_written = 0, .fake_eagain_above = 10}
+		}
+	).first;
+
+	eh_registry.new_listening_status = Pipe::os_services::fd::activity_status::read_or_write;
+	auto const send_res = codec.send(response{.value = 57}, Pipe::worker_sync::transaction_id{325});
+	EXPECT_EQ(send_res, msg_handler::io_status::operation_would_have_blocked);
+	EXPECT_EQ(i->second.bytes_written, 10);
+}
+
+TESTCASE(Pipe_worker_fwk_sync_msg_codec_send_short_buffer)
+{
+	event_handler_store eh_registry;
+	msg_handler codec{17};
+
+	auto sockets = make_sockets();
+	codec.handle_event(
+		msg_codec_traits::sync_fd_activity_event_handler_registred_event{
+			.fd = sockets.socket_a(),
+			.id = Pipe::os_services::fd::event_handler_id{345},
+			.event_handler = {},
+			.event_handler_store = &eh_registry,
+		}
+	);
+
+	auto const i = fd_map.insert(
+		std::pair{
+			sockets.socket_a().native_handle(),
+			fd_props{.bytes_written = 0, .fake_eagain_above = 128}
+		}
+	).first;
+
+	auto const send_res = codec.send(response{.value = 57}, Pipe::worker_sync::transaction_id{325});
+	EXPECT_EQ(send_res, msg_handler::io_status::ok);
+	EXPECT_EQ(i->second.bytes_written, 20);
 }

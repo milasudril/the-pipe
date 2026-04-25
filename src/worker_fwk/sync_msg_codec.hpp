@@ -154,7 +154,7 @@ namespace Pipe::worker_fwk
 				std::end(m_bytes_to_write)
 			};
 
-			if(result.bytes_transferred() == 0)
+			if(!m_bytes_to_write.empty() || result.bytes_transferred() == 0)
 			{
 				if(result.operation_would_have_blocked())
 				{
@@ -170,40 +170,42 @@ namespace Pipe::worker_fwk
 
 		[[nodiscard]] io_status send_pending_messages()
 		{
-			if(auto const flush_result = flush_output_buffer(); flush_result != io_status::ok)
-			{ return flush_result; }
-
-			std::span serialize_into{m_output_buffer.get(), m_buffer_size};
-			size_t bytes_ready = 0;
-			size_t bytes_left_to_use = m_buffer_size;
-			while(!m_msgs_to_send.empty() && !serialize_into.empty())
+			while(true)
 			{
-				auto const bytes_written = std::visit(
-					[this, serialize_into](auto& item){
-						auto const ret = item.encode(serialize_into);
-						if(item.completed())
-						{
-							m_msgs_to_send.pop();
-							// WARNING: item is dead now
-						}
-						return ret;
-					},
-					m_msgs_to_send.front()
-				);
+				if(auto const flush_result = flush_output_buffer(); flush_result != io_status::ok)
+				{ return flush_result; }
 
-				bytes_left_to_use -= bytes_written;
-				bytes_ready += bytes_written;
-				serialize_into = std::span{m_output_buffer.get() + bytes_written, bytes_left_to_use};
+				std::span serialize_into{m_output_buffer.get(), m_buffer_size};
+				size_t bytes_ready = 0;
+				size_t bytes_left_to_use = m_buffer_size;
+				while(!m_msgs_to_send.empty() && !serialize_into.empty())
+				{
+					auto const bytes_written = std::visit(
+						[this, serialize_into](auto& item){
+							auto const ret = item.encode(serialize_into);
+							if(item.completed())
+							{
+								m_msgs_to_send.pop();
+								// WARNING: item is dead now
+							}
+							return ret;
+						},
+						m_msgs_to_send.front()
+					);
+
+					bytes_left_to_use -= bytes_written;
+					bytes_ready += bytes_written;
+					serialize_into = std::span{m_output_buffer.get() + bytes_written, bytes_left_to_use};
+				}
+
+				m_bytes_to_write = std::span{static_cast<std::byte const*>(m_output_buffer.get()), bytes_ready};
+
+				if(m_msgs_to_send.empty() && m_bytes_to_write.empty())
+				{
+					disable_write_listening();
+					return io_status::ok;
+				}
 			}
-
-			m_bytes_to_write = std::span{static_cast<std::byte const*>(m_output_buffer.get()), bytes_ready};
-			if(auto const flush_result = flush_output_buffer(); flush_result != io_status::ok)
-			{ return flush_result; }
-
-			if(m_msgs_to_send.empty() && m_bytes_to_write.empty())
-			{ disable_write_listening(); }
-
-			return io_status::ok;
 		}
 
 		template<class T>
