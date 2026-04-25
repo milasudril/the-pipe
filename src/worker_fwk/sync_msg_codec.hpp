@@ -49,6 +49,7 @@ namespace Pipe::worker_fwk
 			m_registration = reg_event;
 
 		}
+		enum class io_status{ok, operation_would_have_blocked, remote_endpoint_closed};
 
 		template<class Self>
 		void handle_event(this Self& self, fd_activity_event event)
@@ -61,18 +62,16 @@ namespace Pipe::worker_fwk
 				return;
 			}
 
-			auto connection_status = connection_status::ok;
+			auto io_status = io_status::ok;
 			if(can_read(event.status))
-			{ connection_status = self.read_and_dispatch_requests(); }
+			{ io_status = self.read_and_dispatch_requests(); }
 
-			if(can_write(event.status) && connection_status == connection_status::ok)
+			if(can_write(event.status) && io_status == io_status::ok)
 			{ std::ignore = self.send_pending_messages(); }
 		}
 
-		enum class connection_status{ok, closed};
-
 		template<class Self>
-		[[nodiscard]] connection_status read_and_dispatch_requests(this Self& self)
+		[[nodiscard]] io_status read_and_dispatch_requests(this Self& self)
 		{
 			auto const read_result = Pipe::os_services::io::read_full(
 				self.m_registration.fd, std::span{self.m_input_buffer.get(), self.m_buffer_size}
@@ -82,9 +81,9 @@ namespace Pipe::worker_fwk
 				if(!read_result.operation_would_have_blocked())
 				{
 					self.m_registration.event_handler_store->remove(self.m_registration.id);
-					return connection_status::closed;
+					return io_status::remote_endpoint_closed;
 				}
-				return connection_status::ok;
+				return io_status::ok;
 			}
 
 			auto bytes_to_process = std::span{self.m_input_buffer.get(), read_result.bytes_transferred()};
@@ -132,26 +131,40 @@ namespace Pipe::worker_fwk
 				};
 			}
 
-			return connection_status::ok;
+			return io_status::ok;
 		}
 
-		[[nodiscard]] connection_status send_pending_messages()
+		[[nodiscard]] io_status flush_output_buffer()
 		{
-			auto flush = [this](){
-				return os_services::io::try_write(
-					m_registration.fd,
-					m_bytes_to_write,
-					[this](os_services::io::io_blocked){
-						enable_write_listening();
-					},
-					[this](os_services::io::fd_closed){
-						m_registration.event_handler_store->remove(m_registration.id);
-					}
-				);
+			if(m_bytes_to_write.empty())
+			{ return io_status::ok; }
+
+			auto const result = os_services::io::write_full(m_registration.fd, m_bytes_to_write);
+
+			m_bytes_to_write = std::span{
+				std::begin(m_bytes_to_write) + result.bytes_transferred(),
+				std::end(m_bytes_to_write)
 			};
 
-			if(!flush())
-			{ return connection_status::closed; }
+			if(result.bytes_transferred() == 0)
+			{
+				if(result.operation_would_have_blocked())
+				{
+					enable_write_listening();
+					return io_status::operation_would_have_blocked;
+				}
+				m_registration.event_handler_store->remove(m_registration.id);
+				return io_status::remote_endpoint_closed;
+			}
+
+			return io_status::ok;
+		}
+
+
+		[[nodiscard]] io_status send_pending_messages()
+		{
+			if(auto const flush_result = flush_output_buffer(); flush_result != io_status::ok)
+			{ return flush_result; }
 
 			std::span serialize_into{m_output_buffer.get(), m_buffer_size};
 			size_t bytes_ready = 0;
@@ -177,13 +190,13 @@ namespace Pipe::worker_fwk
 			}
 
 			m_bytes_to_write = std::span{static_cast<std::byte const*>(m_output_buffer.get()), bytes_ready};
-			if(!flush())
-			{ return connection_status::closed; }
+			if(auto const flush_result = flush_output_buffer(); flush_result != io_status::ok)
+			{ return flush_result; }
 
 			if(m_msgs_to_send.empty() && m_bytes_to_write.empty())
 			{ disable_write_listening(); }
 
-			return connection_status::ok;
+			return io_status::ok;
 	}
 
 		template<class T>

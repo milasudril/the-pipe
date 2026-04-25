@@ -3,11 +3,13 @@
 #include "./sync_msg_codec.hpp"
 #include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
+#include "src/os_services/io/io.hpp"
 #include "src/os_services/ipc/socket.hpp"
 #include "src/os_services/ipc/unix_domain_socket.hpp"
 #include "src/os_services/ipc/socket_pair.hpp"
 #include "src/utils/utils.hpp"
 #include "src/worker_sync/worker_sync.hpp"
+#include "testfwk/validation.hpp"
 
 #include <testfwk/testfwk.hpp>
 
@@ -102,7 +104,7 @@ namespace
 			expected_request_value.reset();
 		}
 	};
-#if 0
+
 	template<class MsgType, size_t ExpectedByteCount>
 	MsgType recive_message(Pipe::os_services::io::input_file_descriptor_ref fd)
 	{
@@ -116,7 +118,6 @@ namespace
 		EXPECT_EQ(decoder.completed(), true);
 		return decoder.get_value();
 	}
-#endif
 
 	template<size_t BuffSize, class MsgType>
 	void send_message(
@@ -173,7 +174,7 @@ TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_no_bytes_read
 	);
 
 	auto const result = codec.read_and_dispatch_requests();
-	EXPECT_EQ(result, msg_handler::connection_status::ok);
+	EXPECT_EQ(result, msg_handler::io_status::ok);
 }
 
 TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_no_bytes_ready_fd_closed)
@@ -194,7 +195,7 @@ TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_no_bytes_read
 	sockets.close_socket_b();
 	eh_registry.id_to_remove = Pipe::os_services::fd::event_handler_id{345};
 	auto const result = codec.read_and_dispatch_requests();
-	EXPECT_EQ(result, msg_handler::connection_status::closed);
+	EXPECT_EQ(result, msg_handler::io_status::remote_endpoint_closed);
 }
 
 TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_process_request)
@@ -223,7 +224,7 @@ TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_process_reque
 	codec.expected_transaction_id = Pipe::worker_sync::transaction_id{325};
 	codec.expected_request_value = 43;
 	auto const result = codec.read_and_dispatch_requests();
-	EXPECT_EQ(result, msg_handler::connection_status::ok);
+	EXPECT_EQ(result, msg_handler::io_status::ok);
 }
 
 TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_process_notification)
@@ -251,5 +252,39 @@ TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_process_notif
 	send_message<4>(notification{.value = 43}, sockets.socket_b());
 	codec.expected_notification_value = 43;
 	auto const result = codec.read_and_dispatch_requests();
-	EXPECT_EQ(result, msg_handler::connection_status::ok);
+	EXPECT_EQ(result, msg_handler::io_status::ok);
+}
+
+TESTCASE(Pipe_worker_fwk_sync_msg_codec_send_pending_messages_bytes_are_pending_but_operation_would_have_blocked)
+{
+	event_handlers eh_registry;
+	msg_handler codec{65536};
+
+	auto sockets = make_sockets();
+	codec.handle_event(
+		msg_codec_traits::sync_fd_activity_event_handler_registred_event{
+			.fd = sockets.socket_a(),
+			.id = Pipe::os_services::fd::event_handler_id{345},
+			.event_handler = {},
+			.event_handler_store = &eh_registry,
+		}
+	);
+
+	{
+		std::array<std::byte, 65536> junk{};
+		while(true)
+		{
+			auto const write_result = Pipe::os_services::io::write_full(sockets.socket_a(), junk);
+			if(write_result.operation_would_have_blocked())
+			{
+				break;
+			}
+		}
+	}
+
+	eh_registry.new_listening_status = Pipe::os_services::fd::activity_status::read_or_write;
+	codec.send(response{.value = 57}, Pipe::worker_sync::transaction_id{325});
+
+	auto const result = codec.send_pending_messages();
+	EXPECT_EQ(result, msg_handler::io_status::operation_would_have_blocked);
 }
