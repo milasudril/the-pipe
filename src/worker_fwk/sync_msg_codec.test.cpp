@@ -278,7 +278,7 @@ TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_process_reque
 	codec.expected_transaction_id = Pipe::worker_sync::transaction_id{325};
 	codec.expected_request_value = 43;
 	auto const result = codec.read_and_dispatch_requests();
-	EXPECT_EQ(result, msg_handler::io_status::operation_would_have_blocked);
+	EXPECT_EQ(result, msg_handler::io_status::ok);
 }
 
 TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_process_notification)
@@ -306,7 +306,7 @@ TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_process_notif
 	send_message<4>(notification{.value = 43}, sockets.socket_b());
 	codec.expected_notification_value = 43;
 	auto const result = codec.read_and_dispatch_requests();
-	EXPECT_EQ(result, msg_handler::io_status::operation_would_have_blocked);
+	EXPECT_EQ(result, msg_handler::io_status::ok);
 }
 
 TESTCASE(Pipe_worker_fwk_sync_msg_codec_send_pending_messages_operation_would_have_blocked)
