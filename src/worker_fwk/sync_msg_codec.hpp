@@ -78,12 +78,10 @@ namespace Pipe::worker_fwk
 			);
 			if(read_result.bytes_transferred() == 0)
 			{
-				if(!read_result.operation_would_have_blocked())
-				{
-					self.m_registration.event_handler_store->remove(self.m_registration.id);
-					return io_status::remote_endpoint_closed;
-				}
-				return io_status::ok;
+				if(read_result.operation_would_have_blocked())
+				{ return io_status::operation_would_have_blocked; }
+				self.m_registration.event_handler_store->remove(self.m_registration.id);
+				return io_status::remote_endpoint_closed;;
 			}
 
 			auto bytes_to_process = std::span{self.m_input_buffer.get(), read_result.bytes_transferred()};

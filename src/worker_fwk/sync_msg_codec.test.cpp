@@ -174,7 +174,7 @@ TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_no_bytes_read
 	);
 
 	auto const result = codec.read_and_dispatch_requests();
-	EXPECT_EQ(result, msg_handler::io_status::ok);
+	EXPECT_EQ(result, msg_handler::io_status::operation_would_have_blocked);
 }
 
 TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_no_bytes_ready_fd_closed)
