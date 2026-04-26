@@ -48,6 +48,9 @@ namespace Pipe::worker_fwk
 			::fcntl(reg_event.fd.native_handle(), F_SETFL, O_NONBLOCK|flags);
 			m_registration = reg_event;
 
+			if(!m_msgs_to_send.empty())
+			{ enable_write_listening(); }
+
 		}
 		enum class io_status{ok, operation_would_have_blocked, remote_endpoint_closed};
 
@@ -157,10 +160,7 @@ namespace Pipe::worker_fwk
 			if(!m_bytes_to_write.empty() || result.bytes_transferred() == 0)
 			{
 				if(result.operation_would_have_blocked())
-				{
-					enable_write_listening();
-					return io_status::operation_would_have_blocked;
-				}
+				{ return io_status::operation_would_have_blocked; }
 				return io_status::remote_endpoint_closed;
 			}
 
@@ -209,7 +209,7 @@ namespace Pipe::worker_fwk
 		}
 
 		template<class T>
-		io_status send(T&& msg, worker_sync::transaction_id tx_id)
+		void send(T&& msg, worker_sync::transaction_id tx_id)
 		{
 			auto const msg_id = utils::variant_index_v<T, outgoing_msg_type>;
 			m_msgs_to_send.push(
@@ -220,14 +220,13 @@ namespace Pipe::worker_fwk
 					}
 				}
 			);
+
 			m_msgs_to_send.push(
 				worker_sync::encoder<std::remove_cvref_t<T>>{std::forward<T>(msg)}
 			);
 
-			auto const send_result = send_pending_messages();
-			if(send_result == io_status::remote_endpoint_closed)
-			{ m_registration.event_handler_store->remove(m_registration.id); }
-			return send_result;
+			if(m_registration.is_valid())
+			{ enable_write_listening(); }
 		}
 
 	protected:

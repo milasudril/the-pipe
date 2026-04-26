@@ -326,6 +326,9 @@ namespace Pipe::os_services::fd
 	template<class CallbackTag, class FileDescriptorTag>
 	struct activity_event_handler_registered_event
 	{
+		bool is_valid() const
+		{ return fd != nullptr; }
+
 		tagged_file_descriptor_ref<FileDescriptorTag> fd;
 		event_handler_id id;
 		saved_event_handler_ref event_handler;
