@@ -156,6 +156,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_subscription_reque
 	}
 	catch(...)
 	{}
+	EXPECT_EQ(conn.num_messages_to_send(), 0);
 }
 
 TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_subscription_request_fail_to_insert_subscription)
@@ -182,5 +183,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_subscription_reque
 	}
 	catch(...)
 	{ }
+
 	EXPECT_EQ(registry.expected_port_id.has_value(), false);
+	EXPECT_EQ(conn.num_messages_to_send(), 0);
 }

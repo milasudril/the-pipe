@@ -229,6 +229,9 @@ namespace Pipe::worker_fwk
 			{ enable_write_listening(); }
 		}
 
+		size_t num_messages_to_send() const
+		{ return std::size(m_msgs_to_send)/2; }
+
 	protected:
 		void handle_message(worker_sync::msg_header header)
 		{
