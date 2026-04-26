@@ -3,7 +3,7 @@
 #ifndef PIPE_WORKER_FWK_SYNC_CLIENT_CONNECTION_HPP
 #define PIPE_WORKER_FWK_SYNC_CLIENT_CONNECTION_HPP
 
-#include "./sync_msg_codec.hpp"
+#include "./sync_message_channel.hpp"
 
 #include "./port_activity_subscription.hpp"
 #include "src/os_services/ipc/unix_domain_socket.hpp"
@@ -15,7 +15,7 @@
 
 namespace Pipe::worker_fwk
 {
-	struct sync_msg_codec_server_traits
+	struct sync_message_channel_server_traits
 	{
 		using fd_tag = os_services::ipc::connected_socket_tag<SOCK_STREAM, sockaddr_un>;
 		using incoming_sync_msg_type = worker_sync::client_to_server_message;
@@ -27,15 +27,15 @@ namespace Pipe::worker_fwk
 	};
 
 	class sync_client_connection:
-		public sync_msg_codec<sync_msg_codec_server_traits>,
-		public sync_msg_codec_server_traits
+		public sync_message_channel<sync_message_channel_server_traits>,
+		public sync_message_channel_server_traits
 	{
 	public:
 		using client_activity_event_handler_registered_event = sync_fd_activity_event_handler_registred_event;
 		using client_activity_event = sync_fd_activity_event;
 
 		explicit sync_client_connection(port_activity_subscriber_registry_ref port_activity_subscriber_registry, size_t buffer_size = 65536):
-			sync_msg_codec<sync_msg_codec_server_traits>{buffer_size},
+			sync_message_channel<sync_message_channel_server_traits>{buffer_size},
 			m_port_activity_subscriber_registry{port_activity_subscriber_registry}
 		{}
 
@@ -93,7 +93,7 @@ namespace Pipe::worker_fwk
 			i->second.client_status = client_status::ready;
 		}
 
-		using sync_msg_codec<sync_msg_codec_server_traits>::handle_message;
+		using sync_message_channel<sync_message_channel_server_traits>::handle_message;
 
 	private:
 		port_activity_subscriber_registry_ref m_port_activity_subscriber_registry;

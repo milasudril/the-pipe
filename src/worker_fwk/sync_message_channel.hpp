@@ -1,5 +1,5 @@
-#ifndef PIPE_WORKER_FWK_SYNC_MSG_CODEC_HPP
-#define PIPE_WORKER_FWK_SYNC_MSG_CODEC_HPP
+#ifndef PIPE_WORKER_FWK_SYNC_MESSAGE_CHANNEL_HPP
+#define PIPE_WORKER_FWK_SYNC_MESSAGE_CHANNEL_HPP
 
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/fd/activity_event_handler_store.hpp"
@@ -15,7 +15,7 @@
 namespace Pipe::worker_fwk
 {
 	template<class SyncMsgCodecTraits>
-	class sync_msg_codec
+	class sync_message_channel
 	{
 	private:
 		using traits = SyncMsgCodecTraits;
@@ -34,7 +34,7 @@ namespace Pipe::worker_fwk
 		using fd_activity_event = typename traits::sync_fd_activity_event;
 
 	public:
-		explicit sync_msg_codec(size_t buffer_size):
+		explicit sync_message_channel(size_t buffer_size):
 			m_buffer_size{buffer_size},
 			m_input_buffer{std::make_unique<std::byte[]>(buffer_size)},
 			m_output_buffer{std::make_unique<std::byte[]>(buffer_size)}
