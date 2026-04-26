@@ -18,9 +18,9 @@ namespace Pipe::worker_fwk
 	class sync_msg_codec
 	{
 	private:
-		using taits = SyncMsgCodecTraits;
-		using incoming_msg_type = typename taits::incoming_sync_msg_type;
-		using outgoing_msg_type = typename taits::outgoing_sync_msg_type;
+		using traits = SyncMsgCodecTraits;
+		using incoming_msg_type = typename traits::incoming_sync_msg_type;
+		using outgoing_msg_type = typename traits::outgoing_sync_msg_type;
 		using msg_decoder = utils::wrap_variant_element_t<
 			utils::variant_push_front_t<incoming_msg_type, worker_sync::msg_header>,
 			worker_sync::decoder
@@ -30,8 +30,8 @@ namespace Pipe::worker_fwk
 			worker_sync::encoder
 		>;
 		using transaction_id = worker_sync::transaction_id;
-		using fd_activity_event_handler_registred_event = typename taits::sync_fd_activity_event_handler_registred_event;
-		using fd_activity_event = typename taits::sync_fd_activity_event;
+		using fd_activity_event_handler_registred_event = typename traits::sync_fd_activity_event_handler_registred_event;
+		using fd_activity_event = typename traits::sync_fd_activity_event;
 
 	public:
 		explicit sync_msg_codec(size_t buffer_size):
