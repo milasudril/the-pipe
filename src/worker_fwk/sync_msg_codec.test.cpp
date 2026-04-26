@@ -96,6 +96,7 @@ namespace
 		std::optional<Pipe::worker_sync::transaction_id> expected_transaction_id;
 		std::optional<int> expected_notification_value;
 		std::optional<std::string> request_exception_string;
+		std::optional<std::string> notification_exception_string;
 
 		void handle_request(request req, Pipe::worker_sync::transaction_id id)
 		{
@@ -114,6 +115,11 @@ namespace
 		{
 			EXPECT_EQ(notification.value, expected_notification_value);
 			expected_notification_value.reset();
+			if(notification_exception_string.has_value())
+			{
+				auto str = std::exchange(notification_exception_string, std::optional<std::string>{});
+				throw std::runtime_error{*str};
+			}
 		}
 
 		~msg_handler()
@@ -685,6 +691,49 @@ TESTCASE(Pipe_worker_fwk_sync_msg_codec_exception_while_handling_request)
 	codec.expected_request_value = 356;
 	codec.expected_transaction_id = Pipe::worker_sync::transaction_id{24};
 	codec.request_exception_string = "Something went wrong";
+	auto const result = codec.read_and_dispatch_requests();
+	EXPECT_EQ(result, msg_handler::io_status::ok);
+	EXPECT_EQ(eh_registry.current_listening_status, Pipe::os_services::fd::activity_status::read_or_write);
+
+	auto const send_result = codec.send_pending_messages();
+	EXPECT_EQ(send_result, msg_handler::io_status::ok);
+	auto const header = receive_message<Pipe::worker_sync::msg_header, 16>(sockets.socket_b());
+	EXPECT_EQ(
+		header.msg_id,
+		(Pipe::utils::variant_index_v<Pipe::worker_sync::error_response, msg_codec_traits::outgoing_sync_msg_type>)
+	);
+	EXPECT_EQ(header.tx_id, Pipe::worker_sync::transaction_id{24});
+
+	auto const msg = receive_message<Pipe::worker_sync::error_response, 28>(sockets.socket_b());
+	EXPECT_EQ(msg.message, "Something went wrong");
+}
+
+TESTCASE(Pipe_worker_fwk_sync_msg_codec_exception_while_handling_notification)
+{
+	event_handler_store eh_registry;
+	msg_handler codec{65536};
+
+	auto const sockets = make_sockets();
+	codec.handle_event(
+		msg_codec_traits::sync_fd_activity_event_handler_registred_event{
+			.fd = sockets.socket_a(),
+			.id = Pipe::os_services::fd::event_handler_id{345},
+			.event_handler = {},
+			.event_handler_store = &eh_registry,
+		}
+	);
+
+	send_message<16>(
+		Pipe::worker_sync::msg_header{
+			.msg_id = Pipe::utils::variant_index_v<notification, msg_codec_traits::incoming_sync_msg_type>,
+			.tx_id = Pipe::worker_sync::transaction_id{24}
+		},
+		sockets.socket_b()
+	);
+	send_message<4>(notification{.value = 356}, sockets.socket_b());
+
+	codec.expected_notification_value = 356;
+	codec.notification_exception_string = "Something went wrong";
 	auto const result = codec.read_and_dispatch_requests();
 	EXPECT_EQ(result, msg_handler::io_status::ok);
 	EXPECT_EQ(eh_registry.current_listening_status, Pipe::os_services::fd::activity_status::read_or_write);
