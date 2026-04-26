@@ -191,6 +191,9 @@ extern "C"
 	}
 }
 
+
+// Management
+
 TESTCASE(Pipe_worker_fwk_sync_msg_codec_handle_event_fd_activity_event_handler_registered_event)
 {
 	event_handler_store eh_registry;
@@ -212,6 +215,9 @@ TESTCASE(Pipe_worker_fwk_sync_msg_codec_handle_event_fd_activity_event_handler_r
 		EXPECT_EQ(is_blocking&O_NONBLOCK, O_NONBLOCK);
 	}
 }
+
+
+// Reading
 
 TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_no_bytes_ready_operation_would_have_blocked)
 {
@@ -308,6 +314,39 @@ TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_process_notif
 	auto const result = codec.read_and_dispatch_requests();
 	EXPECT_EQ(result, msg_handler::io_status::ok);
 }
+
+TESTCASE(Pipe_worker_fwk_sync_msg_codec_read_and_dispatch_requests_short_buffer)
+{
+	event_handler_store eh_registry;
+	msg_handler codec{17};
+
+	auto sockets = make_sockets();
+	codec.handle_event(
+		msg_codec_traits::sync_fd_activity_event_handler_registred_event{
+			.fd = sockets.socket_a(),
+			.id = Pipe::os_services::fd::event_handler_id{345},
+			.event_handler = {},
+			.event_handler_store = &eh_registry,
+		}
+	);
+
+	send_message<16>(
+		Pipe::worker_sync::msg_header{
+			.msg_id = Pipe::utils::variant_index_v<notification, msg_codec_traits::incoming_sync_msg_type>,
+			.tx_id = Pipe::worker_sync::transaction_id{325}
+		},
+		sockets.socket_b()
+	);
+	send_message<4>(notification{.value = 43}, sockets.socket_b());
+	auto result = codec.read_and_dispatch_requests();
+	EXPECT_EQ(result, msg_handler::io_status::ok);
+
+	codec.expected_notification_value = 43;
+	result = codec.read_and_dispatch_requests();
+	EXPECT_EQ(result, msg_handler::io_status::ok);
+}
+
+// Sending
 
 TESTCASE(Pipe_worker_fwk_sync_msg_codec_send_pending_messages_operation_would_have_blocked)
 {
