@@ -15,10 +15,12 @@
 
 #include <cstdio>
 #include <iterator>
+#include <limits>
 #include <source_location>
 #include <string_view>
 #include <sys/socket.h>
 #include <testfwk/testfwk.hpp>
+#include <dlfcn.h>
 
 namespace
 {
@@ -104,11 +106,32 @@ namespace
 		)
 		{
 			EXPECT_EQ(port_id, expected_port_id);
+			expected_port_id.reset();
 		}
 
 		void notify_client_ready(Pipe::worker_fwk::port_id)
 		{}
 	};
+
+	size_t fail_malloc = std::numeric_limits<size_t>::max();
+	size_t malloc_count = 0;
+}
+
+extern "C"
+{
+	void* malloc(size_t num_bytes)
+	{
+		if(malloc_count == fail_malloc)
+		{
+			malloc_count = 0;
+			fail_malloc = std::numeric_limits<size_t>::max();
+			return nullptr;
+		}
+
+		++malloc_count;
+		auto real_malloc = reinterpret_cast<void* (*)(size_t)>(dlsym(RTLD_NEXT, "malloc"));
+		return real_malloc(num_bytes);
+	}
 }
 
 TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_subscription_request_fail_to_add_subscriber)
@@ -133,4 +156,31 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_subscription_reque
 	}
 	catch(...)
 	{}
+}
+
+TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_subscription_request_fail_to_insert_subscription)
+{
+	my_port_activity_subscriber_registry registry;
+	Pipe::worker_fwk::sync_client_connection conn{
+		Pipe::worker_fwk::port_activity_subscriber_registry_ref{registry},
+		65536
+	};
+
+	malloc_count = 0;
+	fail_malloc = 0; // No additional allocation due to SBO for std::string
+	try
+	{
+		registry.expected_server_portname = "Foobar";
+		registry.expected_port_id = Pipe::worker_fwk::port_id{54};
+		conn.handle_request(
+			Pipe::worker_sync::port_activity_subscription_request{
+				.server_portname = "Foobar"
+			},
+			Pipe::worker_sync::transaction_id{325}
+		);
+		abort();
+	}
+	catch(...)
+	{ }
+	EXPECT_EQ(registry.expected_port_id.has_value(), false);
 }
