@@ -125,12 +125,12 @@ namespace
 		void update_listening_status(
 			Pipe::os_services::fd::saved_event_handler_ref,
 			Pipe::os_services::fd::activity_status new_status
-		) override
+		) noexcept override
 		{
 			obj.get_saved_event_handler_info()->status = new_status;
 		}
 
-		void remove(Pipe::os_services::fd::event_handler_id) override
+		void remove(Pipe::os_services::fd::event_handler_id) noexcept override
 		{}
 
 		Pipe::os_services::fd::event_handler_id do_add(

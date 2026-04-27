@@ -59,7 +59,7 @@ namespace
 		std::optional<Pipe::os_services::fd::event_handler_id> id_to_remove;
 		std::optional<Pipe::os_services::fd::activity_status> current_listening_status;
 
-		void remove(Pipe::os_services::fd::event_handler_id id) override
+		void remove(Pipe::os_services::fd::event_handler_id id) noexcept override
 		{
 			EXPECT_EQ(id, id_to_remove);
 			id_to_remove.reset();
@@ -68,7 +68,7 @@ namespace
 		void update_listening_status(
 			Pipe::os_services::fd::saved_event_handler_ref,
 			Pipe::os_services::fd::activity_status status
-		) override
+		) noexcept override
 		{
 			EXPECT_NE(status, current_listening_status);
 			current_listening_status = status;

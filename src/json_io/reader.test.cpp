@@ -39,11 +39,11 @@ namespace
 		void update_listening_status(
 			Pipe::os_services::fd::saved_event_handler_ref,
 			Pipe::os_services::fd::activity_status
-		) override
-		{ throw std::runtime_error{"Unexpected call update_listening_status"}; }
+		) noexcept override
+		{ Pipe::utils::log_and_terminate("Unexpected call update_listening_status"); }
 
 	private:
-		void remove(Pipe::os_services::fd::event_handler_id id) override
+		void remove(Pipe::os_services::fd::event_handler_id id) noexcept override
 		{ removed_id = id; }
 
 		Pipe::os_services::fd::event_handler_id do_add(

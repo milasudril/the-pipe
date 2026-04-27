@@ -21,14 +21,14 @@ namespace
 		void update_listening_status(
 			Pipe::os_services::fd::saved_event_handler_ref,
 			Pipe::os_services::fd::activity_status status
-		) override
+		) noexcept override
 		{
 			EXPECT_EQ(status, expected_new_listening_status);
 			expected_new_listening_status.reset();
 		}
 
 	private:
-		void remove(Pipe::os_services::fd::event_handler_id id) override
+		void remove(Pipe::os_services::fd::event_handler_id id) noexcept override
 		{
 			EXPECT_EQ(id, expected_remove_id);
 			expected_remove_id.reset();

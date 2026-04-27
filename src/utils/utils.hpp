@@ -440,6 +440,9 @@ namespace Pipe::utils
 	template<class T, class... Types>
 	constexpr auto variant_index_v = variant_index<T, Types...>::value;
 
+	[[gnu::cold]] [[noreturn]] void log_and_terminate(std::string_view message) noexcept;
+
+	[[gnu::cold]] [[noreturn]] void log_with_errno_and_terminate(std::string_view message, int err) noexcept;
 };
 
 template<class T>

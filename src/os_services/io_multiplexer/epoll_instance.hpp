@@ -147,7 +147,7 @@ namespace Pipe::os_services::io_multiplexer
 		void update_listening_status(
 			Pipe::os_services::fd::saved_event_handler_ref handle,
 			Pipe::os_services::fd::activity_status new_status
-		) override
+		) noexcept override
 		{
 			auto const event_handler = static_cast<epoll_entry_data_header const*>(handle.get());
 			::epoll_event event{
@@ -163,14 +163,14 @@ namespace Pipe::os_services::io_multiplexer
 				&event
 			);
 			if(result == -1)
-			{ throw error_handling::system_error{"Failed to update epoll event", errno}; }
+			{ Pipe::utils::log_with_errno_and_terminate("epoll_ctl EPOLL_CTL_MOD failed", errno); }
 		}
 
 		bool is_empty() const
 		{ return m_listeners.empty(); }
 
 	private:
-		void remove(fd::event_handler_id event_handler) override
+		void remove(fd::event_handler_id event_handler) noexcept override
 		{
 			auto const i = m_listeners.find(event_handler);
 			if(i == std::end(m_listeners))

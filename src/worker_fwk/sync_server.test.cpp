@@ -1,13 +1,14 @@
 //@	{"target":{"name":"sync_server.test"}}
 
 #include "./sync_server.hpp"
+#include "src/utils/utils.hpp"
 
 #include <testfwk/testfwk.hpp>
 namespace
 {
 	struct my_event_handler_registry:Pipe::os_services::fd::activity_event_handler_store
 	{
-		void remove(Pipe::os_services::fd::event_handler_id id) override
+		void remove(Pipe::os_services::fd::event_handler_id id) noexcept override
 		{
 			EXPECT_EQ(expected_remove_id.has_value(), true);
 			EXPECT_EQ(id, expected_remove_id);
@@ -17,9 +18,11 @@ namespace
 		void update_listening_status(
 			Pipe::os_services::fd::saved_event_handler_ref handle,
 			Pipe::os_services::fd::activity_status new_status
-		) override
+		) noexcept override
 		{
-			REQUIRE_EQ(expected_update_listening_status_call.has_value(), true);
+			if(!expected_update_listening_status_call.has_value())
+			{ Pipe::utils::log_and_terminate("Unexpected update_listening_status"); }
+
 			EXPECT_EQ(handle.get(), expected_update_listening_status_call->handle.get());
 			EXPECT_EQ(new_status, expected_update_listening_status_call->new_status);
 			expected_update_listening_status_call.reset();
