@@ -440,6 +440,37 @@ namespace Pipe::utils
 	template<class T, class... Types>
 	constexpr auto variant_index_v = variant_index<T, Types...>::value;
 
+	template<class FlushFunc>
+	class write_buffer
+	{
+	public:
+		explicit write_buffer(FlushFunc&& func):
+			m_flush{std::move(func)}
+		{}
+
+		void putchar(char val)
+		{
+			if(m_write_offest == std::size(m_data)) [[unlikely]]
+			{ flush(); }
+			m_data[m_write_offest] = val;
+			++m_write_offest;
+		}
+
+		void flush()
+		{
+			m_flush(std::span{std::data(m_data), m_write_offest});
+			m_write_offest = 0;
+		}
+
+	private:
+		std::array<char, 4096> m_data;
+		size_t m_write_offest{0};
+		FlushFunc m_flush;
+	};
+
+	template<class FlushFunc>
+	write_buffer(FlushFunc&&) ->write_buffer<FlushFunc>;
+
 	[[gnu::cold]] [[noreturn]] void log_and_terminate(std::string_view message) noexcept;
 
 	[[gnu::cold]] [[noreturn]] void log_with_errno_and_terminate(std::string_view message, int err) noexcept;

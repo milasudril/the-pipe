@@ -29,40 +29,6 @@ std::string Pipe::utils::random_printable_ascii_string(size_t n)
 	return ret;
 }
 
-namespace
-{
-	template<class FlushFunc>
-	class write_buffer
-	{
-	public:
-		explicit write_buffer(FlushFunc&& func):
-			m_flush{std::move(func)}
-		{}
-
-		void putchar(char val)
-		{
-			if(m_write_offest == std::size(m_data)) [[unlikely]]
-			{ flush(); }
-			m_data[m_write_offest] = val;
-			++m_write_offest;
-		}
-
-		void flush()
-		{
-			m_flush(std::span{std::data(m_data), m_write_offest});
-			m_write_offest = 0;
-		}
-
-	private:
-		std::array<char, 4096> m_data;
-		size_t m_write_offest{0};
-		FlushFunc m_flush;
-	};
-
-	template<class FlushFunc>
-	write_buffer(FlushFunc&&) ->write_buffer<FlushFunc>;
-};
-
 [[gnu::cold]] [[noreturn]] void Pipe::utils::log_and_terminate(std::string_view message) noexcept
 {
 	::signal(SIGPIPE, SIG_DFL);
