@@ -15,15 +15,15 @@ namespace Pipe::os_services::error_handling
 	{
 	public:
 		/**
-		 * \name Constructs a system_error from a message and an error code using strerror
+		 * \name Constructs a system_error from a message and an error code using strerrordesc_np
 		 */
 		//@{
 		explicit system_error(char const* msg, int err):
-			std::runtime_error{std::format("{}: {}", msg, strerror(err))}
+			std::runtime_error{std::format("{}: {}", msg, strerrordesc_np(err))}
 		{}
 
 		explicit system_error(std::string const& msg, int err):
-			std::runtime_error{std::format("{}: {}", msg, strerror(err))}
+			std::runtime_error{std::format("{}: {}", msg, strerrordesc_np(err))}
 		{}
 		//@}
 	};
