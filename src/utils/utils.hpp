@@ -4,6 +4,7 @@
 #define PIPE_UTILS_HPP
 
 #include <algorithm>
+#include <cstdlib>
 #include <string>
 #include <cmath>
 #include <vector>
@@ -455,6 +456,22 @@ namespace Pipe::utils
 			m_data[m_write_offest] = val;
 			++m_write_offest;
 		}
+
+		void puts(std::string_view str)
+		{
+			while(!str.empty())
+			{
+				auto const num_bytes_to_copy = std::min(
+					std::size(m_data) - m_write_offest,
+					std::size(str)
+				);
+				if(num_bytes_to_copy == 0)
+				{ flush(); }
+				else
+				{ std::copy_n(std::begin(str), num_bytes_to_copy, std::begin(m_data) + m_write_offest); }
+				str = std::string_view{std::begin(str) + num_bytes_to_copy, std::end(str)};
+			}
+		};
 
 		void flush()
 		{
