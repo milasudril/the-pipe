@@ -1,10 +1,9 @@
 #ifndef PIPE_OS_SERVICES_FS_FILE_ACCESS_PERMISSION_HPP
 #define PIPE_OS_SERVICES_FS_FILE_ACCESS_PERMISSION_HPP
 
-#include "src/utils/utils.hpp"
+#include "src/utils/bitenum.hpp"
 
 #include <stdexcept>
-#include <span>
 #include <vector>
 #include <string_view>
 #include <cstdint>
