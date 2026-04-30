@@ -11,7 +11,7 @@
 
 TESTCASE(Pipe_ipc_unix_domain_socket_make_abstract_sockaddr_un)
 {
-	auto const address = Pipe::utils::random_printable_ascii_string(Pipe::utils::num_chars_16_bytes);
+	auto const address = Pipe::utils::random_printable_ascii_string(20);
 	auto const res = Pipe::os_services::ipc::make_abstract_sockaddr_un(address);
 	EXPECT_EQ(res.sun_family, AF_UNIX);
 	EXPECT_EQ(res.sun_path + 1, std::string_view{address});
@@ -49,7 +49,7 @@ namespace
 TESTCASE(Pipe_ipc_unix_domain_socket_create_sockets_and_connect)
 {
 	event server_created;
-	auto const sockname = Pipe::utils::random_printable_ascii_string(Pipe::utils::num_chars_16_bytes);
+	auto const sockname = Pipe::utils::random_printable_ascii_string(20);
 	auto const address = Pipe::os_services::ipc::make_abstract_sockaddr_un(sockname);
 	std::jthread server_thread{[address, &server_created](){
 		auto const server_socket = Pipe::os_services::ipc::make_server_socket<SOCK_SEQPACKET>(address, 1024);

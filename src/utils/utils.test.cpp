@@ -12,11 +12,6 @@ TESTCASE(Pipe_utils_random_printable_ascii_string)
 	printf("%s\n", string.c_str());
 }
 
-TESTCASE(Pipe_utils_byte_count_to_printable_ascii_string_length)
-{
-	EXPECT_EQ(Pipe::utils::byte_count_to_printable_ascii_string_length(16), 20);
-	static_assert(Pipe::utils::num_chars_16_bytes == 20);
-}
 
 TESTCASE(Pipe_utils_for_each_disjoint_segment_boundary_points_not_included)
 {

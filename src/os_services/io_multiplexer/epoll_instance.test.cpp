@@ -215,7 +215,7 @@ namespace
 TESTCASE(Pipe_os_services_io_multiplexer_epoll_instance)
 {
 	event server_created;
-	auto const sockname = Pipe::utils::random_printable_ascii_string(Pipe::utils::num_chars_16_bytes);
+	auto const sockname = Pipe::utils::random_printable_ascii_string(20);
 	auto const address = Pipe::os_services::ipc::make_abstract_sockaddr_un(sockname);
 	std::jthread server_thread{[address, &server_created](){
 		Pipe::os_services::io_multiplexer::epoll_instance monitor;
