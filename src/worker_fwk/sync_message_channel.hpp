@@ -5,6 +5,7 @@
 #include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/worker_sync/worker_sync.hpp"
 #include "src/utils/utils.hpp"
+#include "src/utils/scope_handling.hpp"
 
 #include <fcntl.h>
 #include <memory>

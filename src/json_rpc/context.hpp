@@ -7,6 +7,7 @@
 #include "./transaction.hpp"
 
 #include "src/utils/utils.hpp"
+#include "src/utils/scope_handling.hpp"
 
 #include <deque>
 #include <jopp/types.hpp>
