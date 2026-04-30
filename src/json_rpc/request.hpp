@@ -2,6 +2,7 @@
 #define PIPE_JSON_RPC_REQUEST_HPP
 
 #include "./transaction.hpp"
+#include "src/utils/variant_utils.hpp"
 #include "src/utils/utils.hpp"
 
 #include <jopp/types.hpp>
