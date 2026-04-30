@@ -2,6 +2,7 @@
 
 #include "./reader.hpp"
 
+#include "src/log/log.hpp"
 #include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
 #include "src/os_services/io/io.hpp"
@@ -40,7 +41,7 @@ namespace
 			Pipe::os_services::fd::saved_event_handler_ref,
 			Pipe::os_services::fd::activity_status
 		) noexcept override
-		{ Pipe::utils::log_and_terminate("Unexpected call update_listening_status"); }
+		{ Pipe::log::terminate_with_message("Unexpected call update_listening_status"); }
 
 	private:
 		void remove(Pipe::os_services::fd::event_handler_id id) noexcept override

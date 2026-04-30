@@ -320,10 +320,6 @@ namespace Pipe::utils
 
 	template<class FlushFunc>
 	write_buffer(FlushFunc&&) ->write_buffer<FlushFunc>;
-
-	[[gnu::cold]] [[noreturn]] void log_and_terminate(std::string_view message) noexcept;
-
-	[[gnu::cold]] [[noreturn]] void log_with_errno_and_terminate(std::string_view message, int err) noexcept;
 };
 
 #endif

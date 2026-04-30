@@ -228,6 +228,9 @@ namespace Pipe::log
 	private:
 		configuration m_old_cfg;
 	};
+	
+	
+[[gnu::cold]] [[noreturn]] void terminate_with_message(std::string_view message) noexcept;
 };
 
 #endif

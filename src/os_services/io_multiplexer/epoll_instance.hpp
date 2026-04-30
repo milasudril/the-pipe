@@ -5,6 +5,7 @@
 
 #include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
+#include "src/log/log.hpp"
 #include "src/os_services/error_handling/error_handling.hpp"
 #include "src/os_services/error_handling/system_error.hpp"
 
@@ -163,7 +164,7 @@ namespace Pipe::os_services::io_multiplexer
 				&event
 			);
 			if(result == -1)
-			{ Pipe::utils::log_with_errno_and_terminate("epoll_ctl EPOLL_CTL_MOD failed", errno); }
+			{ Pipe::log::terminate_with_message("epoll_ctl EPOLL_CTL_MOD failed"); }
 		}
 
 		bool is_empty() const
