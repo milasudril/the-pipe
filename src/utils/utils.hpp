@@ -6,16 +6,13 @@
 #include <algorithm>
 #include <cstdlib>
 #include <string>
-#include <cmath>
 #include <vector>
 #include <concepts>
 #include <span>
 #include <format>
 #include <type_traits>
-#include <variant>
 #include <array>
 #include <utility>
-#include <stdexcept>
 
 /**
  * \brief Contains various utility functions
