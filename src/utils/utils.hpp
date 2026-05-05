@@ -13,6 +13,7 @@
 #include <type_traits>
 #include <array>
 #include <utility>
+#include <flat_set>
 
 /**
  * \brief Contains various utility functions
@@ -63,76 +64,49 @@ namespace Pipe::utils
 		{ return std::forward<T>(ref); }
 	}
 
-
-	template<class T>
-	class flat_set
+	template<class Key, class Compare = std::less<Key>, class KeyContainer = std::vector<Key>>
+	class immutable_flat_set
 	{
 	public:
-		class span:std::span<T const>
-		{
-		public:
-			constexpr span() = default;
+		using iterator = typename KeyContainer::const_iterator;
+		using const_iterator = iterator;
 
-			using std::span<T const>::begin;
-			using std::span<T const>::end;
-			using std::span<T const>::operator[];
-			using std::span<T const>::empty;
-			using std::span<T const>::size;
-			using std::span<T const>::front;
-			using std::span<T const>::back;
-			using iterator = std::span<T const>::iterator;
+		immutable_flat_set() = default;
 
-			constexpr span trim(iterator begin, iterator end) const
-			{
-				return span{begin, end};
-			}
+		immutable_flat_set(
+			std::reference_wrapper<std::flat_set<Key, Compare, KeyContainer> const> container
+		):
+			m_begin{std::begin(container.get())},
+			m_end{std::end(container.get())}
+		{}
 
-		private:
-			constexpr explicit span(T const* begin, T const* end):std::span<T const>{begin, end}{}
-			constexpr explicit span(iterator begin, iterator end):std::span<T const>{begin, end}{}
+		auto begin() const
+		{ return m_begin; }
 
-			friend class flat_set;
-		};
+		auto end() const
+		{ return m_end; }
 
-		template<class Iter>
-		explicit flat_set(Iter begin, Iter end):
-			m_values{begin, end}
-		{ sort_and_remove_duplicates(); }
+		auto size() const
+		{ return m_end - m_begin; }
 
-		template<class Iter, class ValueConverter>
-		explicit flat_set(Iter begin, Iter end, ValueConverter conv)
-		{
-			std::transform(
-				begin,
-				end,
-				std::back_inserter(m_values),
-				std::forward<ValueConverter>(conv)
-			);
-			sort_and_remove_duplicates();
-		}
+		auto trim(iterator new_begin, iterator new_end) const
+		{ return immutable_flat_set{new_begin, new_end}; }
 
-		operator span() const
-		{ return span{std::data(m_values), std::data(m_values) + std::size(m_values)}; }
+		bool empty() const
+		{ return m_begin == m_end; }
+
+		auto& back() const
+		{ return *(m_end - 1); }
 
 	private:
-		void sort_and_remove_duplicates()
-		{
-			std::ranges::sort(m_values);
-			auto const res = std::ranges::unique(m_values);
-			m_values.erase(res.end(), std::end(m_values));
-		}
-		std::vector<T> m_values;
+		explicit immutable_flat_set(iterator new_begin, iterator new_end):
+			m_begin{new_begin},
+			m_end{new_end}
+		{}
+
+		iterator m_begin{};
+		iterator m_end{};
 	};
-
-	template<class Iter>
-	flat_set(Iter, Iter) -> flat_set<typename std::iterator_traits<Iter>::value_type>;
-
-	template<class Iter, class ValueConverter>
-	flat_set(Iter begin, Iter end, ValueConverter conv) ->
-		flat_set<std::invoke_result_t<ValueConverter, typename std::iterator_traits<Iter>::value_type>>;
-
-	template<class T>
-	using immutable_flat_set = flat_set<T>::span;
 
 	template<std::unsigned_integral T>
 	struct inclusive_integral_range

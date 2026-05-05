@@ -9,6 +9,7 @@
 
 #include <cstdint>
 #include <linux/close_range.h>
+#include <ranges>
 #include <unistd.h>
 #include <utility>
 #include <vector>
@@ -110,11 +111,13 @@ Pipe::os_services::proc_mgmt::spawn(
 	// Before fork, prepare stuff to be passed to do_exec
 	auto const argv_out = build_argv(path, argv);
 	auto const env_out = build_env(env);
-	utils::flat_set fds_to_keep{
-		std::begin(fds_to_forward),
-		std::end(fds_to_forward),
-		[](auto const& val) {
-			return static_cast<unsigned int>(val.get().native_handle());
+	std::flat_set fds_to_keep{
+		std::from_range_t{},
+		std::ranges::transform_view{
+			fds_to_forward,
+			[](auto const& val) {
+				return static_cast<unsigned int>(val.get().native_handle());
+			}
 		}
 	};
 
@@ -136,7 +139,7 @@ Pipe::os_services::proc_mgmt::spawn(
 				std::data(argv_out),
 				std::data(env_out),
 				io_redir,
-				fds_to_keep,
+				std::cref(fds_to_keep),
 				exec_err_pipe.write_end()
 			);
 			exec_err_pipe.close_write_end();

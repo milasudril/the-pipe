@@ -23,13 +23,14 @@ TESTCASE(Pipe_utils_for_each_disjoint_segment_boundary_points_not_included)
 		Pipe::utils::inclusive_integral_range{13u, 14u},
 		Pipe::utils::inclusive_integral_range{16u, 0xffff'ffffu}
 	};
+	std::flat_set<uint32_t> set(std::begin(vals), std::end(vals));
 	size_t k = 0;
 	for_each_disjoint_segment(
 		Pipe::utils::inclusive_integral_range{
 			.start_at = 0u,
 			.stop_at = 0xffff'ffffu
 		},
-		Pipe::utils::flat_set{std::begin(vals), std::end(vals)},
+		Pipe::utils::immutable_flat_set{std::cref(set)},
 		[&k](auto range, auto const& expected_results) {
 			EXPECT_EQ(range, expected_results[k]);
 			++k;
@@ -49,13 +50,14 @@ TESTCASE(Pipe_utils_for_each_disjoint_segment_boundary_points_not_included_start
 		Pipe::utils::inclusive_integral_range{13u, 14u},
 		Pipe::utils::inclusive_integral_range{16u, 0xffff'ffffu}
 	};
+	std::flat_set<uint32_t> set(std::begin(vals), std::end(vals));
 	size_t k = 0;
 	for_each_disjoint_segment(
 		Pipe::utils::inclusive_integral_range{
 			.start_at = 3u,
 			.stop_at = 0xffff'ffffu
 		},
-		Pipe::utils::flat_set{std::begin(vals), std::end(vals)},
+		Pipe::utils::immutable_flat_set{std::cref(set)},
 		[&k](auto range, auto const& expected_results) {
 			REQUIRE_LT(k, std::size(expected_results));
 			EXPECT_EQ(range, expected_results[k]);
@@ -76,13 +78,14 @@ TESTCASE(Pipe_utils_for_each_disjoint_segment_boundary_points_not_included_start
 		Pipe::utils::inclusive_integral_range{13u, 14u},
 		Pipe::utils::inclusive_integral_range{16u, 0xffff'ffffu}
 	};
+	std::flat_set<uint32_t> set(std::begin(vals), std::end(vals));
 	size_t k = 0;
 	for_each_disjoint_segment(
 		Pipe::utils::inclusive_integral_range{
 			.start_at = 3u,
 			.stop_at = 0xffff'ffffu
 		},
-		Pipe::utils::flat_set{std::begin(vals), std::end(vals)},
+		Pipe::utils::immutable_flat_set{std::cref(set)},
 		[&k](auto range, auto const& expected_results) {
 			REQUIRE_LT(k, std::size(expected_results));
 			EXPECT_EQ(range, expected_results[k]);
@@ -100,13 +103,14 @@ TESTCASE(Pipe_utils_for_each_disjoint_segment_other_testcase)
 		Pipe::utils::inclusive_integral_range{3u, 7u},
 		Pipe::utils::inclusive_integral_range{9u, 0xffff'ffffu}
 	};
+	std::flat_set<uint32_t> set(std::begin(vals), std::end(vals));
 	size_t k = 0;
 	for_each_disjoint_segment(
 		Pipe::utils::inclusive_integral_range{
 			.start_at = 3u,
 			.stop_at = 0xffff'ffffu
 		},
-		Pipe::utils::flat_set{std::begin(vals), std::end(vals)},
+		Pipe::utils::immutable_flat_set{std::cref(set)},
 		[&k](auto range, auto const& expected_results) {
 			REQUIRE_LT(k, std::size(expected_results));
 			EXPECT_EQ(range, expected_results[k]);
@@ -127,13 +131,14 @@ TESTCASE(Pipe_utils_for_each_disjoint_segment_boundary_start_at_included)
 		Pipe::utils::inclusive_integral_range{13u, 14u},
 		Pipe::utils::inclusive_integral_range{16u, 0xffff'ffffu}
 	};
+	std::flat_set<uint32_t> set(std::begin(vals), std::end(vals));
 	size_t k = 0;
 	for_each_disjoint_segment(
 		Pipe::utils::inclusive_integral_range{
 			.start_at = 0u,
 			.stop_at = 0xffff'ffffu
 		},
-		Pipe::utils::flat_set{std::begin(vals), std::end(vals)},
+		Pipe::utils::immutable_flat_set{std::cref(set)},
 		[&k](auto range, auto const& expected_results) {
 			REQUIRE_LT(k, std::size(expected_results));
 			EXPECT_EQ(range, expected_results[k]);
@@ -154,13 +159,14 @@ TESTCASE(Pipe_utils_for_each_disjoint_segment_boundary_stop_at_included)
 		Pipe::utils::inclusive_integral_range{13u, 14u},
 		Pipe::utils::inclusive_integral_range{16u, 0xffff'fffeu}
 	};
+	std::flat_set<uint32_t> set(std::begin(vals), std::end(vals));
 	size_t k = 0;
 	for_each_disjoint_segment(
 		Pipe::utils::inclusive_integral_range{
 			.start_at = 0u,
 			.stop_at = 0xffff'ffffu
 		},
-		Pipe::utils::flat_set{std::begin(vals), std::end(vals)},
+		Pipe::utils::immutable_flat_set{std::cref(set)},
 		[&k](auto range, auto const& expected_results) {
 			REQUIRE_LT(k, std::size(expected_results));
 			EXPECT_EQ(range, expected_results[k]);
@@ -181,13 +187,14 @@ TESTCASE(Pipe_utils_for_each_disjoint_segment_boundary_points_included)
 		Pipe::utils::inclusive_integral_range{13u, 14u},
 		Pipe::utils::inclusive_integral_range{16u, 0xffff'fffeu}
 	};
+	std::flat_set<uint32_t> set(std::begin(vals), std::end(vals));
 	size_t k = 0;
 	for_each_disjoint_segment(
 		Pipe::utils::inclusive_integral_range{
 			.start_at = 0u,
 			.stop_at = 0xffff'ffffu
 		},
-		Pipe::utils::flat_set{std::begin(vals), std::end(vals)},
+		Pipe::utils::immutable_flat_set{std::cref(set)},
 		[&k](auto range, auto const& expected_results) {
 			REQUIRE_LT(k, std::size(expected_results));
 			EXPECT_EQ(range, expected_results[k]);
@@ -206,13 +213,14 @@ TESTCASE(Pipe_utils_for_each_disjoint_segment_consecutive_boundary_points_not_in
 		Pipe::utils::inclusive_integral_range{3u, 4u},
 		Pipe::utils::inclusive_integral_range{7u, 0xffff'ffffu},
 	};
+	std::flat_set<uint32_t> set(std::begin(vals), std::end(vals));
 	size_t k = 0;
 	for_each_disjoint_segment(
 		Pipe::utils::inclusive_integral_range{
 			.start_at = 0u,
 			.stop_at = 0xffff'ffffu
 		},
-		Pipe::utils::flat_set{std::begin(vals), std::end(vals)},
+		Pipe::utils::immutable_flat_set{std::cref(set)},
 		[&k](auto range, auto const& expected_results) {
 			REQUIRE_LT(k, std::size(expected_results));
 			EXPECT_EQ(range, expected_results[k]);
@@ -230,13 +238,14 @@ TESTCASE(Pipe_utils_for_each_disjoint_segment_consecutive_boundary_points_includ
 		Pipe::utils::inclusive_integral_range{2u, 2u},
 		Pipe::utils::inclusive_integral_range{5u, 0xffff'fffdu}
 	};
+	std::flat_set<uint32_t> set(std::begin(vals), std::end(vals));
 	size_t k = 0;
 	for_each_disjoint_segment(
 		Pipe::utils::inclusive_integral_range{
 			.start_at = 0u,
 			.stop_at = 0xffff'ffffu
 		},
-		Pipe::utils::flat_set{std::begin(vals), std::end(vals)},
+		Pipe::utils::immutable_flat_set{std::cref(set)},
 		[&k](auto range, auto const& expected_results) {
 			REQUIRE_LT(k, std::size(expected_results));
 			EXPECT_EQ(range, expected_results[k]);
@@ -254,13 +263,14 @@ TESTCASE(Pipe_utils_for_each_disjoint_segment_vals_outside_range)
 		Pipe::utils::inclusive_integral_range{4u, 5u},
 		Pipe::utils::inclusive_integral_range{7u, 16u}
 	};
+	std::flat_set<uint32_t> set(std::begin(vals), std::end(vals));
 	size_t k = 0;
 	for_each_disjoint_segment(
 		Pipe::utils::inclusive_integral_range{
 			.start_at = 3u,
 			.stop_at = 16u
 		},
-		Pipe::utils::flat_set{std::begin(vals), std::end(vals)},
+		Pipe::utils::immutable_flat_set{std::cref(set)},
 		[&k](auto range, auto const& expected_results) {
 			REQUIRE_LT(k, std::size(expected_results));
 			EXPECT_EQ(range, expected_results[k]);
