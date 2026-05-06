@@ -248,23 +248,23 @@ namespace Pipe::utils
 	template<class T>
 	inline constexpr auto array_size_v = array_size<T>::value;
 
-	template<class FlushFunc>
+	template<class FlushFunc, size_t BufferSize = 4096>
 	class write_buffer
 	{
 	public:
-		explicit write_buffer(FlushFunc&& func):
+		constexpr explicit write_buffer(FlushFunc&& func):
 			m_flush{std::move(func)}
 		{}
 
-		void putchar(char val)
+		constexpr void putchar(char val)
 		{
-			if(m_write_offest == std::size(m_data)) [[unlikely]]
-			{ flush(); }
 			m_data[m_write_offest] = val;
 			++m_write_offest;
+			if(m_write_offest == std::size(m_data)) [[unlikely]]
+			{ flush(); }
 		}
 
-		void puts(std::string_view str)
+		constexpr void puts(std::string_view str)
 		{
 			while(!str.empty())
 			{
@@ -278,22 +278,28 @@ namespace Pipe::utils
 				{ std::copy_n(std::begin(str), num_bytes_to_copy, std::begin(m_data) + m_write_offest); }
 				str = std::string_view{std::begin(str) + num_bytes_to_copy, std::end(str)};
 			}
-		};
+		}
 
-		void flush()
+		constexpr void flush()
 		{
 			m_flush(std::span{std::data(m_data), m_write_offest});
 			m_write_offest = 0;
 		}
 
 	private:
-		std::array<char, 4096> m_data;
+		std::array<char, BufferSize> m_data;
 		size_t m_write_offest{0};
 		FlushFunc m_flush;
 	};
 
 	template<class FlushFunc>
-	write_buffer(FlushFunc&&) ->write_buffer<FlushFunc>;
+	write_buffer(FlushFunc&&) -> write_buffer<FlushFunc>;
+
+	template<size_t BufferSize, class FlushFunc>
+	constexpr auto make_write_buffer(FlushFunc&& func)
+	{
+		return write_buffer<FlushFunc, BufferSize>(std::forward<FlushFunc>(func));
+	}
 };
 
 #endif
