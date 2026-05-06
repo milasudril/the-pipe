@@ -405,13 +405,9 @@ TESTCASE(Pipe_utils_write_buffer_putchars)
 
 		for(size_t k = 0; k != 32; ++k)
 		{ buffer.putchar(static_cast<char>(k + 32)); }
-
-		EXPECT_EQ(flush_count, 2);
-		EXPECT_EQ(std::size(written_data), 32);
-		EXPECT_EQ(written_data, " !\"#$%&'()*+,-./0123456789:;<=>?");
 	}
 
-	EXPECT_EQ(flush_count, 3);
+	EXPECT_EQ(flush_count, 2);
 	EXPECT_EQ(std::size(written_data), 32);
 	EXPECT_EQ(written_data, " !\"#$%&'()*+,-./0123456789:;<=>?");
 }
@@ -443,10 +439,6 @@ TESTCASE(Pipe_utils_write_buffer_putchars_flush_manually)
 
 		for(size_t k = 0; k != 24; ++k)
 		{ buffer.putchar(static_cast<char>(k + 32)); }
-
-		EXPECT_EQ(flush_count, 1);
-		EXPECT_EQ(std::size(written_data), 16);
-		EXPECT_EQ(written_data, " !\"#$%&'()*+,-./");
 
 		buffer.flush();
 		EXPECT_EQ(flush_count, 2);

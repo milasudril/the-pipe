@@ -258,10 +258,10 @@ namespace Pipe::utils
 
 		constexpr void putchar(char val)
 		{
-			m_data[m_write_offest] = val;
-			++m_write_offest;
 			if(m_write_offest == std::size(m_data)) [[unlikely]]
 			{ flush(); }
+			m_data[m_write_offest] = val;
+			++m_write_offest;
 		}
 
 		constexpr void puts(std::string_view str)
