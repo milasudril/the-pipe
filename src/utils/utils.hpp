@@ -286,6 +286,9 @@ namespace Pipe::utils
 			m_write_offest = 0;
 		}
 
+		constexpr ~write_buffer()
+		{ flush(); }
+
 	private:
 		std::array<char, BufferSize> m_data;
 		size_t m_write_offest{0};

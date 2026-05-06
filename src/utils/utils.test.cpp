@@ -383,18 +383,35 @@ TESTCASE(Pipe_utils_write_buffer_putchars)
 {
 	size_t flush_count = 0;
 	std::string written_data;
-	auto buffer = Pipe::utils::make_write_buffer<16>(
-		[&flush_count, &written_data](std::span<char const> buffer) {
-			EXPECT_EQ(std::size(buffer), 16);
-			written_data.append(std::begin(buffer), std::end(buffer));
-			++flush_count;
-		}
-	);
+	{
+		auto buffer = Pipe::utils::make_write_buffer<16>(
+			[&flush_count, &written_data](std::span<char const> buffer) {
+				switch(flush_count)
+				{
+					case 0:
+						EXPECT_EQ(std::size(buffer), 16);
+						break;
+					case 1:
+						EXPECT_EQ(std::size(buffer), 16);
+						break;
+					default:
+						EXPECT_EQ(std::size(buffer), 0);
+				}
 
-	for(size_t k = 0; k != 32; ++k)
-	{ buffer.putchar(static_cast<char>(k + 32)); }
+				written_data.append(std::begin(buffer), std::end(buffer));
+				++flush_count;
+			}
+		);
 
-	EXPECT_EQ(flush_count, 2);
+		for(size_t k = 0; k != 32; ++k)
+		{ buffer.putchar(static_cast<char>(k + 32)); }
+
+		EXPECT_EQ(flush_count, 2);
+		EXPECT_EQ(std::size(written_data), 32);
+		EXPECT_EQ(written_data, " !\"#$%&'()*+,-./0123456789:;<=>?");
+	}
+
+	EXPECT_EQ(flush_count, 3);
 	EXPECT_EQ(std::size(written_data), 32);
 	EXPECT_EQ(written_data, " !\"#$%&'()*+,-./0123456789:;<=>?");
 }
@@ -404,27 +421,39 @@ TESTCASE(Pipe_utils_write_buffer_putchars_flush_manually)
 {
 	size_t flush_count = 0;
 	std::string written_data;
-	auto buffer = Pipe::utils::make_write_buffer<16>(
-		[&flush_count, &written_data](std::span<char const> buffer) {
-			if(flush_count == 0)
-			{ EXPECT_EQ(std::size(buffer), 16); }
-			else
-			{ EXPECT_EQ(std::size(buffer), 8); }
+	{
+		auto buffer = Pipe::utils::make_write_buffer<16>(
+			[&flush_count, &written_data](std::span<char const> buffer) {
+				switch(flush_count)
+				{
+					case 0:
+						EXPECT_EQ(std::size(buffer), 16);
+						break;
+					case 1:
+						EXPECT_EQ(std::size(buffer), 8);
+						break;
+					default:
+						EXPECT_EQ(std::size(buffer), 0);
+				}
 
-			written_data.append(std::begin(buffer), std::end(buffer));
-			++flush_count;
-		}
-	);
+				written_data.append(std::begin(buffer), std::end(buffer));
+				++flush_count;
+			}
+		);
 
-	for(size_t k = 0; k != 24; ++k)
-	{ buffer.putchar(static_cast<char>(k + 32)); }
+		for(size_t k = 0; k != 24; ++k)
+		{ buffer.putchar(static_cast<char>(k + 32)); }
 
-	EXPECT_EQ(flush_count, 1);
-	EXPECT_EQ(std::size(written_data), 16);
-	EXPECT_EQ(written_data, " !\"#$%&'()*+,-./");
+		EXPECT_EQ(flush_count, 1);
+		EXPECT_EQ(std::size(written_data), 16);
+		EXPECT_EQ(written_data, " !\"#$%&'()*+,-./");
 
-	buffer.flush();
-	EXPECT_EQ(flush_count, 2);
+		buffer.flush();
+		EXPECT_EQ(flush_count, 2);
+		EXPECT_EQ(std::size(written_data), 24);
+		EXPECT_EQ(written_data, " !\"#$%&'()*+,-./01234567");
+	}
+	EXPECT_EQ(flush_count, 3);
 	EXPECT_EQ(std::size(written_data), 24);
 	EXPECT_EQ(written_data, " !\"#$%&'()*+,-./01234567");
 }
