@@ -449,3 +449,38 @@ TESTCASE(Pipe_utils_write_buffer_putchars_flush_manually)
 	EXPECT_EQ(std::size(written_data), 24);
 	EXPECT_EQ(written_data, " !\"#$%&'()*+,-./01234567");
 }
+
+TESTCASE(Pipe_utils_write_buffer_puts)
+{
+	size_t flush_count = 0;
+	std::string written_data;
+	{
+		auto buffer = Pipe::utils::make_write_buffer<16>(
+			[&flush_count, &written_data](std::span<char const> buffer) {
+				switch(flush_count)
+				{
+					case 0:
+						EXPECT_EQ(std::size(buffer), 16);
+						break;
+					case 1:
+						EXPECT_EQ(std::size(buffer), 8);
+						break;
+					default:
+						EXPECT_EQ(std::size(buffer), 0);
+				}
+
+				written_data.append(std::begin(buffer), std::end(buffer));
+				++flush_count;
+			}
+		);
+
+		buffer.puts(" !\"#$%&'()*+,-./01234567");
+
+		EXPECT_EQ(flush_count, 1);
+		EXPECT_EQ(std::size(written_data), 16);
+		EXPECT_EQ(written_data, " !\"#$%&'()*+,-./");
+	}
+	EXPECT_EQ(flush_count, 2);
+	EXPECT_EQ(std::size(written_data), 24);
+	EXPECT_EQ(written_data, " !\"#$%&'()*+,-./01234567");
+}

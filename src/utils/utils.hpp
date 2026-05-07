@@ -268,14 +268,16 @@ namespace Pipe::utils
 		{
 			while(!str.empty())
 			{
+				if(m_write_offest == std::size(m_data)) [[unlikely]]
+				{ flush(); }
+
 				auto const num_bytes_to_copy = std::min(
 					std::size(m_data) - m_write_offest,
 					std::size(str)
 				);
-				if(num_bytes_to_copy == 0)
-				{ flush(); }
-				else
-				{ std::copy_n(std::begin(str), num_bytes_to_copy, std::begin(m_data) + m_write_offest); }
+
+				std::copy_n(std::begin(str), num_bytes_to_copy, std::begin(m_data) + m_write_offest);
+				m_write_offest += num_bytes_to_copy;
 				str = std::string_view{std::begin(str) + num_bytes_to_copy, std::end(str)};
 			}
 		}
