@@ -282,7 +282,8 @@ namespace Pipe::utils
 
 		constexpr void flush()
 		{
-			m_flush(std::span{std::data(m_data), m_write_offest});
+			if(m_write_offest != 0)
+			{ m_flush(std::span{std::data(m_data), m_write_offest}); }
 			m_write_offest = 0;
 		}
 

@@ -445,7 +445,7 @@ TESTCASE(Pipe_utils_write_buffer_putchars_flush_manually)
 		EXPECT_EQ(std::size(written_data), 24);
 		EXPECT_EQ(written_data, " !\"#$%&'()*+,-./01234567");
 	}
-	EXPECT_EQ(flush_count, 3);
+	EXPECT_EQ(flush_count, 2);
 	EXPECT_EQ(std::size(written_data), 24);
 	EXPECT_EQ(written_data, " !\"#$%&'()*+,-./01234567");
 }
