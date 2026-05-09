@@ -42,7 +42,12 @@ namespace Pipe::os_services::fs
 			static_cast<mode_t>(perms)
 		);
 		if(fd == -1)
-		{ throw error_handling::system_error{std::format("Failed to open file {}", path), errno}; }
+		{
+			throw error_handling::system_error{
+				std::format("Failed to open file {}", path),
+				error_handling::get_error_code()
+			};
+		}
 
 		return io::output_file_descriptor{fd};
 	}
@@ -51,7 +56,12 @@ namespace Pipe::os_services::fs
 	{
 		auto fd = ::open(path, O_RDONLY);
 		if(fd == -1)
-		{ throw error_handling::system_error{std::format("Failed to open file {}", path), errno}; }
+		{
+			throw error_handling::system_error{
+				std::format("Failed to open file {}", path),
+				error_handling::get_error_code()
+			};
+		}
 
 		return io::input_file_descriptor{fd};
 	}
@@ -60,7 +70,12 @@ namespace Pipe::os_services::fs
 	{
 		auto fd = mkfifo(path, static_cast<mode_t>(perms));
 		if(fd == -1)
-		{ throw error_handling::system_error{std::format("Failed to create fifo {}", path), errno}; }
+		{
+			throw error_handling::system_error{
+				std::format("Failed to create fifo {}", path),
+				error_handling::get_error_code()
+			};
+		}
 		close(fd);
 	}
 

@@ -43,7 +43,7 @@ namespace Pipe::os_services::ipc
 	{
 		eventfd ret{::eventfd(0, 0)};
 		if(ret == nullptr)
-		{ throw error_handling::system_error{"Failed to create eventfd", errno}; }
+		{ throw error_handling::system_error{"Failed to create eventfd", error_handling::get_error_code()}; }
 		return ret;
 	}
 }

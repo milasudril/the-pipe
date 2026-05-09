@@ -17,7 +17,7 @@ namespace Pipe::os_services::ipc
 			std::array<int, 2> fds{};
 			auto const res = ::socketpair(AF_UNIX, SocketType, 0, std::data(fds));
 			if(res == -1)
-			{ throw error_handling::system_error{"Failed to create a socket pair", errno}; }
+			{ throw error_handling::system_error{"Failed to create a socket pair", error_handling::get_error_code()}; }
 
 			m_socket_a = connected_socket<SocketType, sockaddr_un>(fds[0]);
 			m_socket_b = connected_socket<SocketType, sockaddr_un>(fds[1]);

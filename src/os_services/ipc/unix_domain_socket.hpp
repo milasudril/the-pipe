@@ -56,7 +56,7 @@ namespace Pipe::os_services::ipc
 		socklen_t length = sizeof(ret);
 		auto const result = ::getsockopt(socket.native_handle(), SOL_SOCKET, SO_PEERCRED, &ret, &length);
 		if(result == -1)
-		{ throw error_handling::system_error{"Failed to get peer credentials", errno}; }
+		{ throw error_handling::system_error{"Failed to get peer credentials", error_handling::get_error_code()}; }
 		return ret;
 	}
 

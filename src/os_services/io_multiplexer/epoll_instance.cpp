@@ -2,6 +2,7 @@
 
 #include "./epoll_instance.hpp"
 
+#include "src/os_services/error_handling/system_error.hpp"
 #include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
 #include "src/utils/utils.hpp"
@@ -49,7 +50,10 @@ Pipe::os_services::io_multiplexer::epoll_instance::do_add(
 	{
 		m_current_id = prev_id;
 		m_listeners.erase(insert_result.first);
-		throw error_handling::system_error{"Failed to update epoll event", errno};
+		throw error_handling::system_error{
+			"Failed to update epoll event",
+			error_handling::get_error_code()
+		};
 	}
 
 	event_handler->vtable->handle_activity_event_handler_registered_event(
@@ -128,7 +132,7 @@ void Pipe::os_services::io_multiplexer::epoll_instance::wait_for_and_distpatch_e
 		-1
 	);
 	if(res == -1)
-	{ throw error_handling::system_error{"Failed to wait for events", errno}; }
+	{ throw error_handling::system_error{"Failed to wait for events", error_handling::get_error_code()}; }
 
 	for(auto const& item : std::span{std::data(events), static_cast<size_t>(res)})
 	{

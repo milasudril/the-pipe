@@ -50,7 +50,7 @@ namespace Pipe::os_services::ipc
 	{
 		basic_socket<SocketType, AddressType> ret{::socket(domain_v<AddressType>, SocketType, 0)};
 		if(ret == nullptr)
-		{ throw error_handling::system_error{"Failed to create a socket", errno}; }
+		{ throw error_handling::system_error{"Failed to create a socket", error_handling::get_error_code()}; }
 		return ret;
 	}
 
@@ -117,7 +117,12 @@ namespace Pipe::os_services::ipc
 	{
 		connected_socket<SocketType, AddressType> ret{::accept(server_socket.native_handle(), nullptr, nullptr)};
 		if(ret == nullptr)
-		{ throw error_handling::system_error{"Failed to accept connection from socket", errno}; }
+		{
+			throw error_handling::system_error{
+				"Failed to accept connection from socket",
+				error_handling::get_error_code()
+			};
+		}
 		return ret;
 	}
 
@@ -137,11 +142,21 @@ namespace Pipe::os_services::ipc
 			sizeof(listening_address)
 		);
 		if(bind_result == -1)
-		{ throw error_handling::system_error{"Failed to bind socket", errno}; }
+		{
+			throw error_handling::system_error{
+				"Failed to bind socket",
+				error_handling::get_error_code()
+			};
+		}
 
 		auto const listen_result = ::listen(socket.native_handle(), connection_backlog);
 		if(listen_result == -1)
-		{ throw error_handling::system_error{"Failed to enable listening on socket", errno}; }
+		{
+			throw error_handling::system_error{
+				"Failed to enable listening on socket",
+				error_handling::get_error_code()
+			};
+		}
 
 		return server_socket_ref<SocketType, AddressType>{socket.native_handle()};
 	}
@@ -176,7 +191,7 @@ namespace Pipe::os_services::ipc
 		);
 
 		if(result == -1)
-		{ throw error_handling::system_error{"Failed to connect socket", errno}; }
+		{ throw error_handling::system_error{"Failed to connect socket", error_handling::get_error_code()}; }
 
 		return connected_socket_ref<SocketType, AddressType>{socket.native_handle()};
 	}

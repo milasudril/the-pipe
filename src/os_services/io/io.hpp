@@ -27,11 +27,11 @@ namespace Pipe::os_services::io
 		 * \note If `value` < 0 and `err` indicates something other than EAGAIN or EWOULDBLOCK
 		 * an exception is thrown
 		 */
-		explicit io_result(ssize_t value, int err):
+		explicit io_result(ssize_t value, error_handling::code err):
 			m_value{value},
-			m_operation_would_have_blocked{err == EAGAIN || err == EWOULDBLOCK}
+			m_operation_would_have_blocked{static_cast<int>(err) == EAGAIN || static_cast<int>(err) == EWOULDBLOCK}
 		{
-			if(err != 0 && err != EPIPE && !operation_would_have_blocked())
+			if(static_cast<int>(err) != 0 && static_cast<int>(err) != EPIPE && !operation_would_have_blocked())
 			{ throw error_handling::system_error{"I/O operation failed", err}; }
 		}
 
@@ -81,7 +81,7 @@ namespace Pipe::os_services::io
 	{
 		return io_result{
 			read_while_eintr(fd.native_handle(), std::data(buffer), std::size(buffer)),
-			errno
+			error_handling::get_error_code()
 		};
 	}
 
@@ -99,7 +99,7 @@ namespace Pipe::os_services::io
 			{
 				return io_result{
 					std::begin(buffer) - start_at,
-					read_result.operation_would_have_blocked()? EAGAIN: 0
+					read_result.operation_would_have_blocked()? error_handling::code{EAGAIN}: error_handling::code{0}
 				};
 			}
 
@@ -109,7 +109,7 @@ namespace Pipe::os_services::io
 			};
 		}
 
-		return io_result{std::begin(buffer) - start_at, 0};
+		return io_result{std::begin(buffer) - start_at, error_handling::code{0}};
 	}
 
 	/**
@@ -142,7 +142,7 @@ namespace Pipe::os_services::io
 	{
 		return io_result{
 			write_while_eintr(fd.native_handle(), std::data(buffer), std::size(buffer)),
-			errno
+			error_handling::get_error_code()
 		};
 	}
 
@@ -160,7 +160,7 @@ namespace Pipe::os_services::io
 			{
 				return io_result{
 					std::begin(buffer) - start_at,
-					write_result.operation_would_have_blocked()? EAGAIN: 0
+					write_result.operation_would_have_blocked()? error_handling::code{EAGAIN}: error_handling::code{0}
 				};
 			}
 
@@ -170,7 +170,7 @@ namespace Pipe::os_services::io
 			};
 		}
 
-		return io_result{std::begin(buffer) - start_at, 0};
+		return io_result{std::begin(buffer) - start_at, error_handling::code{0}};
 	}
 
 	struct fd_closed{};

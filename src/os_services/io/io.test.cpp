@@ -1,6 +1,7 @@
 //@	{"target":{"name":"io.test"}}
 
 #include "./io.hpp"
+#include "src/os_services/error_handling/system_error.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
 #include "testfwk/validation.hpp"
 
@@ -94,13 +95,13 @@ TESTCASE(Pipe_io_read_bad_fd)
 TESTCASE(Pipe_io_io_result_from_eagain)
 {
 	{
-		Pipe::os_services::io::io_result res{-1, EAGAIN};
+		Pipe::os_services::io::io_result res{-1, static_cast<Pipe::os_services::error_handling::code>(EAGAIN)};
 		EXPECT_EQ(res.operation_would_have_blocked(), true);
 		EXPECT_EQ(res.bytes_transferred(), 0);
 	}
 
 	{
-		Pipe::os_services::io::io_result res{-1, EWOULDBLOCK};
+		Pipe::os_services::io::io_result res{-1, static_cast<Pipe::os_services::error_handling::code>(EWOULDBLOCK)};
 		EXPECT_EQ(res.operation_would_have_blocked(), true);
 		EXPECT_EQ(res.bytes_transferred(), 0);
 	}

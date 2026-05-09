@@ -36,7 +36,12 @@ namespace Pipe::os_services::proc_mgmt
 	{
 		auto res = syscall(SYS_pidfd_send_signal, fd.native_handle(), signo, nullptr, 0);
 		if(res == -1)
-		{ throw error_handling::system_error{"Failed to kill process", errno}; }
+		{
+			throw error_handling::system_error{
+				"Failed to kill process",
+				error_handling::get_error_code()
+			};
+		}
 	}
 
 	/**
@@ -68,7 +73,12 @@ namespace Pipe::os_services::proc_mgmt
 		siginfo_t siginfo{};
 		auto res = ::waitid(P_PIDFD, fd.native_handle(), &siginfo, WEXITED);
 		if(res == -1)
-		{ throw error_handling::system_error{"Failed to wait for process", errno}; }
+		{
+			throw error_handling::system_error{
+				"Failed to wait for process",
+				error_handling::get_error_code()
+			};
+		}
 
 		if(siginfo.si_code == CLD_EXITED)
 		{

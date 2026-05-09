@@ -142,7 +142,11 @@ namespace Pipe::os_services::io_multiplexer
 			m_epoll_fd{::epoll_create1(0)}
 		{
 			if(!m_epoll_fd)
-			{ throw error_handling::system_error{"Failed to create a new epoll instance", errno}; }
+			{
+				throw error_handling::system_error{
+					"Failed to create a new epoll instance", error_handling::get_error_code()
+				};
+			}
 		}
 
 		void update_listening_status(

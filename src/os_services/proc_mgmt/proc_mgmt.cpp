@@ -1,6 +1,7 @@
 //@	{"target":{"name":"proc_mgmt.o"}}
 
 #include "./proc_mgmt.hpp"
+#include "src/os_services/error_handling/system_error.hpp"
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/ipc/pipe.hpp"
 #include "src/os_services/ipc/eventfd.hpp"
@@ -125,7 +126,7 @@ Pipe::os_services::proc_mgmt::spawn(
 	switch(fork_res)
 	{
 		case -1:
-			throw error_handling::system_error{"Fork failed: ", errno};
+			throw error_handling::system_error{"Fork failed: ", error_handling::get_error_code()};
 
 		case 0:
 		{
@@ -155,7 +156,7 @@ Pipe::os_services::proc_mgmt::spawn(
 			auto fd = pidfd_open(fork_res, 0);
 			if(fd == -1)
 			{
-				auto const saved_errno = errno;
+				auto const saved_errno = error_handling::get_error_code();
 				kill(fork_res, SIGKILL);
 				waitpid(fork_res, nullptr, 0);
 				throw error_handling::system_error{"Failed to create pidfd", saved_errno};
@@ -168,7 +169,7 @@ Pipe::os_services::proc_mgmt::spawn(
 				sizeof(val)
 			);
 
-			int child_errno{};
+			error_handling::code child_errno{};
 			auto const read_result = read(
 				exec_err_pipe_read_end,
 				std::as_writable_bytes(std::span{&child_errno, 1})
