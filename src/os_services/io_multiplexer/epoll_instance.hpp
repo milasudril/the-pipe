@@ -149,7 +149,7 @@ namespace Pipe::os_services::io_multiplexer
 			}
 		}
 
-		void update_listening_status(
+		error_handling::code update_listening_status(
 			Pipe::os_services::fd::saved_event_handler_ref handle,
 			Pipe::os_services::fd::activity_status new_status
 		) noexcept override
@@ -168,7 +168,8 @@ namespace Pipe::os_services::io_multiplexer
 				&event
 			);
 			if(result == -1)
-			{ Pipe::log::terminate_with_message("epoll_ctl EPOLL_CTL_MOD failed"); }
+			{ return error_handling::get_error_code();}
+			return error_handling::code{};
 		}
 
 		bool is_empty() const

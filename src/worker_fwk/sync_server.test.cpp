@@ -2,7 +2,9 @@
 
 #include "./sync_server.hpp"
 #include "src/log/log.hpp"
+#include "src/os_services/error_handling/system_error.hpp"
 
+#include <cerrno>
 #include <testfwk/testfwk.hpp>
 namespace
 {
@@ -15,17 +17,18 @@ namespace
 			expected_remove_id.reset();
 		}
 
-		void update_listening_status(
+		Pipe::os_services::error_handling::code update_listening_status(
 			Pipe::os_services::fd::saved_event_handler_ref handle,
 			Pipe::os_services::fd::activity_status new_status
 		) noexcept override
 		{
 			if(!expected_update_listening_status_call.has_value())
-			{ Pipe::log::terminate_with_message("Unexpected update_listening_status"); }
+			{ return Pipe::os_services::error_handling::code{EBADF}; }
 
 			EXPECT_EQ(handle.get(), expected_update_listening_status_call->handle.get());
 			EXPECT_EQ(new_status, expected_update_listening_status_call->new_status);
 			expected_update_listening_status_call.reset();
+			{ return Pipe::os_services::error_handling::code{}; }
 		}
 
 		Pipe::os_services::fd::event_handler_id do_add(
