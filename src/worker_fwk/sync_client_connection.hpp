@@ -25,6 +25,7 @@ namespace Pipe::worker_fwk
 		using sync_fd_activity_event_handler_registred_event =
 			os_services::fd::activity_event_handler_registered_event<client_activity, fd_tag>;
 		using sync_fd_activity_event = os_services::fd::activity_event<client_activity, fd_tag>;
+		using fatal_error_handler = void;
 	};
 
 	class sync_client_connection:

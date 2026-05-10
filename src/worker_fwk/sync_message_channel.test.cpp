@@ -43,6 +43,7 @@ namespace
 		using sync_fd_activity_event_handler_registred_event =
 			Pipe::os_services::fd::activity_event_handler_registered_event<client_activity, fd_tag>;
 		using sync_fd_activity_event = Pipe::os_services::fd::activity_event<client_activity, fd_tag>;
+		using fatal_error_handler = void;
 	};
 
 	auto make_sockets()
