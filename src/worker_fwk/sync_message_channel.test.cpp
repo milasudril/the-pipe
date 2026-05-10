@@ -34,6 +34,14 @@ namespace
 		int value;
 	};
 
+	struct fatal_error_handler
+	{
+		[[noreturn]] void raise_fatal_error(char const* msg, Pipe::os_services::error_handling::code code)
+		{
+			throw Pipe::os_services::error_handling::system_error{msg, code};
+		}
+	};
+
 	struct msg_channel_traits
 	{
 		using fd_tag = Pipe::os_services::ipc::connected_socket_tag<SOCK_STREAM, sockaddr_un>;
@@ -43,7 +51,7 @@ namespace
 		using sync_fd_activity_event_handler_registred_event =
 			Pipe::os_services::fd::activity_event_handler_registered_event<client_activity, fd_tag>;
 		using sync_fd_activity_event = Pipe::os_services::fd::activity_event<client_activity, fd_tag>;
-		using fatal_error_handler = void;
+		using fatal_error_handler = struct fatal_error_handler;
 	};
 
 	auto make_sockets()
@@ -124,12 +132,6 @@ namespace
 				throw std::runtime_error{*str};
 			}
 		}
-
-		[[noreturn]] void raise_fatal_error(char const* msg, Pipe::os_services::error_handling::code code)
-		{
-			throw Pipe::os_services::error_handling::system_error{msg, code};
-		}
-
 
 		~msg_handler()
 		{
@@ -216,7 +218,7 @@ extern "C"
 TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_event_fd_activity_event_handler_registered_event)
 {
 	event_handler_store eh_registry;
-	msg_handler msg_channel{65536};
+	msg_handler msg_channel{65536, fatal_error_handler{}};
 
 	auto const sockets = make_sockets();
 	msg_channel.handle_event(
@@ -238,7 +240,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_event_fd_activity_event_han
 TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_event_fd_activity_event_handler_registered_event_with_message_queued)
 {
 	event_handler_store eh_registry;
-	msg_handler msg_channel{65536};
+	msg_handler msg_channel{65536, fatal_error_handler{}};
 
 	msg_channel.send(response{.value = 13}, Pipe::worker_sync::transaction_id{24});
 	auto const sockets = make_sockets();
@@ -264,7 +266,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_event_fd_activity_event_han
 TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_no_bytes_ready_operation_would_have_blocked)
 {
 	event_handler_store eh_registry;
-	msg_handler msg_channel{65536};
+	msg_handler msg_channel{65536, fatal_error_handler{}};
 
 	auto const sockets = make_sockets();
 	msg_channel.handle_event(
@@ -283,7 +285,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_no_byte
 TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_no_bytes_ready_fd_closed)
 {
 	event_handler_store eh_registry;
-	msg_handler msg_channel{65536};
+	msg_handler msg_channel{65536, fatal_error_handler{}};
 
 	auto sockets = make_sockets();
 	msg_channel.handle_event(
@@ -303,7 +305,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_no_byte
 TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_process_request)
 {
 	event_handler_store eh_registry;
-	msg_handler msg_channel{65536};
+	msg_handler msg_channel{65536, fatal_error_handler{}};
 
 	auto sockets = make_sockets();
 	msg_channel.handle_event(
@@ -332,7 +334,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_process
 TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_process_notification)
 {
 	event_handler_store eh_registry;
-	msg_handler msg_channel{65536};
+	msg_handler msg_channel{65536, fatal_error_handler{}};
 
 	auto sockets = make_sockets();
 	msg_channel.handle_event(
@@ -360,7 +362,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_process
 TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_short_buffer)
 {
 	event_handler_store eh_registry;
-	msg_handler msg_channel{17};
+	msg_handler msg_channel{17, fatal_error_handler{}};
 
 	auto sockets = make_sockets();
 	msg_channel.handle_event(
@@ -393,7 +395,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_short_b
 TESTCASE(Pipe_worker_fwk_sync_message_channel_send_message_before_registration)
 {
 	event_handler_store eh_registry;
-	msg_handler msg_channel{65536};
+	msg_handler msg_channel{65536, fatal_error_handler{}};
 
 	msg_channel.send(response{.value = 13}, Pipe::worker_sync::transaction_id{24});
 	auto const sockets = make_sockets();
@@ -411,7 +413,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_message_before_registration)
 TESTCASE(Pipe_worker_fwk_sync_message_channel_send_message_after_registration)
 {
 	event_handler_store eh_registry;
-	msg_handler msg_channel{65536};
+	msg_handler msg_channel{65536, fatal_error_handler{}};
 
 	auto const sockets = make_sockets();
 	msg_channel.handle_event(
@@ -429,7 +431,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_message_after_registration)
 TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_no_pending_messages_bytes_to_write_empty)
 {
 	event_handler_store eh_registry;
-	msg_handler msg_channel{65536};
+	msg_handler msg_channel{65536, fatal_error_handler{}};
 
 	auto const sockets = make_sockets();
 	msg_channel.handle_event(
@@ -448,7 +450,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_no_pending_m
 TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_no_pending_messages_bytes_to_write)
 {
 	event_handler_store eh_registry;
-	msg_handler msg_channel{65536};
+	msg_handler msg_channel{65536, fatal_error_handler{}};
 
 	auto const sockets = make_sockets();
 	msg_channel.handle_event(
@@ -479,7 +481,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_no_pending_m
 {
 	signal(SIGPIPE, SIG_IGN);
 	event_handler_store eh_registry;
-	msg_handler msg_channel{65536};
+	msg_handler msg_channel{65536, fatal_error_handler{}};
 
 	auto sockets = make_sockets();
 	msg_channel.handle_event(
@@ -502,7 +504,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_no_pending_m
 TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_write_partial_then_block)
 {
 	event_handler_store eh_registry;
-	msg_handler msg_channel{65536};
+	msg_handler msg_channel{65536, fatal_error_handler{}};
 
 	auto const sockets = make_sockets();
 	msg_channel.handle_event(
@@ -535,7 +537,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_write_partia
 TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_write_full)
 {
 	event_handler_store eh_registry;
-	msg_handler msg_channel{65536};
+	msg_handler msg_channel{65536, fatal_error_handler{}};
 
 	auto const sockets = make_sockets();
 	msg_channel.handle_event(
@@ -564,7 +566,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_write_full)
 TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_write_full_small_buffer)
 {
 	event_handler_store eh_registry;
-	msg_handler msg_channel{17};
+	msg_handler msg_channel{17, fatal_error_handler{}};
 
 	auto const sockets = make_sockets();
 	msg_channel.handle_event(
@@ -596,7 +598,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_write_full_s
 TESTCASE(Pipe_worker_fwk_sync_message_channel_receive_unsupport_message_bad_number)
 {
 	event_handler_store eh_registry;
-	msg_handler msg_channel{65536};
+	msg_handler msg_channel{65536, fatal_error_handler{}};
 
 	auto const sockets = make_sockets();
 	msg_channel.handle_event(
@@ -636,7 +638,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_receive_unsupport_message_bad_numb
 TESTCASE(Pipe_worker_fwk_sync_message_channel_receive_unsupport_message_bad)
 {
 	event_handler_store eh_registry;
-	msg_handler msg_channel{65536};
+	msg_handler msg_channel{65536, fatal_error_handler{}};
 
 	auto const sockets = make_sockets();
 	msg_channel.handle_event(
@@ -676,7 +678,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_receive_unsupport_message_bad)
 TESTCASE(Pipe_worker_fwk_sync_message_channel_exception_while_handling_request)
 {
 	event_handler_store eh_registry;
-	msg_handler msg_channel{65536};
+	msg_handler msg_channel{65536, fatal_error_handler{}};
 
 	auto const sockets = make_sockets();
 	msg_channel.handle_event(
@@ -720,7 +722,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_exception_while_handling_request)
 TESTCASE(Pipe_worker_fwk_sync_message_channel_exception_while_handling_notification)
 {
 	event_handler_store eh_registry;
-	msg_handler msg_channel{65536};
+	msg_handler msg_channel{65536, fatal_error_handler{}};
 
 	auto const sockets = make_sockets();
 	msg_channel.handle_event(
@@ -766,7 +768,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_exception_while_handling_notificat
 TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_event_error)
 {
 	event_handler_store eh_registry;
-	msg_handler msg_channel{65536};
+	msg_handler msg_channel{65536, fatal_error_handler{}};
 
 	auto const sockets = make_sockets();
 	msg_channel.handle_event(
@@ -790,7 +792,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_read_connec
 {
 	signal(SIGPIPE, SIG_IGN);
 	event_handler_store eh_registry;
-	msg_handler msg_channel{65536};
+	msg_handler msg_channel{65536, fatal_error_handler{}};
 
 	auto sockets = make_sockets();
 	msg_channel.handle_event(
@@ -814,7 +816,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_read_connec
 TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_read_read_request)
 {
 	event_handler_store eh_registry;
-	msg_handler msg_channel{65536};
+	msg_handler msg_channel{65536, fatal_error_handler{}};
 
 	auto sockets = make_sockets();
 	msg_channel.handle_event(
@@ -848,7 +850,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_write_conne
 {
 	signal(SIGPIPE, SIG_IGN);
 	event_handler_store eh_registry;
-	msg_handler msg_channel{65536};
+	msg_handler msg_channel{65536, fatal_error_handler{}};
 
 	auto sockets = make_sockets();
 	msg_channel.handle_event(
@@ -873,7 +875,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_write_conne
 TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_write)
 {
 	event_handler_store eh_registry;
-	msg_handler msg_channel{65536};
+	msg_handler msg_channel{65536, fatal_error_handler{}};
 
 	auto sockets = make_sockets();
 	msg_channel.handle_event(
@@ -904,7 +906,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_write)
 TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_read_and_write)
 {
 	event_handler_store eh_registry;
-	msg_handler msg_channel{65536};
+	msg_handler msg_channel{65536, fatal_error_handler{}};
 
 	auto sockets = make_sockets();
 	msg_channel.handle_event(

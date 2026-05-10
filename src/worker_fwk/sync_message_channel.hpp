@@ -38,23 +38,26 @@ namespace Pipe::worker_fwk
 		using fatal_error_handler = typename traits::fatal_error_handler;
 
 	public:
-		explicit sync_message_channel(size_t buffer_size):
+		explicit sync_message_channel(
+			size_t buffer_size,
+			fatal_error_handler error_handler
+		):
 			m_buffer_size{buffer_size},
 			m_input_buffer{std::make_unique<std::byte[]>(buffer_size)},
-			m_output_buffer{std::make_unique<std::byte[]>(buffer_size)}
+			m_output_buffer{std::make_unique<std::byte[]>(buffer_size)},
+			m_error_handler{error_handler}
 		{}
 
-		template<class Self>
-		void handle_event(this Self& self, fd_activity_event_handler_registred_event reg_event)
+		void handle_event(fd_activity_event_handler_registred_event reg_event)
 		{
 			auto const fd = reg_event.fd.native_handle();
 			auto const flags = ::fcntl(fd, F_GETFL);
 			assert(flags != -1);
 			::fcntl(reg_event.fd.native_handle(), F_SETFL, O_NONBLOCK|flags);
-			self.m_registration = reg_event;
+			m_registration = reg_event;
 
-			if(!self.m_msgs_to_send.empty())
-			{ self.enable_write_listening(); }
+			if(!m_msgs_to_send.empty())
+			{ enable_write_listening(); }
 		}
 
 		enum class io_status{ok, operation_would_have_blocked, remote_endpoint_closed};
@@ -262,40 +265,39 @@ namespace Pipe::worker_fwk
 		bool m_is_listening_for_write{false};
 
 		fd_activity_event_handler_registred_event m_registration;
+		fatal_error_handler m_error_handler;
 
-		template<class Self>
-		void enable_write_listening(this Self& self)
+		void enable_write_listening()
 		{
-			if(!self.m_is_listening_for_write)
+			if(!m_is_listening_for_write)
 			{
-				auto const res = self.m_registration.event_handler_store->update_listening_status(
-					self.m_registration.event_handler,
+				auto const res = m_registration.event_handler_store->update_listening_status(
+					m_registration.event_handler,
 					os_services::fd::activity_status::read_or_write
 				);
 				if(res != os_services::error_handling::code{})
 				{
-					self.raise_fatal_error("Failed to enable write listening", res);
+					m_error_handler.raise_fatal_error("Failed to enable write listening", res);
 					abort();
 				}
-				self.m_is_listening_for_write = true;
+				m_is_listening_for_write = true;
 			}
 		}
 
-		template<class Self>
-		void  disable_write_listening(this Self& self)
+		void  disable_write_listening()
 		{
-			if(self.m_is_listening_for_write)
+			if(m_is_listening_for_write)
 			{
-				auto const res = self.m_registration.event_handler_store->update_listening_status(
-					self.m_registration.event_handler,
+				auto const res = m_registration.event_handler_store->update_listening_status(
+					m_registration.event_handler,
 					os_services::fd::activity_status::read
 				);
 				if(res != os_services::error_handling::code{})
 				{
-					self.raise_fatal_error("Failed to enable write listening", res);
+					m_error_handler.raise_fatal_error("Failed to enable write listening", res);
 					abort();
 				}
-				self.m_is_listening_for_write = false;
+				m_is_listening_for_write = false;
 			}
 		}
 	};

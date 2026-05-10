@@ -25,7 +25,7 @@ namespace Pipe::worker_fwk
 		using sync_fd_activity_event_handler_registred_event =
 			os_services::fd::activity_event_handler_registered_event<client_activity, fd_tag>;
 		using sync_fd_activity_event = os_services::fd::activity_event<client_activity, fd_tag>;
-		using fatal_error_handler = void;
+		using fatal_error_handler = port_activity_subscriber_registry_ref;
 	};
 
 	class sync_client_connection:
@@ -37,7 +37,7 @@ namespace Pipe::worker_fwk
 		using client_activity_event = sync_fd_activity_event;
 
 		explicit sync_client_connection(port_activity_subscriber_registry_ref port_activity_subscriber_registry, size_t buffer_size = 65536):
-			sync_message_channel<sync_message_channel_server_traits>{buffer_size},
+			sync_message_channel<sync_message_channel_server_traits>{buffer_size, port_activity_subscriber_registry},
 			m_port_activity_subscriber_registry{port_activity_subscriber_registry}
 		{}
 
