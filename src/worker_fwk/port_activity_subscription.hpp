@@ -1,7 +1,11 @@
 #ifndef PIPE_WORKER_FWK_PORT_ACTIVITY_SUBSCRIPTION_HPP
 #define PIPE_WORKER_FWK_PORT_ACTIVITY_SUBSCRIPTION_HPP
 
+#include "src/os_services/error_handling/system_error.hpp"
 #include "src/worker_sync/worker_sync.hpp"
+#include "src/os_services/error_handling/error_handling.hpp"
+
+#include <cstdlib>
 
 namespace Pipe::worker_fwk
 {
@@ -106,6 +110,16 @@ namespace Pipe::worker_fwk
 				) static {
 					return static_cast<T*>(object)->remove_port_activity_subscription(id, port_activity_subscriber, port_activity_subscription);
 				}
+			},
+			m_raise_fatal_error{
+				[][[noreturn]](
+					void* object,
+					char const* message,
+					os_services::error_handling::code code
+				)
+				{
+					static_cast<T*>(object)->raise_fatal_error(message, code);
+				}
 			}
 		{}
 
@@ -126,11 +140,18 @@ namespace Pipe::worker_fwk
 		) const
 		{ m_remove_port_activity_subscription(m_object, id, port_activity_subscriber, port_activity_subscription); }
 
+		[[noreturn]] void raise_fatal_error(char const* message, os_services::error_handling::code code)
+		{
+			m_raise_fatal_error(m_object, message, code);
+			abort();
+		}
+
 	private:
 		void* m_object;
 		void (*m_notify_client_ready)(void*, port_id);
 		port_id (*m_add_port_activity_subscription)(void*, std::string const&, port_activity_subscriber_ref, worker_sync::port_activity_subscription_id);
 		void (*m_remove_port_activity_subscription)(void*, port_id, port_activity_subscriber_ref, worker_sync::port_activity_subscription_id);
+		void (*m_raise_fatal_error)(void*, char const*, os_services::error_handling::code);
 	};
 }
 #endif

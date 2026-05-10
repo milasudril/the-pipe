@@ -95,6 +95,11 @@ namespace
 
 		void notify_client_ready(Pipe::worker_fwk::port_id)
 		{}
+
+		[[noreturn]] void raise_fatal_error(char const* msg, Pipe::os_services::error_handling::code code)
+		{
+			throw Pipe::os_services::error_handling::system_error{msg, code};
+		}
 	};
 }
 

@@ -1,6 +1,7 @@
 #ifndef PIPE_WORKER_FWK_SYNC_MESSAGE_CHANNEL_HPP
 #define PIPE_WORKER_FWK_SYNC_MESSAGE_CHANNEL_HPP
 
+#include "src/os_services/error_handling/system_error.hpp"
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/worker_sync/worker_sync.hpp"
@@ -12,6 +13,7 @@
 #include <cstddef>
 #include <span>
 #include <queue>
+#include <cstdlib>
 
 namespace Pipe::worker_fwk
 {
@@ -41,18 +43,19 @@ namespace Pipe::worker_fwk
 			m_output_buffer{std::make_unique<std::byte[]>(buffer_size)}
 		{}
 
-		void handle_event(fd_activity_event_handler_registred_event reg_event)
+		template<class Self>
+		void handle_event(this Self& self, fd_activity_event_handler_registred_event reg_event)
 		{
 			auto const fd = reg_event.fd.native_handle();
 			auto const flags = ::fcntl(fd, F_GETFL);
 			assert(flags != -1);
 			::fcntl(reg_event.fd.native_handle(), F_SETFL, O_NONBLOCK|flags);
-			m_registration = reg_event;
+			self.m_registration = reg_event;
 
-			if(!m_msgs_to_send.empty())
-			{ enable_write_listening(); }
-
+			if(!self.m_msgs_to_send.empty())
+			{ self.enable_write_listening(); }
 		}
+
 		enum class io_status{ok, operation_would_have_blocked, remote_endpoint_closed};
 
 		template<class Self>
@@ -169,51 +172,52 @@ namespace Pipe::worker_fwk
 		}
 
 
-		[[nodiscard]] io_status send_pending_messages()
+		template<class Self>
+		[[nodiscard]] io_status send_pending_messages(this Self& self)
 		{
 			while(true)
 			{
-				if(auto const flush_result = flush_output_buffer(); flush_result != io_status::ok)
+				if(auto const flush_result = self.flush_output_buffer(); flush_result != io_status::ok)
 				{ return flush_result; }
 
-				std::span serialize_into{m_output_buffer.get(), m_buffer_size};
+				std::span serialize_into{self.m_output_buffer.get(), self.m_buffer_size};
 				size_t bytes_ready = 0;
-				size_t bytes_left_to_use = m_buffer_size;
-				while(!m_msgs_to_send.empty() && !serialize_into.empty())
+				size_t bytes_left_to_use = self.m_buffer_size;
+				while(!self.m_msgs_to_send.empty() && !serialize_into.empty())
 				{
 					auto const bytes_written = std::visit(
-						[this, serialize_into](auto& item){
+						[&self, serialize_into](auto& item){
 							auto const ret = item.encode(serialize_into);
 							if(item.completed())
 							{
-								m_msgs_to_send.pop();
+								self.m_msgs_to_send.pop();
 								// WARNING: item is dead now
 							}
 							return ret;
 						},
-						m_msgs_to_send.front()
+						self.m_msgs_to_send.front()
 					);
 
 					bytes_left_to_use -= bytes_written;
 					bytes_ready += bytes_written;
-					serialize_into = std::span{m_output_buffer.get() + bytes_written, bytes_left_to_use};
+					serialize_into = std::span{self.m_output_buffer.get() + bytes_written, bytes_left_to_use};
 				}
 
-				m_bytes_to_write = std::span{static_cast<std::byte const*>(m_output_buffer.get()), bytes_ready};
+				self.m_bytes_to_write = std::span{static_cast<std::byte const*>(self.m_output_buffer.get()), bytes_ready};
 
-				if(m_msgs_to_send.empty() && m_bytes_to_write.empty())
+				if(self.m_msgs_to_send.empty() && self.m_bytes_to_write.empty())
 				{
-					disable_write_listening();
+					self.disable_write_listening();
 					return io_status::ok;
 				}
 			}
 		}
 
-		template<class T>
-		void send(T&& msg, worker_sync::transaction_id tx_id)
+		template<class Self, class T>
+		void send(this Self& self, T&& msg, worker_sync::transaction_id tx_id)
 		{
 			auto const msg_id = utils::variant_index_v<T, outgoing_msg_type>;
-			m_msgs_to_send.push(
+			self.m_msgs_to_send.push(
 				worker_sync::encoder<worker_sync::msg_header>{
 					worker_sync::msg_header{
 						.msg_id = msg_id,
@@ -222,12 +226,12 @@ namespace Pipe::worker_fwk
 				}
 			);
 
-			m_msgs_to_send.push(
+			self.m_msgs_to_send.push(
 				worker_sync::encoder<std::remove_cvref_t<T>>{std::forward<T>(msg)}
 			);
 
-			if(m_registration.is_valid())
-			{ enable_write_listening(); }
+			if(self.m_registration.is_valid())
+			{ self.enable_write_listening(); }
 		}
 
 		size_t num_messages_to_send() const
@@ -258,27 +262,39 @@ namespace Pipe::worker_fwk
 
 		fd_activity_event_handler_registred_event m_registration;
 
-		void enable_write_listening()
+		template<class Self>
+		void enable_write_listening(this Self& self)
 		{
-			if(!m_is_listening_for_write)
+			if(!self.m_is_listening_for_write)
 			{
-				m_registration.event_handler_store->update_listening_status(
-					m_registration.event_handler,
+				auto const res = self.m_registration.event_handler_store->update_listening_status(
+					self.m_registration.event_handler,
 					os_services::fd::activity_status::read_or_write
 				);
-				m_is_listening_for_write = true;
+				if(res != os_services::error_handling::code{})
+				{
+					self.raise_fatal_error("Failed to enable write listening", res);
+					abort();
+				}
+				self.m_is_listening_for_write = true;
 			}
 		}
 
-		void  disable_write_listening()
+		template<class Self>
+		void  disable_write_listening(this Self& self)
 		{
-			if(m_is_listening_for_write)
+			if(self.m_is_listening_for_write)
 			{
-				m_registration.event_handler_store->update_listening_status(
-					m_registration.event_handler,
+				auto const res = self.m_registration.event_handler_store->update_listening_status(
+					self.m_registration.event_handler,
 					os_services::fd::activity_status::read
 				);
-				m_is_listening_for_write = false;
+				if(res != os_services::error_handling::code{})
+				{
+					self.raise_fatal_error("Failed to enable write listening", res);
+					abort();
+				}
+				self.m_is_listening_for_write = false;
 			}
 		}
 	};

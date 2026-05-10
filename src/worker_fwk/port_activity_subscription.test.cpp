@@ -92,6 +92,11 @@ namespace
 			expected_subscriber_ref.reset();
 			expected_subscription_id.reset();
 		}
+
+		[[noreturn]] void raise_fatal_error(char const* msg, Pipe::os_services::error_handling::code code)
+		{
+			throw Pipe::os_services::error_handling::system_error{msg, code};
+		}
 	};
 }
 

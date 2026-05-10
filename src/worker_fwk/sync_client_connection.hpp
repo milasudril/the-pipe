@@ -6,6 +6,7 @@
 #include "./sync_message_channel.hpp"
 
 #include "./port_activity_subscription.hpp"
+#include "src/os_services/error_handling/system_error.hpp"
 #include "src/os_services/ipc/unix_domain_socket.hpp"
 #include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/worker_sync/worker_sync.hpp"
@@ -94,6 +95,9 @@ namespace Pipe::worker_fwk
 		}
 
 		using sync_message_channel<sync_message_channel_server_traits>::handle_message;
+
+		[[noreturn]] void raise_fatal_error(char const* message, os_services::error_handling::code ec)
+		{ m_port_activity_subscriber_registry.raise_fatal_error(message, ec); }
 
 	private:
 		port_activity_subscriber_registry_ref m_port_activity_subscriber_registry;
