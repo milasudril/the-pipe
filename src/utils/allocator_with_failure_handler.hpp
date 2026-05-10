@@ -15,10 +15,18 @@ namespace Pipe::utils
 	public:
 		using value_type = T;
 
-		template<class Self>
-		[[nodiscard]] T* allocate(this Self&& self, std::size_t n)
-		{
+		allocator_with_failure_handler() = default;
+		explicit allocator_with_failure_handler(FailureHandler const& failure_handler):
+			m_failure_handler{failure_handler}
+		{}
 
+    template<class Other>
+    allocator_with_failure_handler(allocator_with_failure_handler<Other, FailureHandler> const& other):
+			m_failure_handler{other.failure_handler()}
+    {}
+
+		[[nodiscard]] T* allocate(std::size_t n)
+		{
 			auto const max_num_elements = std::numeric_limits<size_t>::max()/sizeof(T);
 			if(n > max_num_elements)
 			{ throw std::bad_array_new_length{}; }
@@ -27,8 +35,7 @@ namespace Pipe::utils
 			auto const ret = ::operator new(num_bytes_to_allocate, std::nothrow);
 			if(ret == nullptr) [[unlikely]]
 			{
-				std::forward<FailureHandler>(self.m_failure_handler)
-					.memory_allocation_failed(std::type_identity<T>{}, n);
+				m_failure_handler.memory_allocation_failed(std::type_identity<T>{}, n);
 				throw std::bad_alloc{};
 			}
 
@@ -41,9 +48,11 @@ namespace Pipe::utils
 		bool operator==(allocator_with_failure_handler const&) const = default;
 		bool operator!=(allocator_with_failure_handler const&) const = default;
 
-		template<class Self>
-		auto&& failure_handler(this Self&& self) noexcept
-		{ return std::forward<FailureHandler>(self.m_failure_handler); }
+		auto& failure_handler() noexcept
+		{ return m_failure_handler; }
+
+		auto& failure_handler() const noexcept
+		{ return m_failure_handler; }
 
 	private:
 		[[no_unique_address]] FailureHandler m_failure_handler;
