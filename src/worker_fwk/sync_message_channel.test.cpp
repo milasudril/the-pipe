@@ -40,6 +40,12 @@ namespace
 		{
 			throw Pipe::os_services::error_handling::system_error{msg, code};
 		}
+
+		template<class T>
+		[[noreturn]] void memory_allocation_failed(std::type_identity<T>, size_t)
+		{
+			throw std::bad_alloc{};
+		}
 	};
 
 	struct msg_channel_traits

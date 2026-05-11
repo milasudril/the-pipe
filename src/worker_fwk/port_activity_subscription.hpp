@@ -146,6 +146,12 @@ namespace Pipe::worker_fwk
 			abort();
 		}
 
+		template<class T>
+		[[noreturn]] void memory_allocation_failed(std::type_identity<T>, size_t)
+		{
+			throw std::bad_alloc{};
+		}
+
 	private:
 		void* m_object;
 		void (*m_notify_client_ready)(void*, port_id);

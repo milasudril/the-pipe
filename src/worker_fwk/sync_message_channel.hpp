@@ -4,6 +4,7 @@
 #include "src/os_services/error_handling/system_error.hpp"
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/fd/activity_event_handler_store.hpp"
+#include "src/utils/allocator_with_failure_handler.hpp"
 #include "src/worker_sync/worker_sync.hpp"
 #include "src/utils/variant_utils.hpp"
 #include "src/utils/scope_handling.hpp"
@@ -36,6 +37,7 @@ namespace Pipe::worker_fwk
 		using fd_activity_event_handler_registred_event = typename traits::sync_fd_activity_event_handler_registred_event;
 		using fd_activity_event = typename traits::sync_fd_activity_event;
 		using fatal_error_handler = typename traits::fatal_error_handler;
+		using send_queue_allocator = utils::allocator_with_failure_handler<msg_encoder, fatal_error_handler>;
 
 	public:
 		explicit sync_message_channel(
@@ -45,6 +47,7 @@ namespace Pipe::worker_fwk
 			m_buffer_size{buffer_size},
 			m_input_buffer{std::make_unique<std::byte[]>(buffer_size)},
 			m_output_buffer{std::make_unique<std::byte[]>(buffer_size)},
+			m_msgs_to_send{send_queue_allocator{error_handler}},
 			m_error_handler{error_handler}
 		{}
 
@@ -194,7 +197,7 @@ namespace Pipe::worker_fwk
 							auto const ret = item.encode(serialize_into);
 							if(item.completed())
 							{
-								self.m_msgs_to_send.pop();
+								self.m_msgs_to_send.pop_front();
 								// WARNING: item is dead now
 							}
 							return ret;
@@ -221,7 +224,7 @@ namespace Pipe::worker_fwk
 		void send(this Self& self, T&& msg, worker_sync::transaction_id tx_id)
 		{
 			auto const msg_id = utils::variant_index_v<T, outgoing_msg_type>;
-			self.m_msgs_to_send.push(
+			self.m_msgs_to_send.push_back(
 				worker_sync::encoder<worker_sync::msg_header>{
 					worker_sync::msg_header{
 						.msg_id = msg_id,
@@ -230,7 +233,7 @@ namespace Pipe::worker_fwk
 				}
 			);
 
-			self.m_msgs_to_send.push(
+			self.m_msgs_to_send.push_back(
 				worker_sync::encoder<std::remove_cvref_t<T>>{std::forward<T>(msg)}
 			);
 
@@ -261,7 +264,7 @@ namespace Pipe::worker_fwk
 		// Encoder
 		std::unique_ptr<std::byte[]> m_output_buffer;
 		std::span<std::byte const> m_bytes_to_write;
-		std::queue<msg_encoder> m_msgs_to_send;
+		std::deque<msg_encoder, send_queue_allocator> m_msgs_to_send;
 		bool m_is_listening_for_write{false};
 
 		fd_activity_event_handler_registred_event m_registration;
