@@ -45,5 +45,14 @@ namespace Pipe::utils
 		else
 		{ return std::forward<T>(ref); }
 	}
+
+	template<class T>
+	inline constexpr bool has_value(T const& item)
+	{
+		if constexpr(std::is_convertible_v<T, bool>)
+		{ return static_cast<bool>(item); }
+		else
+		{ return true; }
+	}
 }
 #endif
