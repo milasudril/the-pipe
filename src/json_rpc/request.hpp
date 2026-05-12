@@ -3,7 +3,7 @@
 
 #include "./transaction.hpp"
 #include "src/utils/variant_utils.hpp"
-#include "src/utils/utils.hpp"
+#include "src/utils/unwrap.hpp"
 
 #include <jopp/types.hpp>
 #include <utility>

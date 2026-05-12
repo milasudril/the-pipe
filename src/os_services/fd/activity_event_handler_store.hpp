@@ -3,8 +3,9 @@
 
 #include "src/os_services/error_handling/system_error.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
-#include "src/utils/utils.hpp"
+#include "src/utils/unwrap.hpp"
 #include <concepts>
+#include <vector>
 
 namespace Pipe::os_services::fd
 {
