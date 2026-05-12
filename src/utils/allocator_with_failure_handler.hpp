@@ -1,6 +1,8 @@
 #ifndef PIPE_UTILS_ALLOCATOR_WITH_FAILURE_HANDLER_HPP
 #define PIPE_UTILS_ALLOCATOR_WITH_FAILURE_HANDLER_HPP
 
+#include "./unwrap.hpp"
+
 #include <new>
 #include <limits>
 #include <cstddef>
@@ -35,7 +37,8 @@ namespace Pipe::utils
 			auto const ret = ::operator new(num_bytes_to_allocate, std::nothrow);
 			if(ret == nullptr) [[unlikely]]
 			{
-				m_failure_handler.memory_allocation_failed(std::type_identity<T>{}, n);
+				if(has_value(m_failure_handler)) [[likely]]
+				{ unwrap(m_failure_handler).memory_allocation_failed(std::type_identity<T>{}, n); }
 				throw std::bad_alloc{};
 			}
 
