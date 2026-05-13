@@ -1,6 +1,8 @@
 #ifndef PIPE_WORKER_SYNC_WORKER_SYNC_HPP
 #define PIPE_WORKER_SYNC_WORKER_SYNC_HPP
 
+#include "src/common_fwk/error_handler.hpp"
+
 #include <cstdlib>
 #include <string>
 #include <cstdint>
