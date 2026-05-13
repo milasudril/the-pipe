@@ -5,6 +5,7 @@
 #include <testfwk/testfwk.hpp>
 #include <dlfcn.h>
 #include <deque>
+#include <memory>
 
 namespace
 {
@@ -121,11 +122,7 @@ TESTCASE(Pipe_utils_allocator_with_failure_handler_non_default_constructible_han
 			allocation_failure_handler_2
 		>;
 
-	std::vector<
-		int,
-		Pipe::utils::allocator_with_failure_handler<int, allocation_failure_handler_2>
-	>
-	buffer(allocator{allocation_failure_handler_2{123}});
+	std::vector<int, allocator> buffer(allocator{allocation_failure_handler_2{123}});
 }
 
 TESTCASE(Pipe_utils_allocator_with_failure_handler_non_default_constructible_handler_deque)
@@ -141,4 +138,48 @@ TESTCASE(Pipe_utils_allocator_with_failure_handler_non_default_constructible_han
 		allocator
 	>
 	buffer(allocator{allocation_failure_handler_2{123}});
+}
+
+TESTCASE(Pipe_utils_allocator_with_failure_handler_pointer_set_to_null)
+{
+	using allocator =
+		Pipe::utils::allocator_with_failure_handler<
+			int,
+			std::shared_ptr<allocation_failure_handler_2>
+		>;
+
+	std::vector<int, allocator> buffer;
+
+	fail_next_malloc = true;
+	try
+	{
+		buffer.push_back(235);
+		REQUIRE_EQ(false, true);
+	}
+	catch(std::exception const& err)
+	{
+		EXPECT_EQ(err.what(), std::string_view{"std::bad_alloc"});
+	}
+}
+
+TESTCASE(Pipe_utils_allocator_with_failure_handler_pointer_not_set_to_null)
+{
+	using allocator =
+		Pipe::utils::allocator_with_failure_handler<
+			int,
+			std::shared_ptr<allocation_failure_handler_2>
+		>;
+
+	std::vector<int, allocator> buffer{allocator{std::make_shared<allocation_failure_handler_2>(345)}};
+
+	fail_next_malloc = true;
+	try
+	{
+		buffer.push_back(235);
+		REQUIRE_EQ(false, true);
+	}
+	catch(std::exception const& err)
+	{
+		EXPECT_EQ(err.what(), std::string_view{"Failed to allocate 1 ints"});
+	}
 }
