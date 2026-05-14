@@ -183,3 +183,17 @@ TESTCASE(Pipe_utils_allocator_with_failure_handler_pointer_not_set_to_null)
 		EXPECT_EQ(err.what(), std::string_view{"Failed to allocate 1 ints"});
 	}
 }
+
+TESTCASE(Pipe_utils_allocator_with_failure_handler_manual_call_to_allocate)
+{
+	Pipe::utils::allocator_with_failure_handler<int, allocation_failure_handler> allocator{};
+	try
+	{
+		std::ignore = allocator.allocate(4611686018427387905ll);
+		REQUIRE_EQ(false, true);
+	}
+	catch(std::exception const& err)
+	{
+		EXPECT_EQ(err.what(), std::string_view{"Failed to compute the size of 4611686018427387905 ints"});
+	}
+}
