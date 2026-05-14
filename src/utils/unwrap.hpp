@@ -47,6 +47,9 @@ namespace Pipe::utils
 	}
 
 	template<class T>
+	using unwrapped_type_t = std::remove_cvref_t<decltype(unwrap(std::declval<T>()))>;
+
+	template<class T>
 	concept is_comparable_to_nullptr = requires(T obj){
 		{ obj == nullptr } -> std::same_as<bool>;
 		{ obj != nullptr } -> std::same_as<bool>;

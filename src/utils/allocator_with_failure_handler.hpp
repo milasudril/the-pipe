@@ -33,7 +33,7 @@ namespace Pipe::utils
 			if(n > max_num_elements)
 			{
 				if(has_value(m_failure_handler))
-				{ unwrap(m_failure_handler).raise_byte_size_computation_error(std::type_identity<T>{}, n); }
+				{ unwrap(m_failure_handler).raise_byte_size_computation_error(n, m_current_context); }
 
 				throw std::bad_array_new_length{};
 			}
@@ -43,7 +43,7 @@ namespace Pipe::utils
 			if(ret == nullptr) [[unlikely]]
 			{
 				if(has_value(m_failure_handler))
-				{ unwrap(m_failure_handler).raise_memory_allocation_error(std::type_identity<T>{}, n); }
+				{ unwrap(m_failure_handler).raise_memory_allocation_error(n, m_current_context); }
 				throw std::bad_alloc{};
 			}
 
@@ -53,8 +53,11 @@ namespace Pipe::utils
 		static void deallocate(T* p, std::size_t n) noexcept
 		{ ::operator delete(p, n * sizeof(T)); }
 
-		bool operator==(allocator_with_failure_handler const&) const = default;
-		bool operator!=(allocator_with_failure_handler const&) const = default;
+		bool operator==(allocator_with_failure_handler const&) const noexcept
+		{ return true; }
+
+		bool operator!=(allocator_with_failure_handler const&) const noexcept
+		{ return false; }
 
 		auto& failure_handler() noexcept
 		{ return m_failure_handler; }
@@ -62,7 +65,11 @@ namespace Pipe::utils
 		auto& failure_handler() const noexcept
 		{ return m_failure_handler; }
 
+		auto& context() noexcept
+		{ return m_current_context; }
+
 	private:
+		typename unwrapped_type_t<FailureHandler>::context m_current_context{};
 		[[no_unique_address]] FailureHandler m_failure_handler{};
 	};
 }

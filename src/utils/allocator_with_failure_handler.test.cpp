@@ -11,12 +11,14 @@ namespace
 {
 	struct allocation_failure_handler
 	{
-		void raise_byte_size_computation_error(std::type_identity<int>, size_t n)
+		struct context{};
+
+		void raise_byte_size_computation_error(size_t n, context)
 		{
 			throw std::runtime_error{std::format("Failed to compute the size of {} ints", n)};
 		}
 
-		void raise_memory_allocation_error(std::type_identity<int>, size_t n)
+		void raise_memory_allocation_error(size_t n, context)
 		{
 			throw std::runtime_error{std::format("Failed to allocate {} ints", n)};
 		}
@@ -24,26 +26,18 @@ namespace
 
 	struct allocation_failure_handler_2
 	{
+		struct context{};
+
 		allocation_failure_handler_2(int){}
 
-		void raise_byte_size_computation_error(std::type_identity<int>, size_t n)
+		void raise_byte_size_computation_error(size_t n, context)
 		{
 			throw std::runtime_error{std::format("Failed to compute the size of {} ints", n)};
 		}
 
-		void raise_byte_size_computation_error(std::type_identity<int*>, size_t n)
-		{
-			throw std::runtime_error{std::format("Failed to compute the size of {} ints", n)};
-		}
-
-		void raise_memory_allocation_error(std::type_identity<int>, size_t n)
+		void raise_memory_allocation_error(size_t n, context)
 		{
 			throw std::runtime_error{std::format("Failed to allocate {} ints", n)};
-		}
-
-		void raise_memory_allocation_error(std::type_identity<int*>, size_t n)
-		{
-			throw std::runtime_error{std::format("Failed to allocate {} int*s", n)};
 		}
 	};
 	bool fail_next_malloc = false;

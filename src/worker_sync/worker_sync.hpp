@@ -49,26 +49,12 @@ namespace Pipe::worker_sync
 
 	static_assert(std::is_trivially_copyable_v<transaction_id>);
 
-	struct error_handler_traits
-	{
-		template<class T>
-		struct type_info
-		{};
-	};
-
-	template<>
-	struct error_handler_traits::type_info<char>
-	{
-		static constexpr char const* name = "char";
-	};
-
-
-	using error_handler = common_fwk::error_handler<error_handler_traits>;
+	using error_handler = std::shared_ptr<common_fwk::error_handler>;
 
 	using string_type = std::basic_string<
 		char,
 		std::char_traits<char>,
-		utils::allocator_with_failure_handler<char, std::shared_ptr<error_handler>>
+		utils::allocator_with_failure_handler<char, error_handler>
 	>;
 
 	struct port_activity_subscription_request

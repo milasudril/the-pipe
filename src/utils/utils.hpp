@@ -25,8 +25,6 @@ namespace Pipe::utils
 	 */
 	std::string random_printable_ascii_string(size_t n);
 
-
-
 	template<class Key, class Compare = std::less<Key>, class KeyContainer = std::vector<Key>>
 	class immutable_flat_set
 	{
