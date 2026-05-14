@@ -16,7 +16,6 @@ namespace Pipe::common_fwk
 	public:
 		struct context
 		{
-			std::source_location where{};
 			std::string_view what_failed{};
 		};
 

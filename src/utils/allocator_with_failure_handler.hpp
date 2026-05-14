@@ -69,7 +69,7 @@ namespace Pipe::utils
 		{ return m_current_context; }
 
 	private:
-		typename unwrapped_type_t<FailureHandler>::context m_current_context{};
+		[[no_unique_address]] typename unwrapped_type_t<FailureHandler>::context m_current_context{};
 		[[no_unique_address]] FailureHandler m_failure_handler{};
 	};
 }
