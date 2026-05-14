@@ -6,6 +6,7 @@
 #include "src/worker_sync/worker_sync.hpp"
 #include "src/utils/variant_utils.hpp"
 #include "src/utils/scope_handling.hpp"
+#include "src/utils/fifo.hpp"
 
 #include <fcntl.h>
 #include <memory>
@@ -51,8 +52,8 @@ namespace Pipe::worker_fwk
 
 			if(!m_msgs_to_send.empty())
 			{ enable_write_listening(); }
-
 		}
+
 		enum class io_status{ok, operation_would_have_blocked, remote_endpoint_closed};
 
 		template<class Self>
@@ -179,25 +180,25 @@ namespace Pipe::worker_fwk
 				std::span serialize_into{m_output_buffer.get(), m_buffer_size};
 				size_t bytes_ready = 0;
 				size_t bytes_left_to_use = m_buffer_size;
-				while(!m_msgs_to_send.empty() && !serialize_into.empty())
-				{
-					auto const bytes_written = std::visit(
-						[this, serialize_into](auto& item){
-							auto const ret = item.encode(serialize_into);
-							if(item.completed())
-							{
-								m_msgs_to_send.pop();
-								// WARNING: item is dead now
-							}
-							return ret;
-						},
-						m_msgs_to_send.front()
-					);
+				m_msgs_to_send.drain_until_blocked_or_empty(
+					[&](auto& item){
+						if(serialize_into.empty())
+						{ return false; }
 
-					bytes_left_to_use -= bytes_written;
-					bytes_ready += bytes_written;
-					serialize_into = std::span{m_output_buffer.get() + bytes_written, bytes_left_to_use};
-				}
+						auto const [bytes_written, is_completed] = std::visit(
+							[this, serialize_into](auto& item){
+								return std::pair{item.encode(serialize_into), item.completed()};
+							},
+							item
+						);
+
+						bytes_left_to_use -= bytes_written;
+						bytes_ready += bytes_written;
+						serialize_into = std::span{m_output_buffer.get() + bytes_written, bytes_left_to_use};
+
+						return is_completed;
+					}
+				);
 
 				m_bytes_to_write = std::span{static_cast<std::byte const*>(m_output_buffer.get()), bytes_ready};
 
@@ -253,7 +254,7 @@ namespace Pipe::worker_fwk
 		// Encoder
 		std::unique_ptr<std::byte[]> m_output_buffer;
 		std::span<std::byte const> m_bytes_to_write;
-		std::queue<msg_encoder> m_msgs_to_send;
+		utils::fifo<msg_encoder> m_msgs_to_send;
 		bool m_is_listening_for_write{false};
 
 		fd_activity_event_handler_registred_event m_registration;

@@ -32,7 +32,7 @@ namespace Pipe::utils
 			auto const max_num_elements = std::numeric_limits<size_t>::max()/sizeof(T);
 			if(n > max_num_elements)
 			{
-				if(has_value(m_failure_handler)) [[likely]]
+				if(has_value(m_failure_handler))
 				{ unwrap(m_failure_handler).raise_byte_size_computation_error(std::type_identity<T>{}, n); }
 
 				throw std::bad_array_new_length{};
@@ -42,7 +42,7 @@ namespace Pipe::utils
 			auto const ret = ::operator new(num_bytes_to_allocate, std::nothrow);
 			if(ret == nullptr) [[unlikely]]
 			{
-				if(has_value(m_failure_handler)) [[likely]]
+				if(has_value(m_failure_handler))
 				{ unwrap(m_failure_handler).raise_memory_allocation_error(std::type_identity<T>{}, n); }
 				throw std::bad_alloc{};
 			}
@@ -63,7 +63,7 @@ namespace Pipe::utils
 		{ return m_failure_handler; }
 
 	private:
-		[[no_unique_address]] FailureHandler m_failure_handler;
+		[[no_unique_address]] FailureHandler m_failure_handler{};
 	};
 }
 #endif
