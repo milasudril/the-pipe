@@ -3,6 +3,7 @@
 #include "./sync_server.hpp"
 #include "src/log/log.hpp"
 #include "src/os_services/error_handling/system_error.hpp"
+#include "src/worker_sync/worker_sync.hpp"
 
 #include <cerrno>
 #include <testfwk/testfwk.hpp>
@@ -63,13 +64,13 @@ namespace
 
 	struct my_port_activity_subscriber_registry
 	{
-		std::optional<std::string> expected_server_portname;
+		std::optional<Pipe::worker_sync::string_type> expected_server_portname;
 		bool fail_port_activity_subscription = false;
 
 		std::optional<Pipe::worker_fwk::port_id> expected_port_id;
 
 		Pipe::worker_fwk::port_id add_port_activity_subscription(
-			std::string const& server_portname,
+			Pipe::worker_sync::string_type const& server_portname,
 			Pipe::worker_fwk::port_activity_subscriber_ref,
 			Pipe::worker_sync::port_activity_subscription_id
 		)

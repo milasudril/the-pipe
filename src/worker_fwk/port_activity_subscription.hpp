@@ -64,7 +64,7 @@ namespace Pipe::worker_fwk
 	template<class T>
 	concept port_activity_subscriber_registry = requires(
 		T& obj,
-		std::string const& str,
+		worker_sync::string_type const& str,
 		port_id port,
 		worker_sync::port_activity_subscription_id port_activity_subscription,
 		port_activity_subscriber_ref port_activity_subscriber
@@ -90,7 +90,7 @@ namespace Pipe::worker_fwk
 			m_add_port_activity_subscription{
 				[](
 					void* object,
-					std::string const& port_name,
+					worker_sync::string_type const& port_name,
 					port_activity_subscriber_ref port_activity_subscriber,
 					worker_sync::port_activity_subscription_id port_activity_subscription
 				) static {
@@ -113,7 +113,7 @@ namespace Pipe::worker_fwk
 		{ m_notify_client_ready(m_object, id); }
 
 		port_id add_port_activity_subscription(
-			std::string const& port_name,
+			worker_sync::string_type const& port_name,
 			port_activity_subscriber_ref port_activity_subscriber,
 			worker_sync::port_activity_subscription_id port_activity_subscription
 		) const
@@ -129,7 +129,7 @@ namespace Pipe::worker_fwk
 	private:
 		void* m_object;
 		void (*m_notify_client_ready)(void*, port_id);
-		port_id (*m_add_port_activity_subscription)(void*, std::string const&, port_activity_subscriber_ref, worker_sync::port_activity_subscription_id);
+		port_id (*m_add_port_activity_subscription)(void*, worker_sync::string_type const&, port_activity_subscriber_ref, worker_sync::port_activity_subscription_id);
 		void (*m_remove_port_activity_subscription)(void*, port_id, port_activity_subscriber_ref, worker_sync::port_activity_subscription_id);
 	};
 }

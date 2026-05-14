@@ -65,7 +65,7 @@ namespace
 
 
 		Pipe::worker_fwk::port_id add_port_activity_subscription(
-			std::string_view port_name,
+			Pipe::worker_sync::string_type const& port_name,
 			Pipe::worker_fwk::port_activity_subscriber_ref subscriber_ref,
 			Pipe::worker_sync::port_activity_subscription_id subscription_id
 		)

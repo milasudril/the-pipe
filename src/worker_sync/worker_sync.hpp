@@ -2,6 +2,7 @@
 #define PIPE_WORKER_SYNC_WORKER_SYNC_HPP
 
 #include "src/common_fwk/error_handler.hpp"
+#include "src/utils/allocator_with_failure_handler.hpp"
 
 #include <cstdlib>
 #include <string>
@@ -12,6 +13,7 @@
 #include <optional>
 #include <utility>
 #include <functional>
+#include <memory>
 
 namespace Pipe::worker_sync
 {
@@ -47,14 +49,36 @@ namespace Pipe::worker_sync
 
 	static_assert(std::is_trivially_copyable_v<transaction_id>);
 
+	struct error_handler_traits
+	{
+		template<class T>
+		struct type_info
+		{};
+	};
+
+	template<>
+	struct error_handler_traits::type_info<char>
+	{
+		static constexpr char const* name = "char";
+	};
+
+
+	using error_handler = common_fwk::error_handler<error_handler_traits>;
+
+	using string_type = std::basic_string<
+		char,
+		std::char_traits<char>,
+		utils::allocator_with_failure_handler<char, std::shared_ptr<error_handler>>
+	>;
+
 	struct port_activity_subscription_request
 	{
-		std::string server_portname;
+		string_type server_portname;
 
-		std::string& content()
+		string_type& content()
 		{ return server_portname; }
 
-		std::string const& content() const
+		string_type const& content() const
 		{ return server_portname; }
 	};
 
@@ -97,12 +121,12 @@ namespace Pipe::worker_sync
 
 	struct error_response
 	{
-		std::string message;
+		string_type message;
 
-		std::string const& content() const
+		string_type const& content() const
 		{ return message; }
 
-		std::string& content()
+		string_type& content()
 		{ return message; }
 	};
 
@@ -223,7 +247,7 @@ namespace Pipe::worker_sync
 	template<class T>
 	concept decodable_string_message = requires(T& obj)
 	{
-		{ obj.content() } ->std::same_as<std::string&>;
+		{ obj.content() } ->std::same_as<string_type&>;
 	};
 
 	template<decodable_string_message Msg>
@@ -287,7 +311,7 @@ namespace Pipe::worker_sync
 	template<class T>
 	concept encodable_string_message = requires(T const& obj)
 	{
-		{obj.content()} -> std::same_as<std::string const&>;
+		{obj.content()} -> std::same_as<string_type const&>;
 	};
 
 	template<encodable_string_message Msg>
