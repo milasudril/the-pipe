@@ -34,6 +34,7 @@ namespace Pipe::worker_fwk
 		using transaction_id = worker_sync::transaction_id;
 		using fd_activity_event_handler_registred_event = typename traits::sync_fd_activity_event_handler_registred_event;
 		using fd_activity_event = typename traits::sync_fd_activity_event;
+		using error_handler = typename traits::error_handler;
 
 	public:
 		explicit sync_message_channel(size_t buffer_size):
