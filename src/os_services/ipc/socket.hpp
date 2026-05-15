@@ -115,7 +115,9 @@ namespace Pipe::os_services::ipc
 	template<auto SocketType, class AddressType>
 	connected_socket<SocketType, AddressType> accept(server_socket_ref<SocketType, AddressType> server_socket)
 	{
-		connected_socket<SocketType, AddressType> ret{::accept(server_socket.native_handle(), nullptr, nullptr)};
+		connected_socket<SocketType, AddressType> ret{
+			error_handling::do_while_eintr(::accept, server_socket.native_handle(), nullptr, nullptr)
+		};
 		if(ret == nullptr)
 		{
 			throw error_handling::system_error{
