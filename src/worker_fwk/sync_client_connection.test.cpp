@@ -30,6 +30,7 @@ namespace
 		bool fail_port_activity_subscription = false;
 
 		std::optional<Pipe::worker_fwk::port_id> expected_port_id;
+		std::optional<Pipe::worker_fwk::port_id> expected_port_id_ready;
 
 		Pipe::worker_fwk::port_id add_port_activity_subscription(
 			std::string const& server_portname,
@@ -57,8 +58,11 @@ namespace
 			expected_port_id.reset();
 		}
 
-		void notify_client_ready(Pipe::worker_fwk::port_id)
-		{}
+		void notify_client_ready(Pipe::worker_fwk::port_id port_id)
+		{
+			EXPECT_EQ(port_id, expected_port_id_ready);
+			expected_port_id_ready.reset();
+		}
 	};
 
 	size_t fail_malloc = std::numeric_limits<size_t>::max();
@@ -370,6 +374,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_unsubscription_sub
 	EXPECT_EQ(conn.num_messages_to_send(), 1);
 
 	ec.disable_exception_rethrow();
+	// Remove subscription
 	conn.handle_request(
 		Pipe::worker_sync::port_activity_unsubscription{
 			.id = Pipe::worker_sync::port_activity_subscription_id{0}
@@ -433,6 +438,120 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_unsubscription_sub
 			)
 		);
 		auto const body = receive_message<Pipe::worker_sync::port_activity_unsubscription_response, 8>(
+			sockets.socket_b()
+		);
+		EXPECT_EQ(body.id, Pipe::worker_sync::port_activity_subscription_id{0});
+	}
+}
+
+TESTCASE(Pipe_worker_fwk_sync_client_connection_notify_data_ready)
+{
+	my_event_handler_registry eh_registry;
+	my_port_activity_subscriber_registry registry;
+	Pipe::worker_fwk::sync_client_connection conn{
+		Pipe::worker_fwk::port_activity_subscriber_registry_ref{registry},
+		65536
+	};
+
+	Pipe::worker_sync::exception_controller ec;
+	// Create subscription
+	registry.expected_server_portname = "Foobar";
+	registry.expected_port_id = Pipe::worker_fwk::port_id{54};
+	conn.handle_request(
+		Pipe::worker_sync::port_activity_subscription_request{
+			.server_portname = "Foobar"
+		},
+		Pipe::worker_sync::transaction_id{125},
+		ec
+	);
+	EXPECT_EQ(ec.exceptions_should_be_rethrown(), true);
+	EXPECT_EQ(registry.expected_port_id.has_value(), true);
+	EXPECT_EQ(conn.num_messages_to_send(), 1);
+
+	// Try to notify that client is ready. This should fail since the client is already ready
+	ec.disable_exception_rethrow();
+	try
+	{
+		conn.handle_message(
+			Pipe::worker_sync::client_ready_event{
+				.id = Pipe::worker_sync::port_activity_subscription_id{0}
+			}
+		);
+		EXPECT_EQ(true, false);
+	}
+	catch(std::exception const& msg)
+	{
+		EXPECT_EQ(msg.what(), std::string_view{"Client is already ready"});
+	}
+	EXPECT_EQ(ec.exceptions_should_be_rethrown(), false);
+
+	// Send notification that data is ready
+	conn.notify_data_ready(Pipe::worker_sync::port_activity_subscription_id{0});
+	EXPECT_EQ(conn.num_messages_to_send(), 2);
+
+	// Now the notification should be accepted
+	registry.expected_port_id_ready = Pipe::worker_fwk::port_id{54};
+	conn.handle_message(
+		Pipe::worker_sync::client_ready_event{
+			.id = Pipe::worker_sync::port_activity_subscription_id{0}
+		}
+	);
+	EXPECT_EQ(ec.exceptions_should_be_rethrown(), false);
+	EXPECT_EQ(conn.num_messages_to_send(), 2);
+
+	auto const sockets = make_sockets();
+	eh_registry.expected_update_listening_status_call = my_event_handler_registry::update_listening_status_call{
+		.handle = Pipe::os_services::fd::saved_event_handler_ref{},
+		.new_status = Pipe::os_services::fd::activity_status::read_or_write
+	};
+	conn.handle_event(
+		Pipe::worker_fwk::sync_client_connection::sync_fd_activity_event_handler_registred_event{
+			.fd = sockets.socket_a(),
+			.id = Pipe::os_services::fd::event_handler_id{345},
+			.event_handler = {},
+			.event_handler_store = &eh_registry,
+		}
+	);
+	EXPECT_EQ(conn.num_messages_to_send(), 2);
+
+	eh_registry.expected_update_listening_status_call = my_event_handler_registry::update_listening_status_call{
+		.handle = Pipe::os_services::fd::saved_event_handler_ref{},
+		.new_status = Pipe::os_services::fd::activity_status::read
+	};
+	auto const send_result = conn.send_pending_messages();
+	EXPECT_EQ(send_result, Pipe::worker_fwk::sync_client_connection::io_status::ok);
+
+	{
+		auto const header = receive_message<Pipe::worker_sync::msg_header, 16>(sockets.socket_b());
+		EXPECT_EQ(header.tx_id, Pipe::worker_sync::transaction_id{125});
+		EXPECT_EQ(
+			header.msg_id,
+			(
+				Pipe::utils::variant_index_v<
+					Pipe::worker_sync::port_activity_subscription_response,
+					Pipe::worker_sync::server_to_client_message
+				>
+			)
+		);
+		auto const body = receive_message<Pipe::worker_sync::port_activity_subscription_response, 8>(
+			sockets.socket_b()
+		);
+		EXPECT_EQ(body.id, Pipe::worker_sync::port_activity_subscription_id{0});
+	}
+
+	{
+		auto const header = receive_message<Pipe::worker_sync::msg_header, 16>(sockets.socket_b());
+		EXPECT_EQ(header.tx_id, Pipe::worker_sync::transaction_id{});
+		EXPECT_EQ(
+			header.msg_id,
+			(
+				Pipe::utils::variant_index_v<
+					Pipe::worker_sync::data_ready_event,
+					Pipe::worker_sync::server_to_client_message
+				>
+			)
+		);
+		auto const body = receive_message<Pipe::worker_sync::data_ready_event, 8>(
 			sockets.socket_b()
 		);
 		EXPECT_EQ(body.id, Pipe::worker_sync::port_activity_subscription_id{0});

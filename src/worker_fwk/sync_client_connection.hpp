@@ -93,13 +93,13 @@ namespace Pipe::worker_fwk
 		{
 			auto const i = m_port_activity_subscriptions.find(id);
 			assert(i != std::end(m_port_activity_subscriptions));
+			i->second.client_status = client_status::busy;
 			send(
 				worker_sync::data_ready_event{
 					.id = id
 				},
 				worker_sync::transaction_id{}
 			);
-			i->second.client_status = client_status::ready;
 		}
 
 		using sync_message_channel<sync_message_channel_server_traits>::handle_message;
