@@ -186,10 +186,11 @@ namespace Pipe::os_services::ipc
 		AddressType const& connect_to
 	)
 	{
-		auto const result = ::connect(
+		auto const result = error_handling::do_while_eintr(
+			::connect,
 			socket.native_handle(),
 			reinterpret_cast<sockaddr const*>(&connect_to),
-			sizeof(connect_to)
+			static_cast<socklen_t>(sizeof(connect_to))
 		);
 
 		if(result == -1)
