@@ -2,8 +2,15 @@
 
 #include "./sync_server.hpp"
 #include "src/log/log.hpp"
+#include "src/os_services/fd/activity_event_handler_store.hpp"
+#include "src/os_services/ipc/socket.hpp"
+#include "src/os_services/ipc/socket_pair.hpp"
+#include "src/os_services/ipc/unix_domain_socket.hpp"
 
+#include <sys/socket.h>
 #include <testfwk/testfwk.hpp>
+#include <thread>
+
 namespace
 {
 	struct my_event_handler_registry:Pipe::os_services::fd::activity_event_handler_store
@@ -95,7 +102,7 @@ namespace
 	};
 }
 
-TESTCASE(Pipe_worker_fwk_sync_server_init)
+TESTCASE(Pipe_worker_fwk_sync_server_create)
 {
 	my_event_handler_registry event_handlers;
 	event_handlers.expected_do_add_call = my_event_handler_registry::do_add_call{
@@ -129,5 +136,54 @@ TESTCASE(Pipe_worker_fwk_sync_server_init)
 	EXPECT_EQ(
 		(std::string_view{std::begin(addr_string) + 1, std::end(addr_string)}),
 		server_info.socket_name
+	);
+}
+
+TESTCASE(Pipe_worker_fwk_sync_server_register_and_accept_connection)
+{
+	my_event_handler_registry event_handlers;
+
+	auto const socket_name =
+		Pipe::utils::random_printable_ascii_string(Pipe::os_services::ipc::abstract_sunpath_maxlength);
+	auto const server_socket = Pipe::os_services::ipc::make_server_socket<SOCK_STREAM>(
+		Pipe::os_services::ipc::make_abstract_sockaddr_un(socket_name),
+		1024
+	);
+
+	my_port_activity_subscriber_registry port_activity_subscriber_registry;
+	Pipe::worker_fwk::sync_server server{
+		Pipe::worker_fwk::port_activity_subscriber_registry_ref{port_activity_subscriber_registry}
+	};
+
+	server.handle_event(
+		Pipe::worker_fwk::sync_server::activity_event_handler_registered_event{
+			.fd = server_socket.get(),
+			.id = Pipe::os_services::fd::event_handler_id{345},
+			.event_handler = {},
+			.event_handler_store = &event_handlers
+		}
+	);
+
+	std::jthread client_thread{
+		[socket_name](){
+			auto const socket = Pipe::os_services::ipc::make_socket<SOCK_STREAM, sockaddr_un>();
+			auto const connection = Pipe::os_services::ipc::connect(
+				socket.get(),
+				Pipe::os_services::ipc::make_abstract_sockaddr_un(socket_name)
+			);
+			EXPECT_EQ(socket.get().native_handle(), connection.native_handle());
+		}
+	};
+
+	event_handlers.expected_do_add_call = my_event_handler_registry::do_add_call{
+		Pipe::os_services::fd::activity_status::read,
+		Pipe::os_services::fd::file_descriptor{},
+		Pipe::os_services::fd::event_handler_id{324}
+	};
+
+	server.handle_event(
+		Pipe::worker_fwk::sync_server::server_activity_event{
+			.status = Pipe::os_services::fd::activity_status::read
+		}
 	);
 }

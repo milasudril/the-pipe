@@ -9,13 +9,6 @@
 #include "src/os_services/ipc/unix_domain_socket.hpp"
 #include "src/os_services/fd/activity_event_handler_store.hpp"
 
-#include <cstring>
-#include <fcntl.h>
-#include <memory>
-#include <type_traits>
-#include <unordered_map>
-#include <queue>
-
 namespace Pipe::worker_fwk
 {
 	class sync_server
@@ -28,11 +21,11 @@ namespace Pipe::worker_fwk
 		using fd_tag = os_services::ipc::server_socket_tag<SOCK_STREAM, sockaddr_un>;
 
 		struct server_socket_activity{};
-		using server_activity_event_handler_registered_event =
+		using activity_event_handler_registered_event =
 			os_services::fd::activity_event_handler_registered_event<server_socket_activity, fd_tag>;
 		using server_activity_event = os_services::fd::activity_event<server_socket_activity, fd_tag>;
 
-		void handle_event(server_activity_event_handler_registered_event const& event)
+		void handle_event(activity_event_handler_registered_event const& event)
 		{ m_registration = event; }
 
 		void handle_event(server_activity_event event)
@@ -49,7 +42,7 @@ namespace Pipe::worker_fwk
 
 	private:
 		port_activity_subscriber_registry_ref m_port_activity_subscriber_registry;
-		server_activity_event_handler_registered_event m_registration;
+		activity_event_handler_registered_event m_registration;
 	};
 
 	struct server_info
