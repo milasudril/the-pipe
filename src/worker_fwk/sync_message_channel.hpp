@@ -196,7 +196,7 @@ namespace Pipe::worker_fwk
 
 					bytes_left_to_use -= bytes_written;
 					bytes_ready += bytes_written;
-					serialize_into = std::span{m_output_buffer.get() + bytes_written, bytes_left_to_use};
+					serialize_into = std::span{std::begin(serialize_into) + bytes_written, bytes_left_to_use};
 				}
 
 				m_bytes_to_write = std::span{static_cast<std::byte const*>(m_output_buffer.get()), bytes_ready};

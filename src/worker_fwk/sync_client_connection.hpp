@@ -68,7 +68,12 @@ namespace Pipe::worker_fwk
 			}
 
 			ec.enable_exception_rethrow();
-			send(worker_sync::port_activity_unsubscription_response{}, tx_id);
+			send(
+				worker_sync::port_activity_unsubscription_response{
+					.id = msg.id
+				},
+				tx_id
+			);
 		}
 
 		void handle_message(worker_sync::client_ready_event event)
