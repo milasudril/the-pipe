@@ -39,6 +39,8 @@ namespace Pipe::worker_fwk
 	class port_activity_subscriber_ref
 	{
 	public:
+		port_activity_subscriber_ref() = default;
+
 		template<port_activity_subscriber T>
 		requires(!std::is_same_v<std::remove_cvref_t<T>, port_activity_subscriber_ref>)
 		explicit port_activity_subscriber_ref(T& object):
@@ -57,8 +59,8 @@ namespace Pipe::worker_fwk
 		bool operator!=(port_activity_subscriber_ref const&) const = default;
 
 	private:
-		void* m_object;
-		void (*m_notify_data_ready)(void*, worker_sync::port_activity_subscription_id);
+		void* m_object = nullptr;
+		void (*m_notify_data_ready)(void*, worker_sync::port_activity_subscription_id) = nullptr;
 	};
 
 	template<class T>

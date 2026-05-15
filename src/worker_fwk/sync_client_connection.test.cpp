@@ -31,10 +31,11 @@ namespace
 
 		std::optional<Pipe::worker_fwk::port_id> expected_port_id;
 		std::optional<Pipe::worker_fwk::port_id> expected_port_id_ready;
+		Pipe::worker_fwk::port_activity_subscriber_ref saved_subscriber_ref;
 
 		Pipe::worker_fwk::port_id add_port_activity_subscription(
 			std::string const& server_portname,
-			Pipe::worker_fwk::port_activity_subscriber_ref,
+			Pipe::worker_fwk::port_activity_subscriber_ref subscriber_ref,
 			Pipe::worker_sync::port_activity_subscription_id
 		)
 		{
@@ -45,6 +46,7 @@ namespace
 				fail_port_activity_subscription = false;
 				throw std::runtime_error{"Failed to add port activity subscription"};
 			}
+			saved_subscriber_ref = subscriber_ref;
 			return Pipe::worker_fwk::port_id{54};
 		}
 
@@ -486,7 +488,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_notify_data_ready)
 	EXPECT_EQ(ec.exceptions_should_be_rethrown(), false);
 
 	// Send notification that data is ready
-	conn.notify_data_ready(Pipe::worker_sync::port_activity_subscription_id{0});
+	registry.saved_subscriber_ref.notify_data_ready(Pipe::worker_sync::port_activity_subscription_id{0});
 	EXPECT_EQ(conn.num_messages_to_send(), 2);
 
 	// Now the notification should be accepted
