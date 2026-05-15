@@ -557,3 +557,27 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_notify_data_ready)
 		EXPECT_EQ(body.id, Pipe::worker_sync::port_activity_subscription_id{0});
 	}
 }
+
+TESTCASE(Pipe_worker_fwk_sync_client_connection_client_data_ready_subscription_does_not_exist)
+{
+	my_event_handler_registry eh_registry;
+	my_port_activity_subscriber_registry registry;
+	Pipe::worker_fwk::sync_client_connection conn{
+		Pipe::worker_fwk::port_activity_subscriber_registry_ref{registry},
+		65536
+	};
+
+	try
+	{
+		conn.handle_message(
+			Pipe::worker_sync::client_ready_event{
+				.id = Pipe::worker_sync::port_activity_subscription_id{45}
+			}
+		);
+		EXPECT_EQ(true, false);
+	}
+	catch(std::exception const& msg)
+	{
+		EXPECT_EQ(msg.what(), std::string_view{"Subscription id not found"});
+	}
+}
