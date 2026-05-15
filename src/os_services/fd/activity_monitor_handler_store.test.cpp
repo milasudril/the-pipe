@@ -1,7 +1,6 @@
 //@	{"target":{"name": "activity_event_handler_store.test"}}
 
 #include "./activity_event_handler_store.hpp"
-#include "src/os_services/error_handling/system_error.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/ipc/pipe.hpp"
@@ -123,14 +122,12 @@ namespace
 
 		blob obj;
 
-		Pipe::os_services::error_handling::code update_listening_status(
+		void update_listening_status(
 			Pipe::os_services::fd::saved_event_handler_ref,
 			Pipe::os_services::fd::activity_status new_status
 		) noexcept override
 		{
 			obj.get_saved_event_handler_info()->status = new_status;
-			// TODO: Test with different value
-			return Pipe::os_services::error_handling::code{};
 		}
 
 		void remove(Pipe::os_services::fd::event_handler_id) noexcept override

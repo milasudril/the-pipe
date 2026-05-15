@@ -1,7 +1,6 @@
 //@	{"target":{"name":"sync_message_channel.test"}}
 
 #include "./sync_message_channel.hpp"
-#include "src/os_services/error_handling/system_error.hpp"
 #include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
 #include "src/os_services/io/io.hpp"
@@ -66,14 +65,13 @@ namespace
 			id_to_remove.reset();
 		}
 
-		Pipe::os_services::error_handling::code update_listening_status(
+		void update_listening_status(
 			Pipe::os_services::fd::saved_event_handler_ref,
 			Pipe::os_services::fd::activity_status status
 		) noexcept override
 		{
 			EXPECT_NE(status, current_listening_status);
 			current_listening_status = status;
-			return Pipe::os_services::error_handling::code{};
 		}
 
 		Pipe::os_services::fd::event_handler_id do_add(

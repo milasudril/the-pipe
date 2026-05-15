@@ -8,7 +8,6 @@
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/ipc/pipe.hpp"
 
-#include <cerrno>
 #include <jopp/parser.hpp>
 #include <jopp/serializer.hpp>
 #include <testfwk/testfwk.hpp>
@@ -38,11 +37,11 @@ namespace
 	public:
 		Pipe::os_services::fd::event_handler_id removed_id{};
 
-		Pipe::os_services::error_handling::code update_listening_status(
+		void update_listening_status(
 			Pipe::os_services::fd::saved_event_handler_ref,
 			Pipe::os_services::fd::activity_status
 		) noexcept override
-		{ return Pipe::os_services::error_handling::code{ECANCELED}; }
+		{ Pipe::log::terminate_with_message("Unexpected call update_listening_status"); }
 
 	private:
 		void remove(Pipe::os_services::fd::event_handler_id id) noexcept override

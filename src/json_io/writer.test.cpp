@@ -18,15 +18,13 @@ namespace
 		std::optional<Pipe::os_services::fd::activity_status> expected_new_listening_status;
 		std::optional<Pipe::os_services::fd::event_handler_id> expected_remove_id;
 
-		Pipe::os_services::error_handling::code update_listening_status(
+		void update_listening_status(
 			Pipe::os_services::fd::saved_event_handler_ref,
 			Pipe::os_services::fd::activity_status status
 		) noexcept override
 		{
 			EXPECT_EQ(status, expected_new_listening_status);
 			expected_new_listening_status.reset();
-			// TODO: Should try different error code?
-			return Pipe::os_services::error_handling::code{};
 		}
 
 	private:
