@@ -6,7 +6,6 @@
 #include "./sync_message_channel.hpp"
 
 #include "./port_activity_subscription.hpp"
-#include "src/common_fwk/error_handler.hpp"
 #include "src/os_services/ipc/unix_domain_socket.hpp"
 #include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/worker_sync/worker_sync.hpp"
@@ -25,7 +24,6 @@ namespace Pipe::worker_fwk
 		using sync_fd_activity_event_handler_registred_event =
 			os_services::fd::activity_event_handler_registered_event<client_activity, fd_tag>;
 		using sync_fd_activity_event = os_services::fd::activity_event<client_activity, fd_tag>;
-		using error_handler = worker_sync::error_handler;
 	};
 
 	class sync_client_connection:

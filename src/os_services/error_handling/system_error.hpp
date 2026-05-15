@@ -1,8 +1,6 @@
 #ifndef PIPE_OS_SERVICES_ERROR_HANDLING_SYSTEM_ERROR_HPP
 #define PIPE_OS_SERVICES_ERROR_HANDLING_SYSTEM_ERROR_HPP
 
-#include "src/common_fwk/error_handler.hpp"
-
 #include <cstring>
 #include <stdexcept>
 #include <format>
@@ -11,7 +9,7 @@
 
 namespace Pipe::os_services::error_handling
 {
-	using code = common_fwk::os_error_code;
+	enum class code{};
 
 	inline auto get_error_code() noexcept
 	{ return static_cast<code>(errno); }

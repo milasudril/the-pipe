@@ -1,9 +1,6 @@
 #ifndef PIPE_WORKER_SYNC_WORKER_SYNC_HPP
 #define PIPE_WORKER_SYNC_WORKER_SYNC_HPP
 
-#include "src/common_fwk/error_handler.hpp"
-#include "src/utils/allocator_with_failure_handler.hpp"
-
 #include <cstdlib>
 #include <string>
 #include <cstdint>
@@ -13,7 +10,6 @@
 #include <optional>
 #include <utility>
 #include <functional>
-#include <memory>
 
 namespace Pipe::worker_sync
 {
@@ -49,22 +45,14 @@ namespace Pipe::worker_sync
 
 	static_assert(std::is_trivially_copyable_v<transaction_id>);
 
-	using error_handler = std::shared_ptr<common_fwk::error_handler>;
-
-	using string_type = std::basic_string<
-		char,
-		std::char_traits<char>,
-		utils::allocator_with_failure_handler<char, error_handler>
-	>;
-
 	struct port_activity_subscription_request
 	{
-		string_type server_portname;
+		std::string server_portname;
 
-		string_type& content()
+		std::string& content()
 		{ return server_portname; }
 
-		string_type const& content() const
+		std::string const& content() const
 		{ return server_portname; }
 	};
 
@@ -107,12 +95,12 @@ namespace Pipe::worker_sync
 
 	struct error_response
 	{
-		string_type message;
+		std::string message;
 
-		string_type const& content() const
+		std::string const& content() const
 		{ return message; }
 
-		string_type& content()
+		std::string& content()
 		{ return message; }
 	};
 
@@ -233,7 +221,7 @@ namespace Pipe::worker_sync
 	template<class T>
 	concept decodable_string_message = requires(T& obj)
 	{
-		{ obj.content() } ->std::same_as<string_type&>;
+		{ obj.content() } ->std::same_as<std::string&>;
 	};
 
 	template<decodable_string_message Msg>
@@ -297,7 +285,7 @@ namespace Pipe::worker_sync
 	template<class T>
 	concept encodable_string_message = requires(T const& obj)
 	{
-		{obj.content()} -> std::same_as<string_type const&>;
+		{obj.content()} -> std::same_as<std::string const&>;
 	};
 
 	template<encodable_string_message Msg>

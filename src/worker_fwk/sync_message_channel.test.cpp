@@ -34,11 +34,6 @@ namespace
 		int value;
 	};
 
-	struct my_error_handler
-	{
-
-	};
-
 	struct msg_channel_traits
 	{
 		using fd_tag = Pipe::os_services::ipc::connected_socket_tag<SOCK_STREAM, sockaddr_un>;
@@ -48,7 +43,6 @@ namespace
 		using sync_fd_activity_event_handler_registred_event =
 			Pipe::os_services::fd::activity_event_handler_registered_event<client_activity, fd_tag>;
 		using sync_fd_activity_event = Pipe::os_services::fd::activity_event<client_activity, fd_tag>;
-		using error_handler = my_error_handler;
 	};
 
 	auto make_sockets()

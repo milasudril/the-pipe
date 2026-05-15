@@ -47,27 +47,10 @@ namespace Pipe::utils
 	}
 
 	template<class T>
-	using unwrapped_type_t = std::remove_cvref_t<decltype(unwrap(std::declval<T>()))>;
-
-	template<class T>
-	concept is_comparable_to_nullptr = requires(T obj){
-		{ obj == nullptr } -> std::same_as<bool>;
-		{ obj != nullptr } -> std::same_as<bool>;
-	};
-
-	template<class T>
-	concept stores_optional_value = requires(T obj){
-		{ obj.has_value() } -> std::same_as<bool>;
-	};
-
-	template<class T>
 	inline constexpr bool has_value(T const& item)
 	{
-		if constexpr(is_comparable_to_nullptr<T>)
-		{ return item != nullptr; }
-		else
-		if constexpr(stores_optional_value<T>)
-		{ return item.has_value(); }
+		if constexpr(std::is_convertible_v<T, bool>)
+		{ return static_cast<bool>(item); }
 		else
 		{ return true; }
 	}
