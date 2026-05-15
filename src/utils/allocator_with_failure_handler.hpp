@@ -33,7 +33,7 @@ namespace Pipe::utils
 			if(n > max_num_elements)
 			{
 				if(has_value(m_failure_handler))
-				{ unwrap(m_failure_handler).raise_byte_size_computation_error(n, m_current_context); }
+				{ unwrap(m_failure_handler).raise_byte_size_computation_error(n); }
 
 				throw std::bad_array_new_length{};
 			}
@@ -43,7 +43,7 @@ namespace Pipe::utils
 			if(ret == nullptr) [[unlikely]]
 			{
 				if(has_value(m_failure_handler))
-				{ unwrap(m_failure_handler).raise_memory_allocation_error(n, m_current_context); }
+				{ unwrap(m_failure_handler).raise_memory_allocation_error(n); }
 				throw std::bad_alloc{};
 			}
 
@@ -65,11 +65,7 @@ namespace Pipe::utils
 		auto& failure_handler() const noexcept
 		{ return m_failure_handler; }
 
-		auto& context() noexcept
-		{ return m_current_context; }
-
 	private:
-		[[no_unique_address]] typename unwrapped_type_t<FailureHandler>::context m_current_context{};
 		[[no_unique_address]] FailureHandler m_failure_handler{};
 	};
 }
