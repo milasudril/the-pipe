@@ -422,7 +422,7 @@ TESTCASE(Pipe_worker_sync_decoder_base_decode_completed_callback_throws)
 	std::optional<Pipe::worker_sync::error_response> response;
 	auto const res = decoder.decode_and_dispatch(
 		data,
-		[](int val){
+		[](int val, Pipe::worker_sync::exception_controller&){
 			EXPECT_EQ(val, 465);
 			throw std::runtime_error{"Callback failed"};
 		},
@@ -433,6 +433,37 @@ TESTCASE(Pipe_worker_sync_decoder_base_decode_completed_callback_throws)
 	EXPECT_EQ(res, 13);
 	REQUIRE_EQ(response.has_value(), true);
 	EXPECT_EQ(response.value().message, "Callback failed");
+}
+
+TESTCASE(Pipe_worker_sync_decoder_base_decode_completed_callback_throws_exceptions_rethrown)
+{
+	test_decoder decoder{};
+	decoder.is_completed = true;
+	std::array<std::byte, 16> data{};
+	decoder.expected_range = data;
+	decoder.return_size = 13;
+	decoder.return_value = 465;
+	std::optional<Pipe::worker_sync::error_response> response;
+	try
+	{
+		std::ignore = decoder.decode_and_dispatch(
+			data,
+			[](int val, Pipe::worker_sync::exception_controller& ec){
+				ec.enable_exception_rethrow();
+				EXPECT_EQ(val, 465);
+				throw std::runtime_error{"Callback failed"};
+			},
+			[&response]<class T>(T&& val){
+				response = std::forward<T>(val);
+			}
+		);
+		REQUIRE_EQ(true, false);
+	}
+	catch(std::exception const& e)
+	{
+		EXPECT_EQ(e.what(), std::string_view{"Callback failed"});
+	}
+	EXPECT_EQ(response.has_value(), false);
 }
 
 TESTCASE(Pipe_worker_sync_decoder_base_decode_completed_callback_succeeds)
@@ -446,7 +477,7 @@ TESTCASE(Pipe_worker_sync_decoder_base_decode_completed_callback_succeeds)
 	std::optional<Pipe::worker_sync::error_response> response;
 	auto const res = decoder.decode_and_dispatch(
 		data,
-		[](int val){
+		[](int val, Pipe::worker_sync::exception_controller&){
 			EXPECT_EQ(val, 465);
 		},
 		[&response]<class T>(T&& val){

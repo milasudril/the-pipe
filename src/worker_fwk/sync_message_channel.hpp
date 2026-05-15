@@ -105,7 +105,7 @@ namespace Pipe::worker_fwk
 					[&self, bytes_to_process]<class Decoder>(Decoder& item) {
 						return item.decode_and_dispatch(
 							bytes_to_process,
-							[&self]<class Msg>(Msg&& item){
+							[&self]<class Msg>(Msg&& item, worker_sync::exception_controller&){
 								utils::maybe_at_scope_exit reset_decoder{
 									[&self](){
 										self.m_currently_received_message = {};

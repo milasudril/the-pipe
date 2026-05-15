@@ -126,6 +126,22 @@ namespace Pipe::worker_sync
 		transaction_id tx_id;
 	};
 
+	class exception_controller
+	{
+	public:
+		void disable_exception_rethrow()
+		{ m_state = false; }
+
+		void enable_exception_rethrow()
+		{ m_state = true; }
+
+		[[nodiscard]] bool exceptions_should_be_rethrown() const
+		{ return m_state; }
+
+	private:
+		bool m_state{false};
+	};
+
 	class decoder_base
 	{
 	public:
@@ -140,10 +156,14 @@ namespace Pipe::worker_sync
 			auto const ret = self.decode(src);
 			if(self.completed())
 			{
+				exception_controller ec;
 				try
-				{ std::forward<Func>(func)(std::move(self.get_value())); }
+				{ std::forward<Func>(func)(std::move(self.get_value()), ec); }
 				catch(std::exception const& err)
 				{
+					if(ec.exceptions_should_be_rethrown())
+					{ throw; }
+
 					std::forward<ErrorHandler>(on_error)(
 						worker_sync::error_response{
 							.message = err.what()
