@@ -11,7 +11,8 @@ Pipe::worker_fwk::sync_client_connection::~sync_client_connection()
 
 void Pipe::worker_fwk::sync_client_connection::handle_request(
 	worker_sync::port_activity_subscription_request&& msg,
-	worker_sync::transaction_id tx_id
+	worker_sync::transaction_id tx_id,
+	worker_sync::exception_controller& ec
 )
 {
 	utils::maybe_at_scope_exit restore_subscription_id{
@@ -48,6 +49,8 @@ void Pipe::worker_fwk::sync_client_connection::handle_request(
 			m_port_activity_subscriptions.erase(i);
 		}
 	};
+
+	ec.enable_exception_rethrow();
 	send(
 		worker_sync::port_activity_subscription_response{
 			.id = subscription_id

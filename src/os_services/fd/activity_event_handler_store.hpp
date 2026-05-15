@@ -286,7 +286,7 @@ namespace Pipe::os_services::fd
 		 */
 		virtual void remove(event_handler_id id) noexcept = 0;
 
-		virtual void update_listening_status(saved_event_handler_ref handle, activity_status new_status) noexcept = 0;
+		virtual void update_listening_status(saved_event_handler_ref handle, activity_status new_status) = 0;
 
 		virtual ~activity_event_handler_store() = default;
 

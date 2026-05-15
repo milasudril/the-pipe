@@ -48,12 +48,14 @@ namespace Pipe::worker_fwk
 
 		void handle_request(
 			worker_sync::port_activity_subscription_request&& msg,
-			worker_sync::transaction_id tx_id
+			worker_sync::transaction_id tx_id,
+			worker_sync::exception_controller& ec
 		);
 
 		void handle_request(
 			worker_sync::port_activity_unsubscription msg,
-			worker_sync::transaction_id tx_id
+			worker_sync::transaction_id tx_id,
+			worker_sync::exception_controller& ec
 		)
 		{
 			auto const i = m_port_activity_subscriptions.find(msg.id);
@@ -64,6 +66,8 @@ namespace Pipe::worker_fwk
 				);
 				m_port_activity_subscriptions.erase(i);
 			}
+
+			ec.enable_exception_rethrow();
 			send(worker_sync::port_activity_unsubscription_response{}, tx_id);
 		}
 

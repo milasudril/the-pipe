@@ -98,7 +98,11 @@ namespace
 		std::optional<std::string> request_exception_string;
 		std::optional<std::string> notification_exception_string;
 
-		void handle_request(request req, Pipe::worker_sync::transaction_id id)
+		void handle_request(
+			request req,
+			Pipe::worker_sync::transaction_id id,
+			Pipe::worker_sync::exception_controller&
+		)
 		{
 			EXPECT_EQ(req.value, expected_request_value);
 			expected_request_value.reset();
@@ -207,10 +211,10 @@ extern "C"
 TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_event_fd_activity_event_handler_registered_event)
 {
 	event_handler_store eh_registry;
-	Pipe::worker_fwk::sync_message_channel<msg_channel_traits> codec{65536};
+	Pipe::worker_fwk::sync_message_channel<msg_channel_traits> msg_channel{65536};
 
 	auto const sockets = make_sockets();
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
@@ -229,11 +233,11 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_event_fd_activity_event_han
 TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_event_fd_activity_event_handler_registered_event_with_message_queued)
 {
 	event_handler_store eh_registry;
-	Pipe::worker_fwk::sync_message_channel<msg_channel_traits> codec{65536};
+	Pipe::worker_fwk::sync_message_channel<msg_channel_traits> msg_channel{65536};
 
-	codec.send(response{.value = 13}, Pipe::worker_sync::transaction_id{24});
+	msg_channel.send(response{.value = 13}, Pipe::worker_sync::transaction_id{24});
 	auto const sockets = make_sockets();
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
@@ -255,10 +259,10 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_event_fd_activity_event_han
 TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_no_bytes_ready_operation_would_have_blocked)
 {
 	event_handler_store eh_registry;
-	msg_handler codec{65536};
+	msg_handler msg_channel{65536};
 
 	auto const sockets = make_sockets();
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
@@ -267,17 +271,17 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_no_byte
 		}
 	);
 
-	auto const result = codec.read_and_dispatch_requests();
+	auto const result = msg_channel.read_and_dispatch_requests();
 	EXPECT_EQ(result, msg_handler::io_status::operation_would_have_blocked);
 }
 
 TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_no_bytes_ready_fd_closed)
 {
 	event_handler_store eh_registry;
-	msg_handler codec{65536};
+	msg_handler msg_channel{65536};
 
 	auto sockets = make_sockets();
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
@@ -287,17 +291,17 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_no_byte
 	);
 
 	sockets.close_socket_b();
-	auto const result = codec.read_and_dispatch_requests();
+	auto const result = msg_channel.read_and_dispatch_requests();
 	EXPECT_EQ(result, msg_handler::io_status::remote_endpoint_closed);
 }
 
 TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_process_request)
 {
 	event_handler_store eh_registry;
-	msg_handler codec{65536};
+	msg_handler msg_channel{65536};
 
 	auto sockets = make_sockets();
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
@@ -314,19 +318,19 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_process
 		sockets.socket_b()
 	);
 	send_message<4>(request{.value = 43}, sockets.socket_b());
-	codec.expected_transaction_id = Pipe::worker_sync::transaction_id{325};
-	codec.expected_request_value = 43;
-	auto const result = codec.read_and_dispatch_requests();
+	msg_channel.expected_transaction_id = Pipe::worker_sync::transaction_id{325};
+	msg_channel.expected_request_value = 43;
+	auto const result = msg_channel.read_and_dispatch_requests();
 	EXPECT_EQ(result, msg_handler::io_status::ok);
 }
 
 TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_process_notification)
 {
 	event_handler_store eh_registry;
-	msg_handler codec{65536};
+	msg_handler msg_channel{65536};
 
 	auto sockets = make_sockets();
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
@@ -343,18 +347,18 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_process
 		sockets.socket_b()
 	);
 	send_message<4>(notification{.value = 43}, sockets.socket_b());
-	codec.expected_notification_value = 43;
-	auto const result = codec.read_and_dispatch_requests();
+	msg_channel.expected_notification_value = 43;
+	auto const result = msg_channel.read_and_dispatch_requests();
 	EXPECT_EQ(result, msg_handler::io_status::ok);
 }
 
 TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_short_buffer)
 {
 	event_handler_store eh_registry;
-	msg_handler codec{17};
+	msg_handler msg_channel{17};
 
 	auto sockets = make_sockets();
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
@@ -371,11 +375,11 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_short_b
 		sockets.socket_b()
 	);
 	send_message<4>(notification{.value = 43}, sockets.socket_b());
-	auto result = codec.read_and_dispatch_requests();
+	auto result = msg_channel.read_and_dispatch_requests();
 	EXPECT_EQ(result, msg_handler::io_status::ok);
 
-	codec.expected_notification_value = 43;
-	result = codec.read_and_dispatch_requests();
+	msg_channel.expected_notification_value = 43;
+	result = msg_channel.read_and_dispatch_requests();
 	EXPECT_EQ(result, msg_handler::io_status::ok);
 }
 
@@ -384,11 +388,11 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_short_b
 TESTCASE(Pipe_worker_fwk_sync_message_channel_send_message_before_registration)
 {
 	event_handler_store eh_registry;
-	Pipe::worker_fwk::sync_message_channel<msg_channel_traits> codec{65536};
+	Pipe::worker_fwk::sync_message_channel<msg_channel_traits> msg_channel{65536};
 
-	codec.send(response{.value = 13}, Pipe::worker_sync::transaction_id{24});
+	msg_channel.send(response{.value = 13}, Pipe::worker_sync::transaction_id{24});
 	auto const sockets = make_sockets();
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
@@ -402,10 +406,10 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_message_before_registration)
 TESTCASE(Pipe_worker_fwk_sync_message_channel_send_message_after_registration)
 {
 	event_handler_store eh_registry;
-	Pipe::worker_fwk::sync_message_channel<msg_channel_traits> codec{65536};
+	Pipe::worker_fwk::sync_message_channel<msg_channel_traits> msg_channel{65536};
 
 	auto const sockets = make_sockets();
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
@@ -413,17 +417,17 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_message_after_registration)
 			.event_handler_store = &eh_registry,
 		}
 	);
-	codec.send(response{.value = 13}, Pipe::worker_sync::transaction_id{24});
+	msg_channel.send(response{.value = 13}, Pipe::worker_sync::transaction_id{24});
 	EXPECT_EQ(eh_registry.current_listening_status, Pipe::os_services::fd::activity_status::read_or_write);
 }
 
 TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_no_pending_messages_bytes_to_write_empty)
 {
 	event_handler_store eh_registry;
-	Pipe::worker_fwk::sync_message_channel<msg_channel_traits> codec{65536};
+	Pipe::worker_fwk::sync_message_channel<msg_channel_traits> msg_channel{65536};
 
 	auto const sockets = make_sockets();
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
@@ -431,7 +435,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_no_pending_m
 			.event_handler_store = &eh_registry,
 		}
 	);
-	auto const io_result =codec.send_pending_messages();
+	auto const io_result =msg_channel.send_pending_messages();
 	EXPECT_EQ(io_result, msg_handler::io_status::ok);
 	EXPECT_EQ(eh_registry.current_listening_status.has_value(), false);
 }
@@ -439,10 +443,10 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_no_pending_m
 TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_no_pending_messages_bytes_to_write)
 {
 	event_handler_store eh_registry;
-	Pipe::worker_fwk::sync_message_channel<msg_channel_traits> codec{65536};
+	Pipe::worker_fwk::sync_message_channel<msg_channel_traits> msg_channel{65536};
 
 	auto const sockets = make_sockets();
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
@@ -451,7 +455,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_no_pending_m
 		}
 	);
 
-	codec.send(response{.value = 13}, Pipe::worker_sync::transaction_id{24});
+	msg_channel.send(response{.value = 13}, Pipe::worker_sync::transaction_id{24});
 
 	fd_map.insert(std::pair{
 		sockets.socket_a().native_handle(),
@@ -461,7 +465,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_no_pending_m
 		}
 	});
 
-	auto const io_result =codec.send_pending_messages();
+	auto const io_result =msg_channel.send_pending_messages();
 	EXPECT_EQ(io_result, msg_handler::io_status::operation_would_have_blocked);
 	EXPECT_EQ(eh_registry.current_listening_status, Pipe::os_services::fd::activity_status::read_or_write);
 }
@@ -470,10 +474,10 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_no_pending_m
 {
 	signal(SIGPIPE, SIG_IGN);
 	event_handler_store eh_registry;
-	Pipe::worker_fwk::sync_message_channel<msg_channel_traits> codec{65536};
+	Pipe::worker_fwk::sync_message_channel<msg_channel_traits> msg_channel{65536};
 
 	auto sockets = make_sockets();
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
@@ -482,21 +486,21 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_no_pending_m
 		}
 	);
 
-	codec.send(response{.value = 13}, Pipe::worker_sync::transaction_id{24});
+	msg_channel.send(response{.value = 13}, Pipe::worker_sync::transaction_id{24});
 
 	sockets.close_socket_b();
 
-	auto const io_result =codec.send_pending_messages();
+	auto const io_result =msg_channel.send_pending_messages();
 	EXPECT_EQ(io_result, msg_handler::io_status::remote_endpoint_closed);
 }
 
 TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_write_partial_then_block)
 {
 	event_handler_store eh_registry;
-	Pipe::worker_fwk::sync_message_channel<msg_channel_traits> codec{65536};
+	Pipe::worker_fwk::sync_message_channel<msg_channel_traits> msg_channel{65536};
 
 	auto const sockets = make_sockets();
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
@@ -505,7 +509,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_write_partia
 		}
 	);
 
-	codec.send(response{.value = 13}, Pipe::worker_sync::transaction_id{24});
+	msg_channel.send(response{.value = 13}, Pipe::worker_sync::transaction_id{24});
 
 	fd_map.insert(std::pair{
 		sockets.socket_a().native_handle(),
@@ -515,21 +519,21 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_write_partia
 		}
 	});
 
-	auto const io_result =codec.send_pending_messages();
+	auto const io_result =msg_channel.send_pending_messages();
 	EXPECT_EQ(io_result, msg_handler::io_status::operation_would_have_blocked);
 	EXPECT_EQ(eh_registry.current_listening_status, Pipe::os_services::fd::activity_status::read_or_write);
 
-	codec.send(response{.value = 187}, Pipe::worker_sync::transaction_id{25});
+	msg_channel.send(response{.value = 187}, Pipe::worker_sync::transaction_id{25});
 	EXPECT_EQ(eh_registry.current_listening_status, Pipe::os_services::fd::activity_status::read_or_write);
 }
 
 TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_write_full)
 {
 	event_handler_store eh_registry;
-	Pipe::worker_fwk::sync_message_channel<msg_channel_traits> codec{65536};
+	Pipe::worker_fwk::sync_message_channel<msg_channel_traits> msg_channel{65536};
 
 	auto const sockets = make_sockets();
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
@@ -538,9 +542,9 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_write_full)
 		}
 	);
 
-	codec.send(response{.value = 13}, Pipe::worker_sync::transaction_id{24});
+	msg_channel.send(response{.value = 13}, Pipe::worker_sync::transaction_id{24});
 
-	auto const io_result =codec.send_pending_messages();
+	auto const io_result =msg_channel.send_pending_messages();
 	EXPECT_EQ(io_result, msg_handler::io_status::ok);
 	EXPECT_EQ(eh_registry.current_listening_status, Pipe::os_services::fd::activity_status::read);
 
@@ -555,10 +559,10 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_write_full)
 TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_write_full_small_buffer)
 {
 	event_handler_store eh_registry;
-	Pipe::worker_fwk::sync_message_channel<msg_channel_traits> codec{17};
+	Pipe::worker_fwk::sync_message_channel<msg_channel_traits> msg_channel{17};
 
 	auto const sockets = make_sockets();
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
@@ -567,9 +571,9 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_write_full_s
 		}
 	);
 
-	codec.send(response{.value = 13}, Pipe::worker_sync::transaction_id{24});
+	msg_channel.send(response{.value = 13}, Pipe::worker_sync::transaction_id{24});
 
-	auto const io_result =codec.send_pending_messages();
+	auto const io_result =msg_channel.send_pending_messages();
 	EXPECT_EQ(io_result, msg_handler::io_status::ok);
 	EXPECT_EQ(eh_registry.current_listening_status, Pipe::os_services::fd::activity_status::read);
 
@@ -587,10 +591,10 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_write_full_s
 TESTCASE(Pipe_worker_fwk_sync_message_channel_receive_unsupport_message_bad_number)
 {
 	event_handler_store eh_registry;
-	msg_handler codec{65536};
+	msg_handler msg_channel{65536};
 
 	auto const sockets = make_sockets();
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
@@ -607,11 +611,11 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_receive_unsupport_message_bad_numb
 		sockets.socket_b()
 	);
 
-	auto const result = codec.read_and_dispatch_requests();
+	auto const result = msg_channel.read_and_dispatch_requests();
 	EXPECT_EQ(result, msg_handler::io_status::ok);
 	EXPECT_EQ(eh_registry.current_listening_status, Pipe::os_services::fd::activity_status::read_or_write);
 
-	auto const send_result = codec.send_pending_messages();
+	auto const send_result = msg_channel.send_pending_messages();
 	EXPECT_EQ(send_result, msg_handler::io_status::ok);
 	auto const header = receive_message<Pipe::worker_sync::msg_header, 16>(sockets.socket_b());
 	EXPECT_EQ(
@@ -627,10 +631,10 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_receive_unsupport_message_bad_numb
 TESTCASE(Pipe_worker_fwk_sync_message_channel_receive_unsupport_message_bad)
 {
 	event_handler_store eh_registry;
-	msg_handler codec{65536};
+	msg_handler msg_channel{65536};
 
 	auto const sockets = make_sockets();
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
@@ -647,11 +651,11 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_receive_unsupport_message_bad)
 		sockets.socket_b()
 	);
 
-	auto const result = codec.read_and_dispatch_requests();
+	auto const result = msg_channel.read_and_dispatch_requests();
 	EXPECT_EQ(result, msg_handler::io_status::ok);
 	EXPECT_EQ(eh_registry.current_listening_status, Pipe::os_services::fd::activity_status::read_or_write);
 
-	auto const send_result = codec.send_pending_messages();
+	auto const send_result = msg_channel.send_pending_messages();
 	EXPECT_EQ(send_result, msg_handler::io_status::ok);
 	auto const header = receive_message<Pipe::worker_sync::msg_header, 16>(sockets.socket_b());
 	EXPECT_EQ(
@@ -667,10 +671,10 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_receive_unsupport_message_bad)
 TESTCASE(Pipe_worker_fwk_sync_message_channel_exception_while_handling_request)
 {
 	event_handler_store eh_registry;
-	msg_handler codec{65536};
+	msg_handler msg_channel{65536};
 
 	auto const sockets = make_sockets();
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
@@ -688,14 +692,14 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_exception_while_handling_request)
 	);
 	send_message<4>(request{.value = 356}, sockets.socket_b());
 
-	codec.expected_request_value = 356;
-	codec.expected_transaction_id = Pipe::worker_sync::transaction_id{24};
-	codec.request_exception_string = "Something went wrong";
-	auto const result = codec.read_and_dispatch_requests();
+	msg_channel.expected_request_value = 356;
+	msg_channel.expected_transaction_id = Pipe::worker_sync::transaction_id{24};
+	msg_channel.request_exception_string = "Something went wrong";
+	auto const result = msg_channel.read_and_dispatch_requests();
 	EXPECT_EQ(result, msg_handler::io_status::ok);
 	EXPECT_EQ(eh_registry.current_listening_status, Pipe::os_services::fd::activity_status::read_or_write);
 
-	auto const send_result = codec.send_pending_messages();
+	auto const send_result = msg_channel.send_pending_messages();
 	EXPECT_EQ(send_result, msg_handler::io_status::ok);
 	auto const header = receive_message<Pipe::worker_sync::msg_header, 16>(sockets.socket_b());
 	EXPECT_EQ(
@@ -711,10 +715,10 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_exception_while_handling_request)
 TESTCASE(Pipe_worker_fwk_sync_message_channel_exception_while_handling_notification)
 {
 	event_handler_store eh_registry;
-	msg_handler codec{65536};
+	msg_handler msg_channel{65536};
 
 	auto const sockets = make_sockets();
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
@@ -732,13 +736,13 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_exception_while_handling_notificat
 	);
 	send_message<4>(notification{.value = 356}, sockets.socket_b());
 
-	codec.expected_notification_value = 356;
-	codec.notification_exception_string = "Something went wrong";
-	auto const result = codec.read_and_dispatch_requests();
+	msg_channel.expected_notification_value = 356;
+	msg_channel.notification_exception_string = "Something went wrong";
+	auto const result = msg_channel.read_and_dispatch_requests();
 	EXPECT_EQ(result, msg_handler::io_status::ok);
 	EXPECT_EQ(eh_registry.current_listening_status, Pipe::os_services::fd::activity_status::read_or_write);
 
-	auto const send_result = codec.send_pending_messages();
+	auto const send_result = msg_channel.send_pending_messages();
 	EXPECT_EQ(send_result, msg_handler::io_status::ok);
 	auto const header = receive_message<Pipe::worker_sync::msg_header, 16>(sockets.socket_b());
 	EXPECT_EQ(
@@ -757,10 +761,10 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_exception_while_handling_notificat
 TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_event_error)
 {
 	event_handler_store eh_registry;
-	msg_handler codec{65536};
+	msg_handler msg_channel{65536};
 
 	auto const sockets = make_sockets();
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
@@ -770,7 +774,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_event_error)
 	);
 
 	eh_registry.id_to_remove = Pipe::os_services::fd::event_handler_id{345},
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event{
 			.status = Pipe::os_services::fd::activity_status::error
 		}
@@ -781,10 +785,10 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_read_connec
 {
 	signal(SIGPIPE, SIG_IGN);
 	event_handler_store eh_registry;
-	msg_handler codec{65536};
+	msg_handler msg_channel{65536};
 
 	auto sockets = make_sockets();
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
@@ -795,7 +799,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_read_connec
 
 	sockets.close_socket_b();
 	eh_registry.id_to_remove = Pipe::os_services::fd::event_handler_id{345},
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event{
 			.status = Pipe::os_services::fd::activity_status::read
 		}
@@ -805,10 +809,10 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_read_connec
 TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_read_read_request)
 {
 	event_handler_store eh_registry;
-	msg_handler codec{65536};
+	msg_handler msg_channel{65536};
 
 	auto sockets = make_sockets();
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
@@ -826,9 +830,9 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_read_read_r
 	);
 	send_message<4>(request{.value = 356}, sockets.socket_b());
 
-	codec.expected_request_value = 356;
-	codec.expected_transaction_id = Pipe::worker_sync::transaction_id{24};
-	codec.handle_event(
+	msg_channel.expected_request_value = 356;
+	msg_channel.expected_transaction_id = Pipe::worker_sync::transaction_id{24};
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event{
 			.status = Pipe::os_services::fd::activity_status::read
 		}
@@ -839,10 +843,10 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_write_conne
 {
 	signal(SIGPIPE, SIG_IGN);
 	event_handler_store eh_registry;
-	msg_handler codec{65536};
+	msg_handler msg_channel{65536};
 
 	auto sockets = make_sockets();
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
@@ -851,10 +855,10 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_write_conne
 		}
 	);
 
-	codec.send(response{.value = 4367}, Pipe::worker_sync::transaction_id{467});
+	msg_channel.send(response{.value = 4367}, Pipe::worker_sync::transaction_id{467});
 	sockets.close_socket_b();
 	eh_registry.id_to_remove = Pipe::os_services::fd::event_handler_id{345},
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event{
 			.status = Pipe::os_services::fd::activity_status::write
 		}
@@ -864,10 +868,10 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_write_conne
 TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_write)
 {
 	event_handler_store eh_registry;
-	msg_handler codec{65536};
+	msg_handler msg_channel{65536};
 
 	auto sockets = make_sockets();
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
@@ -876,8 +880,8 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_write)
 		}
 	);
 
-	codec.send(response{.value = 4367}, Pipe::worker_sync::transaction_id{467});
-	codec.handle_event(
+	msg_channel.send(response{.value = 4367}, Pipe::worker_sync::transaction_id{467});
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event{
 			.status = Pipe::os_services::fd::activity_status::write
 		}
@@ -895,10 +899,10 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_write)
 TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_read_and_write)
 {
 	event_handler_store eh_registry;
-	msg_handler codec{65536};
+	msg_handler msg_channel{65536};
 
 	auto sockets = make_sockets();
-	codec.handle_event(
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
@@ -916,10 +920,10 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_read_and_wr
 	);
 	send_message<4>(request{.value = 356}, sockets.socket_b());
 
-	codec.send(response{.value = 4367}, Pipe::worker_sync::transaction_id{467});
-	codec.expected_request_value = 356;
-	codec.expected_transaction_id = Pipe::worker_sync::transaction_id{24};
-	codec.handle_event(
+	msg_channel.send(response{.value = 4367}, Pipe::worker_sync::transaction_id{467});
+	msg_channel.expected_request_value = 356;
+	msg_channel.expected_transaction_id = Pipe::worker_sync::transaction_id{24};
+	msg_channel.handle_event(
 		msg_channel_traits::sync_fd_activity_event{
 			.status = Pipe::os_services::fd::activity_status::read_or_write
 		}

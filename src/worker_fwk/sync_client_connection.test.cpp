@@ -24,10 +24,49 @@
 
 namespace
 {
-#if 0
+	struct my_port_activity_subscriber_registry
+	{
+		std::optional<std::string> expected_server_portname;
+		bool fail_port_activity_subscription = false;
+
+		std::optional<Pipe::worker_fwk::port_id> expected_port_id;
+
+		Pipe::worker_fwk::port_id add_port_activity_subscription(
+			std::string const& server_portname,
+			Pipe::worker_fwk::port_activity_subscriber_ref,
+			Pipe::worker_sync::port_activity_subscription_id
+		)
+		{
+			EXPECT_EQ(server_portname, expected_server_portname);
+			expected_server_portname.reset();
+			if(fail_port_activity_subscription)
+			{
+				fail_port_activity_subscription = false;
+				throw std::runtime_error{"Failed to add port activity subscription"};
+			}
+			return Pipe::worker_fwk::port_id{54};
+		}
+
+		void remove_port_activity_subscription(
+			Pipe::worker_fwk::port_id port_id,
+			Pipe::worker_fwk::port_activity_subscriber_ref,
+			Pipe::worker_sync::port_activity_subscription_id
+		)
+		{
+			EXPECT_EQ(port_id, expected_port_id);
+			expected_port_id.reset();
+		}
+
+		void notify_client_ready(Pipe::worker_fwk::port_id)
+		{}
+	};
+
+	size_t fail_malloc = std::numeric_limits<size_t>::max();
+	size_t malloc_count = 0;
+
 	struct my_event_handler_registry:Pipe::os_services::fd::activity_event_handler_store
 	{
-		void remove(Pipe::os_services::fd::event_handler_id id) override
+		void remove(Pipe::os_services::fd::event_handler_id id) noexcept override
 		{
 			EXPECT_EQ(expected_remove_id.has_value(), true);
 			EXPECT_EQ(id, expected_remove_id);
@@ -74,47 +113,30 @@ namespace
 		};
 		std::optional<do_add_call> expected_do_add_call;
 	};
-#endif
 
-	struct my_port_activity_subscriber_registry
+	auto make_sockets()
 	{
-		std::optional<std::string> expected_server_portname;
-		bool fail_port_activity_subscription = false;
+		Pipe::os_services::ipc::socket_pair<SOCK_STREAM> sockets;
+		auto const flags = ::fcntl(sockets.socket_b().native_handle(), F_GETFL);
+		REQUIRE_NE(flags, -1);
+		auto const res = ::fcntl(sockets.socket_b().native_handle(), F_SETFL, O_NONBLOCK);
+		REQUIRE_NE(res, -1);
+		return sockets;
+	}
 
-		std::optional<Pipe::worker_fwk::port_id> expected_port_id;
-
-		Pipe::worker_fwk::port_id add_port_activity_subscription(
-			std::string const& server_portname,
-			Pipe::worker_fwk::port_activity_subscriber_ref,
-			Pipe::worker_sync::port_activity_subscription_id
-		)
-		{
-			EXPECT_EQ(server_portname, expected_server_portname);
-			expected_server_portname.reset();
-			if(fail_port_activity_subscription)
-			{
-				fail_port_activity_subscription = false;
-				throw std::runtime_error{"Failed to add port activity subscription"};
-			}
-			return Pipe::worker_fwk::port_id{54};
-		}
-
-		void remove_port_activity_subscription(
-			Pipe::worker_fwk::port_id port_id,
-			Pipe::worker_fwk::port_activity_subscriber_ref,
-			Pipe::worker_sync::port_activity_subscription_id
-		)
-		{
-			EXPECT_EQ(port_id, expected_port_id);
-			expected_port_id.reset();
-		}
-
-		void notify_client_ready(Pipe::worker_fwk::port_id)
-		{}
-	};
-
-	size_t fail_malloc = std::numeric_limits<size_t>::max();
-	size_t malloc_count = 0;
+	template<class MsgType, size_t ExpectedByteCount>
+	MsgType receive_message(Pipe::os_services::io::input_file_descriptor_ref fd)
+	{
+		std::array<std::byte, ExpectedByteCount> buffer;
+		auto const read_result = read_full(fd, buffer);
+		REQUIRE_EQ(read_result.operation_would_have_blocked(), false);
+		REQUIRE_EQ(read_result.bytes_transferred(), ExpectedByteCount);
+		Pipe::worker_sync::decoder<MsgType> decoder{};
+		auto const res = decoder.decode(buffer);
+		EXPECT_EQ(res, ExpectedByteCount);
+		EXPECT_EQ(decoder.completed(), true);
+		return decoder.get_value();
+	}
 }
 
 extern "C"
@@ -142,6 +164,8 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_subscription_reque
 		65536
 	};
 
+	Pipe::worker_sync::exception_controller ec;
+
 	try
 	{
 		registry.expected_server_portname = "Foobar";
@@ -150,13 +174,15 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_subscription_reque
 			Pipe::worker_sync::port_activity_subscription_request{
 				.server_portname = "Foobar"
 			},
-			Pipe::worker_sync::transaction_id{325}
+			Pipe::worker_sync::transaction_id{325},
+			ec
 		);
 		abort();
 	}
 	catch(...)
 	{}
 	EXPECT_EQ(conn.num_messages_to_send(), 0);
+	EXPECT_EQ(ec.exceptions_should_be_rethrown(), false);
 }
 
 TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_subscription_request_fail_to_insert_subscription)
@@ -167,6 +193,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_subscription_reque
 		65536
 	};
 
+	Pipe::worker_sync::exception_controller ec;
 	malloc_count = 0;
 	fail_malloc = 0; // No additional allocation due to SBO for std::string
 	try
@@ -177,13 +204,80 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_subscription_reque
 			Pipe::worker_sync::port_activity_subscription_request{
 				.server_portname = "Foobar"
 			},
-			Pipe::worker_sync::transaction_id{325}
+			Pipe::worker_sync::transaction_id{325},
+			ec
 		);
 		abort();
 	}
 	catch(...)
 	{ }
 
+	EXPECT_EQ(ec.exceptions_should_be_rethrown(), false);
 	EXPECT_EQ(registry.expected_port_id.has_value(), false);
 	EXPECT_EQ(conn.num_messages_to_send(), 0);
+}
+
+TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_subscription_request_succeeds)
+{
+	my_port_activity_subscriber_registry registry;
+	Pipe::worker_fwk::sync_client_connection conn{
+		Pipe::worker_fwk::port_activity_subscriber_registry_ref{registry},
+		65536
+	};
+
+	Pipe::worker_sync::exception_controller ec;
+
+	registry.expected_server_portname = "Foobar";
+	registry.expected_port_id = Pipe::worker_fwk::port_id{54};
+	conn.handle_request(
+		Pipe::worker_sync::port_activity_subscription_request{
+			.server_portname = "Foobar"
+		},
+		Pipe::worker_sync::transaction_id{325},
+		ec
+	);
+	EXPECT_EQ(ec.exceptions_should_be_rethrown(), true);
+	EXPECT_EQ(registry.expected_port_id.has_value(), true);
+	EXPECT_EQ(conn.num_messages_to_send(), 1);
+
+
+	auto const sockets = make_sockets();
+	my_event_handler_registry eh_registry;
+	eh_registry.expected_update_listening_status_call = my_event_handler_registry::update_listening_status_call{
+		.handle = Pipe::os_services::fd::saved_event_handler_ref{},
+		.new_status = Pipe::os_services::fd::activity_status::read_or_write
+	};
+	conn.handle_event(
+		Pipe::worker_fwk::sync_client_connection::sync_fd_activity_event_handler_registred_event{
+			.fd = sockets.socket_a(),
+			.id = Pipe::os_services::fd::event_handler_id{345},
+			.event_handler = {},
+			.event_handler_store = &eh_registry,
+		}
+	);
+	EXPECT_EQ(conn.num_messages_to_send(), 1);
+
+	eh_registry.expected_update_listening_status_call = my_event_handler_registry::update_listening_status_call{
+		.handle = Pipe::os_services::fd::saved_event_handler_ref{},
+		.new_status = Pipe::os_services::fd::activity_status::read
+	};
+	auto const send_result = conn.send_pending_messages();
+	EXPECT_EQ(send_result, Pipe::worker_fwk::sync_client_connection::io_status::ok);
+
+	auto const header = receive_message<Pipe::worker_sync::msg_header, 16>(sockets.socket_b());
+	EXPECT_EQ(header.tx_id, Pipe::worker_sync::transaction_id{325});
+	EXPECT_EQ(
+		header.msg_id,
+		(
+			Pipe::utils::variant_index_v<
+				Pipe::worker_sync::port_activity_subscription_response,
+				Pipe::worker_sync::server_to_client_message
+			>
+		)
+	);
+
+	auto const body = receive_message<Pipe::worker_sync::port_activity_subscription_response, 8>(
+		sockets.socket_b()
+	);
+	EXPECT_EQ(body.id, Pipe::worker_sync::port_activity_subscription_id{0});
 }

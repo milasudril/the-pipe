@@ -105,7 +105,7 @@ namespace Pipe::worker_fwk
 					[&self, bytes_to_process]<class Decoder>(Decoder& item) {
 						return item.decode_and_dispatch(
 							bytes_to_process,
-							[&self]<class Msg>(Msg&& item, worker_sync::exception_controller&){
+							[&self]<class Msg>(Msg&& item, worker_sync::exception_controller& ec){
 								utils::maybe_at_scope_exit reset_decoder{
 									[&self](){
 										self.m_currently_received_message = {};
@@ -117,10 +117,10 @@ namespace Pipe::worker_fwk
 
 								if constexpr(
 									requires{
-										{self.handle_request(std::forward<Msg>(item), self.m_current_transaction_id)};
+										{self.handle_request(std::forward<Msg>(item), self.m_current_transaction_id, ec)};
 									}
 								)
-								{ self.handle_request(std::forward<Msg>(item), self.m_current_transaction_id); }
+								{ self.handle_request(std::forward<Msg>(item), self.m_current_transaction_id, ec); }
 								else
 								{ self.handle_message(std::forward<Msg>(item)); }
 							},
