@@ -166,12 +166,9 @@ TESTCASE(Pipe_worker_fwk_sync_server_register_and_accept_connection)
 
 	std::jthread client_thread{
 		[socket_name](){
-			auto const socket = Pipe::os_services::ipc::make_socket<SOCK_STREAM, sockaddr_un>();
-			auto const connection = Pipe::os_services::ipc::connect(
-				socket.get(),
+			auto const socket = Pipe::os_services::ipc::make_connection<SOCK_STREAM>(
 				Pipe::os_services::ipc::make_abstract_sockaddr_un(socket_name)
 			);
-			EXPECT_EQ(socket.get().native_handle(), connection.native_handle());
 		}
 	};
 

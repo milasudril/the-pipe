@@ -173,7 +173,7 @@ namespace Pipe::os_services::ipc
 	)
 	{
 		auto socket = make_socket<SocketType, AddressType>();
-		auto server_socket_ref = bind_and_listen(socket.release(),listening_address, connection_backlog);
+		auto server_socket_ref = bind_and_listen(socket.release(), listening_address, connection_backlog);
 		return server_socket<SocketType, AddressType>{server_socket_ref};
 	}
 
