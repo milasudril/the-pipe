@@ -87,11 +87,6 @@ namespace Pipe::worker_sync
 	struct client_ready_event
 	{ port_activity_subscription_id id; };
 
-	using client_to_server_message = std::variant<
-		port_activity_subscription_request,
-		port_activity_unsubscription,
-		client_ready_event
-	>;
 
 	struct error_response
 	{
@@ -112,6 +107,13 @@ namespace Pipe::worker_sync
 
 	struct data_ready_event
 	{ port_activity_subscription_id id; };
+
+	using client_to_server_message = std::variant<
+		client_ready_event,
+		error_response,
+		port_activity_subscription_request,
+		port_activity_unsubscription
+	>;
 
 	using server_to_client_message = std::variant<
 		data_ready_event,

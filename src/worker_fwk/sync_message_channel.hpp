@@ -122,6 +122,13 @@ namespace Pipe::worker_fwk
 								)
 								{ self.handle_request(std::forward<Msg>(item), self.m_current_transaction_id, ec); }
 								else
+								if constexpr (
+									requires{
+										{self.handle_response(std::forward<Msg>(item), self.m_current_transaction_id, ec)};
+									}
+								)
+								{ self.handle_response(std::forward<Msg>(item), self.m_current_transaction_id, ec); }
+								else
 								{ self.handle_message(std::forward<Msg>(item)); }
 							},
 							[&self](worker_sync::error_response&& response) {

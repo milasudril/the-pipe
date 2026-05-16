@@ -76,6 +76,16 @@ namespace Pipe::worker_fwk
 			);
 		}
 
+		void handle_response(
+			worker_sync::error_response const& err,
+			worker_sync::transaction_id,
+			worker_sync::exception_controller& ec
+		)
+		{
+			ec.enable_exception_rethrow();
+			throw std::runtime_error{err.content()};
+		}
+
 		void handle_message(worker_sync::client_ready_event event)
 		{
 			auto const i = m_port_activity_subscriptions.find(event.id);
