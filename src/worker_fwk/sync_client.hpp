@@ -73,6 +73,26 @@ namespace Pipe::worker_fwk
 			);
 		}
 
+		void subscribe_to_port(std::string const& server_portname)
+		{
+			send(
+				Pipe::worker_sync::port_activity_subscription_request{
+					.server_portname = server_portname
+				},
+				Pipe::worker_sync::transaction_id{}
+			);
+		}
+
+		void unsubscribe_from_port(worker_sync::port_activity_subscription_id id)
+		{
+			send(
+				Pipe::worker_sync::port_activity_unsubscription{
+					.id = id
+				},
+				Pipe::worker_sync::transaction_id{}
+			);
+		}
+
 		using sync_message_channel<sync_message_channel_client_traits>::handle_message;
 	};
 
