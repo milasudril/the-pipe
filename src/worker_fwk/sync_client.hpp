@@ -28,8 +28,50 @@ namespace Pipe::worker_fwk
 		explicit sync_client(size_t buffer_size):sync_message_channel{buffer_size}
 		{}
 
-		template<class ... Args>
-		void handle_response(Args&&...){}
+		void handle_response(
+			worker_sync::error_response const& err,
+			worker_sync::transaction_id,
+			worker_sync::exception_controller& ec
+		)
+		{
+			ec.enable_exception_rethrow();
+			throw std::runtime_error{err.content()};
+		}
+
+		void handle_message(worker_sync::data_ready_event)
+		{
+		//	m_subscriber.notify_data_ready(event.id);
+		}
+
+		void handle_response(
+			worker_sync::port_activity_subscription_response const&,
+			worker_sync::transaction_id,
+			worker_sync::exception_controller& ec
+		)
+		{
+			ec.enable_exception_rethrow();
+		//	m_subscriber.subscription_completed(response.id)
+		}
+
+		void handle_response(
+			worker_sync::port_activity_unsubscription_response const&,
+			worker_sync::transaction_id,
+			worker_sync::exception_controller& ec
+		)
+		{
+			ec.enable_exception_rethrow();
+		//	m_subscriber.unsubscription_completed(response.id);
+		}
+
+		void notify_client_ready(worker_sync::port_activity_subscription_id id)
+		{
+			send(
+				Pipe::worker_sync::client_ready_event{
+					.id = id
+				},
+				Pipe::worker_sync::transaction_id{}
+			);
+		}
 
 		using sync_message_channel<sync_message_channel_client_traits>::handle_message;
 	};
