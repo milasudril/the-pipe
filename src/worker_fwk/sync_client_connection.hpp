@@ -1,5 +1,3 @@
-//@	{"dependencies_extra":[{"ref":"./sync_client_connection.o", "rel":"implementation"}]}
-
 #ifndef PIPE_WORKER_FWK_SYNC_CLIENT_CONNECTION_HPP
 #define PIPE_WORKER_FWK_SYNC_CLIENT_CONNECTION_HPP
 
@@ -39,7 +37,10 @@ namespace Pipe::worker_fwk
 			m_port_activity_subscriber_registry{port_activity_subscriber_registry}
 		{}
 
-		~sync_client_connection();
+		~sync_client_connection()
+		{
+		// TODO: Add support for connection closed
+		}
 
 		sync_client_connection(sync_client_connection&&) = default;
 		sync_client_connection& operator=(sync_client_connection&&) = default;
@@ -50,7 +51,20 @@ namespace Pipe::worker_fwk
 			worker_sync::port_activity_subscription_request&& msg,
 			worker_sync::transaction_id tx_id,
 			worker_sync::exception_controller& ec
-		);
+		)
+		{
+			auto const subscription_id = m_port_activity_subscriber_registry.add_port_activity_subscription(
+				msg.server_portname,
+				port_activity_subscriber_ref{*this}
+			);
+			ec.enable_exception_rethrow();
+			send(
+				worker_sync::port_activity_subscription_response{
+					.id = subscription_id
+				},
+				tx_id
+			);
+		}
 
 		void handle_request(
 			worker_sync::port_activity_unsubscription msg,
@@ -58,14 +72,10 @@ namespace Pipe::worker_fwk
 			worker_sync::exception_controller& ec
 		)
 		{
-			auto const i = m_port_activity_subscriptions.find(msg.id);
-			if(i != std::end(m_port_activity_subscriptions))
-			{
-				m_port_activity_subscriber_registry.remove_port_activity_subscription(
-					i->second.id, port_activity_subscriber_ref{*this}, i->first
-				);
-				m_port_activity_subscriptions.erase(i);
-			}
+			m_port_activity_subscriber_registry.remove_port_activity_subscription(
+				port_activity_subscriber_ref{*this},
+				msg.id
+			);
 
 			ec.enable_exception_rethrow();
 			send(
@@ -87,23 +97,10 @@ namespace Pipe::worker_fwk
 		}
 
 		void handle_message(worker_sync::client_ready_event event)
-		{
-			auto const i = m_port_activity_subscriptions.find(event.id);
-			if(i == std::end(m_port_activity_subscriptions))
-			{ throw std::runtime_error{"Subscription id not found"}; }
-
-			if(i->second.client_status == client_status::ready)
-			{ throw std::runtime_error{"Client is already ready"}; }
-
-			i->second.client_status = client_status::ready;
-			m_port_activity_subscriber_registry.notify_client_ready(i->second.id);
-		}
+		{ m_port_activity_subscriber_registry.notify_client_ready(event.id); }
 
 		void notify_data_ready(worker_sync::port_activity_subscription_id id)
 		{
-			auto const i = m_port_activity_subscriptions.find(id);
-			assert(i != std::end(m_port_activity_subscriptions));
-			i->second.client_status = client_status::busy;
 			send(
 				worker_sync::data_ready_event{
 					.id = id
@@ -116,18 +113,6 @@ namespace Pipe::worker_fwk
 
 	private:
 		port_activity_subscriber_registry_ref m_port_activity_subscriber_registry;
-
-		enum class client_status{ready, busy};
-
-		struct output_port_info
-		{
-			port_id id;
-			enum client_status client_status;
-		};
-
-		std::unordered_map<worker_sync::port_activity_subscription_id, output_port_info> m_port_activity_subscriptions;
-		worker_sync::port_activity_subscription_id m_port_activity_subscription_id{0};
-
 	};
 }
 #endif

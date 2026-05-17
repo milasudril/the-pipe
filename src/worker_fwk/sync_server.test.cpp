@@ -1,4 +1,4 @@
-//@	{"target":{"name":"sync_server.test"}}
+//	{"target":{"name":"sync_server.test"}}
 
 #include "./sync_server.hpp"
 #include "src/log/log.hpp"

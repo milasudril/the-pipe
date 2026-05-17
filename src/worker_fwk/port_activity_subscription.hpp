@@ -67,14 +67,13 @@ namespace Pipe::worker_fwk
 	concept port_activity_subscriber_registry = requires(
 		T& obj,
 		std::string const& str,
-		port_id port,
 		worker_sync::port_activity_subscription_id port_activity_subscription,
 		port_activity_subscriber_ref port_activity_subscriber
 	)
 	{
-		{ obj.add_port_activity_subscription(str, port_activity_subscriber, port_activity_subscription) } -> std::same_as<port_id>;
-		{ obj.remove_port_activity_subscription(port, port_activity_subscriber, port_activity_subscription) } -> std::same_as<void>;
-		{ obj.notify_client_ready(port) } -> std::same_as<void>;
+		{ obj.add_port_activity_subscription(str, port_activity_subscriber) } -> std::same_as<worker_sync::port_activity_subscription_id>;
+		{ obj.remove_port_activity_subscription(port_activity_subscriber, port_activity_subscription) } -> std::same_as<void>;
+		{ obj.notify_client_ready(port_activity_subscription) } -> std::same_as<void>;
 	};
 
 	class port_activity_subscriber_registry_ref
@@ -85,7 +84,7 @@ namespace Pipe::worker_fwk
 		explicit port_activity_subscriber_registry_ref(T& object):
 			m_object{&object},
 			m_notify_client_ready{
-				[](void* object, port_id id) static {
+				[](void* object, worker_sync::port_activity_subscription_id id) static {
 					static_cast<T*>(object)->notify_client_ready(id);
 				}
 			},
@@ -93,46 +92,42 @@ namespace Pipe::worker_fwk
 				[](
 					void* object,
 					std::string const& port_name,
-					port_activity_subscriber_ref port_activity_subscriber,
-					worker_sync::port_activity_subscription_id port_activity_subscription
+					port_activity_subscriber_ref port_activity_subscriber
 				) static {
-					return static_cast<T*>(object)->add_port_activity_subscription(port_name, port_activity_subscriber, port_activity_subscription);
+					return static_cast<T*>(object)->add_port_activity_subscription(port_name, port_activity_subscriber);
 				}
 			},
 			m_remove_port_activity_subscription{
 				[](
 					void* object,
-					port_id id,
 					port_activity_subscriber_ref port_activity_subscriber,
 					worker_sync::port_activity_subscription_id port_activity_subscription
 				) static {
-					return static_cast<T*>(object)->remove_port_activity_subscription(id, port_activity_subscriber, port_activity_subscription);
+					return static_cast<T*>(object)->remove_port_activity_subscription(port_activity_subscriber, port_activity_subscription);
 				}
 			}
 		{}
 
-		void notify_client_ready(port_id id) const
+		void notify_client_ready(worker_sync::port_activity_subscription_id id) const
 		{ m_notify_client_ready(m_object, id); }
 
-		port_id add_port_activity_subscription(
+		worker_sync::port_activity_subscription_id add_port_activity_subscription(
 			std::string const& port_name,
-			port_activity_subscriber_ref port_activity_subscriber,
-			worker_sync::port_activity_subscription_id port_activity_subscription
+			port_activity_subscriber_ref port_activity_subscriber
 		) const
-		{ return m_add_port_activity_subscription(m_object, port_name, port_activity_subscriber, port_activity_subscription); }
+		{ return m_add_port_activity_subscription(m_object, port_name, port_activity_subscriber); }
 
 		void remove_port_activity_subscription(
-			port_id id,
 			port_activity_subscriber_ref port_activity_subscriber,
 			worker_sync::port_activity_subscription_id port_activity_subscription
 		) const
-		{ m_remove_port_activity_subscription(m_object, id, port_activity_subscriber, port_activity_subscription); }
+		{ m_remove_port_activity_subscription(m_object, port_activity_subscriber, port_activity_subscription); }
 
 	private:
 		void* m_object;
-		void (*m_notify_client_ready)(void*, port_id);
-		port_id (*m_add_port_activity_subscription)(void*, std::string const&, port_activity_subscriber_ref, worker_sync::port_activity_subscription_id);
-		void (*m_remove_port_activity_subscription)(void*, port_id, port_activity_subscriber_ref, worker_sync::port_activity_subscription_id);
+		void (*m_notify_client_ready)(void*, worker_sync::port_activity_subscription_id);
+		worker_sync::port_activity_subscription_id (*m_add_port_activity_subscription)(void*, std::string const&, port_activity_subscriber_ref);
+		void (*m_remove_port_activity_subscription)(void*, port_activity_subscriber_ref, worker_sync::port_activity_subscription_id);
 	};
 }
 #endif

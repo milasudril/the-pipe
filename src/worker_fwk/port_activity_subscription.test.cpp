@@ -52,45 +52,38 @@ namespace
 {
 	struct port_activity_subscriber_registry
 	{
-		std::optional<Pipe::worker_fwk::port_id> expected_port_id;
 		std::optional<std::string_view> expected_port_name;
 		std::optional<Pipe::worker_fwk::port_activity_subscriber_ref> expected_subscriber_ref;
 		std::optional<Pipe::worker_sync::port_activity_subscription_id> expected_subscription_id;
 
-		void notify_client_ready(Pipe::worker_fwk::port_id port_id)
+		void notify_client_ready(Pipe::worker_sync::port_activity_subscription_id subscription_id)
 		{
-			EXPECT_EQ(port_id, expected_port_id);
-			expected_port_id.reset();
+			EXPECT_EQ(expected_subscription_id, subscription_id);
+			expected_subscription_id.reset();
 		}
 
 
-		Pipe::worker_fwk::port_id add_port_activity_subscription(
+		Pipe::worker_sync::port_activity_subscription_id  add_port_activity_subscription(
 			std::string_view port_name,
-			Pipe::worker_fwk::port_activity_subscriber_ref subscriber_ref,
-			Pipe::worker_sync::port_activity_subscription_id subscription_id
+			Pipe::worker_fwk::port_activity_subscriber_ref subscriber_ref
 		)
 		{
 			EXPECT_EQ(port_name, expected_port_name);
 			EXPECT_EQ(subscriber_ref, expected_subscriber_ref);
-			EXPECT_EQ(subscription_id, expected_subscription_id);
 			expected_port_name.reset();
 			expected_subscriber_ref.reset();
-			expected_subscription_id.reset();
-			return Pipe::worker_fwk::port_id{4356};
+			return Pipe::worker_sync::port_activity_subscription_id{4356};
 		}
 
 		void remove_port_activity_subscription(
-			Pipe::worker_fwk::port_id port_id,
 			Pipe::worker_fwk::port_activity_subscriber_ref subscriber_ref,
 			Pipe::worker_sync::port_activity_subscription_id subscription_id
 		)
 		{
-			EXPECT_EQ(port_id, expected_port_id);
 			EXPECT_EQ(subscriber_ref, expected_subscriber_ref);
 			EXPECT_EQ(subscription_id, expected_subscription_id);
-			expected_port_id.reset();
-			expected_subscriber_ref.reset();
 			expected_subscription_id.reset();
+			expected_subscriber_ref.reset();
 		}
 	};
 }
@@ -100,26 +93,23 @@ TESTCASE(port_activity_subscriber_registry_ref_test_callbacks)
 	port_activity_subscriber_registry my_registry;
 	Pipe::worker_fwk::port_activity_subscriber_registry_ref reg_ref{my_registry};
 
-	my_registry.expected_port_id = Pipe::worker_fwk::port_id{435};
-	reg_ref.notify_client_ready(Pipe::worker_fwk::port_id{435});
+	my_registry.expected_subscription_id = Pipe::worker_sync::port_activity_subscription_id{435};
+	reg_ref.notify_client_ready(Pipe::worker_sync::port_activity_subscription_id{435});
 
 	port_activity_subscriber my_subscriber;
 	my_registry.expected_port_name = "foobar";
 	my_registry.expected_subscriber_ref =
 	Pipe::worker_fwk::port_activity_subscriber_ref{my_subscriber};
 	my_registry.expected_subscription_id = Pipe::worker_sync::port_activity_subscription_id{545};
-	auto const port_id = reg_ref.add_port_activity_subscription(
+	auto const subscriber_id = reg_ref.add_port_activity_subscription(
 		"foobar",
-		Pipe::worker_fwk::port_activity_subscriber_ref{my_subscriber},
-		Pipe::worker_sync::port_activity_subscription_id{545}
+		Pipe::worker_fwk::port_activity_subscriber_ref{my_subscriber}
 	);
-	EXPECT_EQ(port_id, Pipe::worker_fwk::port_id{4356});
+	EXPECT_EQ(subscriber_id, Pipe::worker_sync::port_activity_subscription_id{4356});
 
-	my_registry.expected_port_id = Pipe::worker_fwk::port_id{42356};
 	my_registry.expected_subscriber_ref = Pipe::worker_fwk::port_activity_subscriber_ref{my_subscriber};
 	my_registry.expected_subscription_id = Pipe::worker_sync::port_activity_subscription_id{546};
 	reg_ref.remove_port_activity_subscription(
-		Pipe::worker_fwk::port_id{42356},
 		Pipe::worker_fwk::port_activity_subscriber_ref{my_subscriber},
 		Pipe::worker_sync::port_activity_subscription_id{546}
 	);
