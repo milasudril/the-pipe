@@ -13,3 +13,16 @@ TESTCASE(Pipe_utils_string_literal_construct)
 	EXPECT_EQ(foo, "hello, world");
 	EXPECT_EQ("hello, world", foo);
 }
+
+TESTCASE(Pipe_utils_make_string_literal_array)
+{
+	static constexpr auto const strings = Pipe::utils::make_string_literal_array<
+		Pipe::utils::string_literal{"Foo"},
+		Pipe::utils::string_literal{"Bar"},
+		Pipe::utils::string_literal{"Kaka"}
+	>();
+
+	EXPECT_EQ(std::string_view{strings[0]}, "Foo");
+	EXPECT_EQ(std::string_view{strings[1]}, "Bar");
+	EXPECT_EQ(std::string_view{strings[2]}, "Kaka");
+}
