@@ -4,9 +4,47 @@
 
 namespace Pipe::worker_fwk
 {
+	class msg_file_subcriber_barrier
+	{
+	public:
+		explicit msg_file_subcriber_barrier(std::move_only_function<void()> on_subscribers_ready):
+			m_on_subscribers_ready{std::move(on_subscribers_ready)}
+		{}
+
+		void inc_num_subscribers()
+		{ ++m_num_subscribers; }
+
+		void dec_num_subscribers()
+		{ --m_num_subscribers; }
+
+		void inc_num_ready_subscribers()
+		{
+			++m_num_ready_subscribers;
+			if(m_num_ready_subscribers == m_num_subscribers)
+			{
+				m_on_subscribers_ready();
+				m_num_ready_subscribers = 0;
+			}
+		}
+
+	private:
+		size_t m_num_subscribers{};
+		size_t m_num_ready_subscribers{};
+		std::move_only_function<void()> m_on_subscribers_ready;
+	};
+
 	class subscription_registry
 	{
 	public:
+		template<class OutputPortCollection>
+		subscription_registry(OutputPortCollection& output_ports):
+			m_outputs{
+				&output_ports,
+				output_ports.get_msg_file_output_ports()
+			}
+		{}
+
+
 		void notify_client_ready(worker_sync::port_activity_subscription_id id) const;
 
 		worker_sync::port_activity_subscription_id add_port_activity_subscription(
@@ -20,27 +58,7 @@ namespace Pipe::worker_fwk
 		) const;
 
 	private:
-		class output_port_info
-		{
-		public:
-			void inc_num_subscribers()
-			{ ++m_num_subscribers; }
-
-			void dec_num_subscribers()
-			{ --m_num_subscribers; }
-
-			void inc_num_ready_subscribers()
-			{ ++m_num_ready_subscribers; }
-
-			void dec_num_ready_subscribers()
-			{ --m_num_ready_subscribers; }
-
-		private:
-			size_t m_num_subscribers{};
-			size_t m_num_subscribers{};
-		};
-
-		std::unordered_map<
+		std::flat_map<
 			worker_sync::port_activity_subscription_id, port_id> m_port_activity_subscriptions;
 	};
 }
