@@ -1,5 +1,5 @@
-#ifndef PIPE_UTILS_CALLBACK_BINDING_HPP
-#define PIPE_UTILS_CALLBACK_BINDING_HPP
+#ifndef PIPE_UTILS_BOUND_MEMBER_FUNCTION_HPP
+#define PIPE_UTILS_BOUND_MEMBER_FUNCTION_HPP
 
 #include <bit>
 
@@ -12,13 +12,13 @@ namespace Pipe::utils
 	};
 
 	template<class ReturnType, class ... ArgTypes>
-	class callback_binding
+	class bound_member_function
 	{
 	public:
-		callback_binding() = default;
+		bound_member_function() = default;
 
 		template<class ObjectType, ReturnType (ObjectType::*Callback)(ArgTypes...)>
-		explicit callback_binding(ObjectType& object, make_type<Callback>):
+		explicit bound_member_function(ObjectType& object, make_type<Callback>):
 			m_object{&object},
 			m_callback{[](void* object, ArgTypes... args){
 				return (static_cast<ObjectType*>(object)->*make_type<Callback>::value)(args...);
@@ -26,7 +26,7 @@ namespace Pipe::utils
 		{}
 
 		template<class ObjectType, ReturnType (*Callback)(ObjectType&, ArgTypes...)>
-		explicit callback_binding(ObjectType& object, make_type<Callback>):
+		explicit bound_member_function(ObjectType& object, make_type<Callback>):
 			m_object{&object},
 			m_callback{
 				[](void* object, ArgTypes... args){
@@ -46,9 +46,9 @@ namespace Pipe::utils
 	};
 
 	template<auto Callback, class ObjectType>
-	auto make_binding(ObjectType& object)
+	auto bind_member_function(ObjectType& object)
 	{
-		return callback_binding{object, make_type<Callback>{}};
+		return bound_member_function{object, make_type<Callback>{}};
 	}
 }
 

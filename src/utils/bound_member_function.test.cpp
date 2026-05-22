@@ -1,6 +1,6 @@
-//@	{"target":{"name":"callback_binding.test"}}
+//@	{"target":{"name":"bound_member_function.test"}}
 
-#include "./callback_binding.hpp"
+#include "./bound_member_function.hpp"
 
 #include <testfwk/testfwk.hpp>
 
@@ -28,15 +28,15 @@ namespace
 	};
 }
 
-TESTCASE(Pipe_utils_callback_binding_bind_and_call)
+TESTCASE(Pipe_utils_bound_member_function_bind_and_call)
 {
 	my_test_class foo{};
-	Pipe::utils::callback_binding times{foo, Pipe::utils::make_type<&my_test_class::times>{}};
+	Pipe::utils::bound_member_function times{foo, Pipe::utils::make_type<&my_test_class::times>{}};
 	EXPECT_EQ(times(3, 2), 6);
 
-	Pipe::utils::callback_binding minus{foo, Pipe::utils::make_type<&my_test_class::minus>{}};
+	Pipe::utils::bound_member_function minus{foo, Pipe::utils::make_type<&my_test_class::minus>{}};
 	EXPECT_EQ(minus(3, 2), 1);
 
-	auto const alt_minus = Pipe::utils::make_binding<&my_test_class::minus>(foo);
+	auto const alt_minus = Pipe::utils::bind_member_function<&my_test_class::minus>(foo);
 	EXPECT_EQ(alt_minus(3, 8), -5);
 }
