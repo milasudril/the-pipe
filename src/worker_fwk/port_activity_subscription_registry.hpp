@@ -1,4 +1,5 @@
 #include "./port_activity_subscription.hpp"
+#include "src/utils/bound_member_function.hpp"
 
 #include <flat_map>
 
@@ -7,8 +8,10 @@ namespace Pipe::worker_fwk
 	class msg_file_subcriber_barrier
 	{
 	public:
-		explicit msg_file_subcriber_barrier(std::move_only_function<void()> on_subscribers_ready):
-			m_on_subscribers_ready{std::move(on_subscribers_ready)}
+		using submit_function = utils::bound_member_function<void>;
+
+		explicit msg_file_subcriber_barrier(submit_function submit_result):
+			m_submit_result{submit_result}
 		{}
 
 		void inc_num_subscribers()
@@ -22,7 +25,7 @@ namespace Pipe::worker_fwk
 			++m_num_ready_subscribers;
 			if(m_num_ready_subscribers == m_num_subscribers)
 			{
-				m_on_subscribers_ready();
+				m_submit_result();
 				m_num_ready_subscribers = 0;
 			}
 		}
@@ -30,7 +33,7 @@ namespace Pipe::worker_fwk
 	private:
 		size_t m_num_subscribers{};
 		size_t m_num_ready_subscribers{};
-		std::move_only_function<void()> m_on_subscribers_ready;
+		submit_function m_submit_result;
 	};
 
 	class subscription_registry
