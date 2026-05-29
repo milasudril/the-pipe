@@ -37,6 +37,9 @@ namespace Pipe::worker_fwk
 		auto get_num_ready_subscribers() const
 		{ return m_num_ready_subscribers; }
 
+		bool is_bond_to(submit_function other_submit_function) const
+		{ return m_submit_result == other_submit_function; }
+
 	private:
 		void submit_result_if_ready()
 		{

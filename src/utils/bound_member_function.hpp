@@ -38,6 +38,9 @@ namespace Pipe::utils
 		ReturnType operator()(ArgTypes... args) const
 		{ return m_callback(m_object, args...); }
 
+		bool operator==(bound_member_function const&) const = default;
+		bool operator!=(bound_member_function const&) const = default;
+
 	private:
 		void* m_object{};
 
