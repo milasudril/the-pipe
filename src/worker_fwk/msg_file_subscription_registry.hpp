@@ -5,6 +5,7 @@
 
 #include "./port_activity_subscription.hpp"
 #include "src/utils/scope_handling.hpp"
+#include "src/utils/utils.hpp"
 #include "src/worker_fwk/msg_file_subscriber_barrier.hpp"
 #include "src/worker_sync/worker_sync.hpp"
 
@@ -38,17 +39,27 @@ namespace Pipe::worker_fwk
 		msg_file_input_port_status status;
 	};
 
+	template<class T>
+	concept msg_file_output_port_collection = requires(T& obj, std::string const& port_name){
+		{ std::as_const(obj).get_msg_file_output_ports() } -> utils::pair_like<port_id, msg_file_subcriber_barrier>;
+		{ obj.get_port_id(port_name) } -> std::same_as<port_id>;
+	};
 
-	template<class MsgFileOutputṔortCollection>
 	class msg_file_subscription_registry
 	{
 	public:
-		msg_file_subscription_registry(MsgFileOutputṔortCollection& output_ports):
-			m_ports{output_ports},
+		template<msg_file_output_port_collection PortCollection>
+		msg_file_subscription_registry(PortCollection& output_ports):
+			m_ports{&output_ports},
+			m_get_port_id{
+				[](void* handle, std::string const& port_name){
+					return static_cast<PortCollection*>(handle)->get_port_id(port_name);
+				}
+			},
 			m_msg_file_output_ports{
 				std::ranges::transform_view{
 					output_ports.get_msg_file_output_ports(),
-					[](std::pair<port_id, msg_file_subcriber_barrier> const& item){
+					[](auto const& item){
 						return std::pair{
 							item.first,
 							msg_file_output_port{
@@ -67,12 +78,12 @@ namespace Pipe::worker_fwk
 		)
 		{
 			auto const port = [&](){
-				auto const id = m_ports.get_port_id(port_name);
+				auto const id = m_get_port_id(m_ports, port_name);
 				auto const port = m_msg_file_output_ports.find(id);
 				if(port == std::end(m_msg_file_output_ports))
 				{ throw std::runtime_error{"The given port is not providing a message file"}; }
 				return port;
-			};
+			}();
 
 			auto const id = m_current_subscription_id.next();
 			utils::maybe_at_scope_exit rollback_id{
@@ -155,7 +166,7 @@ namespace Pipe::worker_fwk
 			std::erase_if(
 				i->second.port->subscriptions,
 				[id](auto const& item){
-					item.id == id;
+					return item.id == id;
 				}
 			);
 		}
@@ -167,7 +178,7 @@ namespace Pipe::worker_fwk
 				std::erase_if(
 					item.second.subscriptions,
 					[subscriber](auto const& item){
-						return item.second.subscriber == subscriber;
+						return item.subscriber == subscriber;
 					}
 				);
 			}
@@ -190,7 +201,8 @@ namespace Pipe::worker_fwk
 		{ return m_current_subscription_id; }
 
 	private:
-		MsgFileOutputṔortCollection& m_ports;
+		void* m_ports;
+		port_id (*m_get_port_id)(void*, std::string const&);
 		std::flat_map<port_id, msg_file_output_port> m_msg_file_output_ports;
 		std::flat_map<
 			worker_sync::port_activity_subscription_id,

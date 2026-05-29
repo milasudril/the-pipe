@@ -269,6 +269,15 @@ namespace Pipe::utils
 	{
 		return write_buffer<FlushFunc, BufferSize>(std::forward<FlushFunc>(func));
 	}
+
+	template<class Object, class First, class Second = First>
+	concept pair_like = requires(Object obj) {
+		{ obj.first } -> std::same_as<First&>;
+		{ obj.second } -> std::same_as<Second&>;
+	};
+
+	static_assert(pair_like<std::pair<int, int>, int>);
+	static_assert(pair_like<std::pair<int&, int>, int&, int>);
 };
 
 #endif
