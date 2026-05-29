@@ -14,6 +14,7 @@
 #include <array>
 #include <utility>
 #include <flat_set>
+#include <ranges>
 
 /**
  * \brief Contains various utility functions
@@ -278,6 +279,12 @@ namespace Pipe::utils
 
 	static_assert(pair_like<std::pair<int, int>, int>);
 	static_assert(pair_like<std::pair<int&, int>, int&, int>);
+
+	template<class Object, class First, class Second = First>
+	concept bidir_range_of_pairs = std::ranges::bidirectional_range<Object> && requires(Object obj){
+		{ *std::ranges::begin(obj) } -> pair_like<First, Second>;
+		{ *std::ranges::end(obj) } -> pair_like<First, Second>;
+	};
 };
 
 #endif

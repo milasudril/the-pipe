@@ -41,7 +41,8 @@ namespace Pipe::worker_fwk
 
 	template<class T>
 	concept msg_file_output_port_collection = requires(T& obj, std::string const& port_name){
-		{ std::as_const(obj).get_msg_file_output_ports() } -> utils::pair_like<port_id, msg_file_subcriber_barrier>;
+		{ obj.get_msg_file_output_ports() } ->
+				utils::bidir_range_of_pairs<port_id, msg_file_subcriber_barrier>;
 		{ obj.get_port_id(port_name) } -> std::same_as<port_id>;
 	};
 
@@ -57,6 +58,7 @@ namespace Pipe::worker_fwk
 				}
 			},
 			m_msg_file_output_ports{
+				std::from_range_t{},
 				std::ranges::transform_view{
 					output_ports.get_msg_file_output_ports(),
 					[](auto const& item){
