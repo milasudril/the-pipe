@@ -13,7 +13,7 @@ namespace
 			return std::array{
 				std::pair{
 					Pipe::worker_fwk::port_id{0},
-					Pipe::worker_fwk::msg_file_subcriber_barrier{
+					Pipe::worker_fwk::msg_file_subscriber_barrier{
 						Pipe::utils::bind_member_function<&my_port_collection::port_0_ready>(*this)
 					}
 				}

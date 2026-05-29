@@ -26,7 +26,7 @@ namespace Pipe::worker_fwk
 
 	struct msg_file_output_port
 	{
-		msg_file_subcriber_barrier barrier;
+		msg_file_subscriber_barrier barrier;
 		std::vector<msg_file_output_port_subscription> subscriptions;
 	};
 
@@ -42,7 +42,7 @@ namespace Pipe::worker_fwk
 	template<class T>
 	concept msg_file_output_port_collection = requires(T& obj, std::string const& port_name){
 		{ obj.get_msg_file_output_ports() } ->
-				utils::bidir_range_of_pairs<port_id, msg_file_subcriber_barrier>;
+				utils::bidir_range_of_pairs<port_id, msg_file_subscriber_barrier>;
 		{ obj.get_port_id(port_name) } -> std::same_as<port_id>;
 	};
 

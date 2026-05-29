@@ -89,7 +89,7 @@ namespace Pipe::worker_ctl
 	};
 
 	/**
-	 * \brief Converts a output_port_info ot a jopp::object
+	 * \brief Converts a output_port_info to a jopp::object
 	 */
 	inline jopp::object to_jopp_object(output_port_info&& obj)
 	{

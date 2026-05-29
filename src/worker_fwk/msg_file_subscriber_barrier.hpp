@@ -7,12 +7,12 @@
 
 namespace Pipe::worker_fwk
 {
-	class msg_file_subcriber_barrier
+	class msg_file_subscriber_barrier
 	{
 	public:
 		using submit_function = utils::bound_member_function<void>;
 
-		explicit msg_file_subcriber_barrier(submit_function submit_result):
+		explicit msg_file_subscriber_barrier(submit_function submit_result):
 			m_submit_result{submit_result}
 		{}
 

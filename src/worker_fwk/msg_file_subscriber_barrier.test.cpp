@@ -19,10 +19,10 @@ namespace
 	};
 }
 
-TESTCASE(Pipe_worker_fwk_msg_file_subcriber_barrier_inc_num_subscribers)
+TESTCASE(Pipe_worker_fwk_msg_file_subscriber_barrier_inc_num_subscribers)
 {
 	my_handler handler;
-	Pipe::worker_fwk::msg_file_subcriber_barrier barry{
+	Pipe::worker_fwk::msg_file_subscriber_barrier barry{
 		Pipe::utils::bind_member_function<&my_handler::do_it>(handler)
 	};
 
@@ -34,10 +34,10 @@ TESTCASE(Pipe_worker_fwk_msg_file_subcriber_barrier_inc_num_subscribers)
 	EXPECT_EQ(barry.get_num_subscribers(), 3);
 }
 
-TESTCASE(Pipe_worker_fwk_msg_file_subcriber_barrier_fires_when_all_are_completed)
+TESTCASE(Pipe_worker_fwk_msg_file_subscriber_barrier_fires_when_all_are_completed)
 {
 	my_handler handler;
-	Pipe::worker_fwk::msg_file_subcriber_barrier barry{
+	Pipe::worker_fwk::msg_file_subscriber_barrier barry{
 		Pipe::utils::bind_member_function<&my_handler::do_it>(handler)
 	};
 
@@ -58,10 +58,10 @@ TESTCASE(Pipe_worker_fwk_msg_file_subcriber_barrier_fires_when_all_are_completed
 	EXPECT_EQ(barry.get_num_ready_subscribers(), 0);
 }
 
-TESTCASE(Pipe_worker_fwk_msg_file_subcriber_barrier_fires_when_sufficiently_many_subcribers_left)
+TESTCASE(Pipe_worker_fwk_msg_file_subscriber_barrier_fires_when_sufficiently_many_subcribers_left)
 {
 	my_handler handler;
-	Pipe::worker_fwk::msg_file_subcriber_barrier barry{
+	Pipe::worker_fwk::msg_file_subscriber_barrier barry{
 		Pipe::utils::bind_member_function<&my_handler::do_it>(handler)
 	};
 
@@ -82,10 +82,10 @@ TESTCASE(Pipe_worker_fwk_msg_file_subcriber_barrier_fires_when_sufficiently_many
 	EXPECT_EQ(barry.get_num_ready_subscribers(), 0);
 }
 
-TESTCASE(Pipe_worker_fwk_msg_file_subcriber_barrier_dec_does_not_count_below_zero)
+TESTCASE(Pipe_worker_fwk_msg_file_subscriber_barrier_dec_does_not_count_below_zero)
 {
 	my_handler handler;
-	Pipe::worker_fwk::msg_file_subcriber_barrier barry{
+	Pipe::worker_fwk::msg_file_subscriber_barrier barry{
 		Pipe::utils::bind_member_function<&my_handler::do_it>(handler)
 	};
 
