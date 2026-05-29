@@ -1,3 +1,5 @@
+//@	{"dependencies_extra":[{"ref":"./msg_file_subscription_registry.o", "rel":"implementation"}]}
+
 #ifndef PIPE_WORKER_FWK_MSG_FILE_SUBSCRIPTION_REGISTRY_HPP
 #define PIPE_WORKER_FWK_MSG_FILE_SUBSCRIPTION_REGISTRY_HPP
 
@@ -11,6 +13,7 @@
 #include <ranges>
 #include <string>
 #include <memory>
+#include <cassert>
 
 namespace Pipe::worker_fwk
 {
@@ -89,7 +92,7 @@ namespace Pipe::worker_fwk
 				}
 			).first;
 			utils::maybe_at_scope_exit rollback_subscription{
-				[this, id](){
+				[this, i](){
 					m_port_activity_subscriptions.erase(i);
 				}
 			};
@@ -133,7 +136,7 @@ namespace Pipe::worker_fwk
 			{
 				item.subscriber.notify_data_ready(item.id);
 				auto const subscription = m_port_activity_subscriptions.find(item.id);
-				assert(subscription != std::end(m_port_activity_subscriptions);
+				assert(subscription != std::end(m_port_activity_subscriptions));
 				subscription->second.status = msg_file_input_port_status::busy;
 			}
 		}
@@ -172,7 +175,7 @@ namespace Pipe::worker_fwk
 			std::erase_if(
 				m_port_activity_subscriptions,
 				[subscriber](auto const& item){
-					return item.second.subscriber.== subscriber;
+					return item.second.subscriber == subscriber;
 				}
 			);
 		}
