@@ -18,7 +18,7 @@ Pipe::worker_fwk::msg_file_subscription_registry::add_port_activity_subscription
 
 	auto const id = m_current_subscription_id.next();
 	utils::maybe_at_scope_exit rollback_id{
-		[this, id](){
+		[this, id]() noexcept{
 			m_current_subscription_id = id;
 		}
 	};
@@ -34,7 +34,7 @@ Pipe::worker_fwk::msg_file_subscription_registry::add_port_activity_subscription
 		}
 	).first;
 	utils::maybe_at_scope_exit rollback_subscription{
-		[this, i](){
+		[this, i]() noexcept{
 			m_port_activity_subscriptions.erase(i);
 		}
 	};
@@ -45,6 +45,17 @@ Pipe::worker_fwk::msg_file_subscription_registry::add_port_activity_subscription
 			.id = id
 		}
 	);
+	utils::maybe_at_scope_exit rollback_subscriptions{
+		[&port_data = port->second]() noexcept {
+			port_data.subscriptions.pop_back();
+			port_data.barrier.dec_num_subscribers();
+		}
+	};
+
+	port->second.barrier.inc_num_subscribers();
+	port->second.barrier.inc_num_ready_subscribers();
+
+	rollback_subscriptions.reset();
 	rollback_subscription.reset();
 	rollback_id.reset();
 
