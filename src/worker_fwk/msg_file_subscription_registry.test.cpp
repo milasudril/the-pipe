@@ -118,6 +118,19 @@ namespace
 		}
 	};
 
+	struct my_activity_subscriber
+	{
+		std::optional<Pipe::worker_sync::port_activity_subscription_id> expected_id;
+		void notify_data_ready(Pipe::worker_sync::port_activity_subscription_id id)
+		{
+			EXPECT_EQ(id, expected_id);
+			expected_id.reset();
+		}
+
+		~my_activity_subscriber()
+		{ EXPECT_EQ(expected_id.has_value(), false); }
+	};
+
 	std::array<std::byte, 1024*1024> malloc_buffer;
 	constinit size_t fail_malloc_no = static_cast<size_t>(-1);
 	constinit size_t malloc_count = 0;
@@ -359,7 +372,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_try_to_add_subcriber_sub
 	EXPECT_EQ(port.barrier.get_num_subscribers(), 0);
 }
 
-TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_tye_add_subcriber_callback_throws)
+TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_try_add_subcriber_callback_throws)
 {
 	Pipe::utils::at_scope_exit{
 		[saved_offset = malloc_offset](){
@@ -392,6 +405,69 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_tye_add_subcriber_callba
 	EXPECT_EQ(std::size(port.subscriptions), 0);
 	EXPECT_EQ(port.barrier.get_num_ready_subscribers(), 0);
 	EXPECT_EQ(port.barrier.get_num_subscribers(), 0);
+}
+
+TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_try_add_subcriber_callback_throws_with_ready_clients)
+{
+	Pipe::utils::at_scope_exit{
+		[saved_offset = malloc_offset](){
+			malloc_offset = saved_offset;
+		}
+	};
+
+	my_port_collection port_collection{};
+	Pipe::worker_fwk::msg_file_subscription_registry registry{port_collection};
+	my_activity_subscriber activity_subscriber{};
+	port_collection.expect_port_0_ready = true;
+	auto const id = registry.add_port_activity_subscription(
+		"port_0",
+		Pipe::worker_fwk::port_activity_subscriber_ref{activity_subscriber}
+	);
+
+	// Before signalling that client is ready, signal that data is ready
+	activity_subscriber.expected_id = id;
+	registry.notify_data_ready(Pipe::worker_fwk::port_id{0});
+
+	// Raise an exception when submitting data
+	port_collection.expect_port_0_ready_exception = true;
+	try
+	{
+		registry.notify_client_ready(id, Pipe::worker_fwk::port_activity_subscriber_ref{activity_subscriber});
+		REQUIRE_EQ(true, false);
+	}
+	catch(std::exception const& err)
+	{ EXPECT_EQ(err.what(), std::string_view{"Something went wrong"}); }
+
+	{
+		auto const& output_ports = registry.get_msg_file_output_ports();
+		auto const& port = output_ports.at(Pipe::worker_fwk::port_id{0});
+		// Still one ready subscriber
+		EXPECT_EQ(port.barrier.get_num_ready_subscribers(), 1);
+		EXPECT_EQ(port.barrier.get_num_subscribers(), 1);
+	}
+
+	port_collection.expect_port_0_ready_exception = true;
+	try
+	{
+		registry.add_port_activity_subscription(
+			"port_0",
+			Pipe::worker_fwk::port_activity_subscriber_ref{}
+		);
+		REQUIRE_EQ(true, false);
+	}
+	catch(std::exception const& err)
+	{ EXPECT_EQ(err.what(), std::string_view{"Something went wrong"}); }
+
+	EXPECT_EQ(std::size(registry.get_port_acivity_subscriptions()), 1);
+	EXPECT_EQ(
+		registry.get_current_subscription_id(),
+		Pipe::worker_sync::port_activity_subscription_id{1}
+	);
+	auto const& output_ports = registry.get_msg_file_output_ports();
+	auto const& port = output_ports.at(Pipe::worker_fwk::port_id{0});
+	EXPECT_EQ(std::size(port.subscriptions), 1);
+	EXPECT_EQ(port.barrier.get_num_ready_subscribers(), 1);
+	EXPECT_EQ(port.barrier.get_num_subscribers(), 1);
 }
 
 TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_add_subcriber)
