@@ -506,3 +506,101 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_add_subcriber)
 	EXPECT_EQ(subscription.status, Pipe::worker_fwk::msg_file_input_port_status::ready);
 	EXPECT_EQ(subscription.subscriber, Pipe::worker_fwk::port_activity_subscriber_ref{});
 }
+
+TESTCASE(Pipe_worker_fwk_msg_file_subscription_notify_client_ready_client_subscription_does_not_exist)
+{
+	Pipe::utils::at_scope_exit{
+		[saved_offset = malloc_offset](){
+			malloc_offset = saved_offset;
+		}
+	};
+
+	my_port_collection port_collection{};
+	Pipe::worker_fwk::msg_file_subscription_registry registry{port_collection};
+
+	try
+	{
+		registry.notify_client_ready(
+			Pipe::worker_sync::port_activity_subscription_id{},
+			Pipe::worker_fwk::port_activity_subscriber_ref{}
+		);
+		REQUIRE_EQ(true, false);
+	}
+	catch(std::exception const& err)
+	{
+		EXPECT_EQ(err.what(), std::string_view{"Invalid subscription id"});
+	}
+}
+
+TESTCASE(Pipe_worker_fwk_msg_file_subscription_notify_client_ready_client_wrong_subscription_owner)
+{
+	Pipe::utils::at_scope_exit{
+		[saved_offset = malloc_offset](){
+			malloc_offset = saved_offset;
+		}
+	};
+
+	my_port_collection port_collection{};
+	Pipe::worker_fwk::msg_file_subscription_registry registry{port_collection};
+
+	my_activity_subscriber subscriber{};
+	port_collection.expect_port_0_ready = true;
+	auto const id = registry.add_port_activity_subscription("port_0", Pipe::worker_fwk::port_activity_subscriber_ref{subscriber});
+
+	try
+	{
+		registry.notify_client_ready(id, Pipe::worker_fwk::port_activity_subscriber_ref{});
+		REQUIRE_EQ(true, false);
+	}
+	catch(std::exception const& err)
+	{
+		EXPECT_EQ(err.what(), std::string_view{"Invalid subscription id"});
+	}
+}
+
+TESTCASE(Pipe_worker_fwk_msg_file_subscription_notify_client_ready_client_client_already_ready)
+{
+	Pipe::utils::at_scope_exit{
+		[saved_offset = malloc_offset](){
+			malloc_offset = saved_offset;
+		}
+	};
+
+	my_port_collection port_collection{};
+	Pipe::worker_fwk::msg_file_subscription_registry registry{port_collection};
+
+	my_activity_subscriber subscriber{};
+	port_collection.expect_port_0_ready = true;
+	auto const id = registry.add_port_activity_subscription("port_0", Pipe::worker_fwk::port_activity_subscriber_ref{subscriber});
+
+	try
+	{
+		// NOTE: port starts in state ready
+		registry.notify_client_ready(id, Pipe::worker_fwk::port_activity_subscriber_ref{subscriber});
+		REQUIRE_EQ(true, false);
+	}
+	catch(std::exception const& err)
+	{
+		EXPECT_EQ(err.what(), std::string_view{"Port activity subscriber is already ready"});
+	}
+}
+
+TESTCASE(Pipe_worker_fwk_msg_file_subscription_notify_client_ready_success)
+{
+	Pipe::utils::at_scope_exit{
+		[saved_offset = malloc_offset](){
+			malloc_offset = saved_offset;
+		}
+	};
+
+	my_port_collection port_collection{};
+	Pipe::worker_fwk::msg_file_subscription_registry registry{port_collection};
+
+	my_activity_subscriber subscriber{};
+	port_collection.expect_port_0_ready = true;
+	auto const id = registry.add_port_activity_subscription("port_0", Pipe::worker_fwk::port_activity_subscriber_ref{subscriber});
+	subscriber.expected_id = id;
+	registry.notify_data_ready(Pipe::worker_fwk::port_id{0});
+	port_collection.expect_port_0_ready = true;
+	registry.notify_client_ready(id, Pipe::worker_fwk::port_activity_subscriber_ref{subscriber});
+}
