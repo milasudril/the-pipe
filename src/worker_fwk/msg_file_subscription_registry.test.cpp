@@ -131,7 +131,9 @@ namespace
 		{ EXPECT_EQ(expected_id.has_value(), false); }
 	};
 
-	std::array<std::byte, 1024*1024> malloc_buffer;
+
+	alignas(32) std::array<std::byte, 1024*1024> malloc_buffer;
+
 	constinit size_t fail_malloc_no = static_cast<size_t>(-1);
 	constinit size_t malloc_count = 0;
 	constinit size_t malloc_offset = 0;
