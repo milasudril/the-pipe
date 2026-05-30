@@ -714,15 +714,83 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_remove_port_activity_sub
 
 	my_activity_subscriber subscriber_0{};
 	port_collection.expect_port_0_ready = true;
-	registry.add_port_activity_subscription("port_0", Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0});
+	auto const id_0 = registry.add_port_activity_subscription("port_0", Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0});
+	subscriber_0.expected_id = id_0;
+	registry.notify_data_ready(Pipe::worker_fwk::port_id{0});
 
 	my_activity_subscriber subscriber_1{};
+	auto const id_1 = registry.add_port_activity_subscription("port_0", Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_1});
+
 	registry.add_port_activity_subscription("port_0", Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_1});
 	auto const& ports = registry.get_msg_file_output_ports();
 	auto const& port = ports.at(Pipe::worker_fwk::port_id{0});
-	EXPECT_EQ(port.barrier.get_num_subscribers(), 2);
-	// Only one is ready, since the first one is considered busy
-	EXPECT_EQ(port.barrier.get_num_ready_subscribers(), 1);
+	EXPECT_EQ(port.barrier.get_num_subscribers(), 3);
+	// Only one is ready, since the first one has already triggered the port ready event
+	// NOTE: since no data ready event has been sent, both clients are considered ready
+	EXPECT_EQ(port.barrier.get_num_ready_subscribers(), 2);
 
+	// This should not trigger any port ready event since the number of ready client does not change
+	registry.remove_port_activity_subscription(
+		id_1,
+		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_1}
+	);
+
+	auto const& activity_subscriptions = registry.get_port_acivity_subscriptions();
+	EXPECT_EQ(activity_subscriptions.at(id_0).status, Pipe::worker_fwk::msg_file_input_port_status::busy);
+
+	port_collection.expect_port_0_ready = true;
+	registry.remove_port_activity_subscription(
+		id_0,
+		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0}
+	);
 }
+
+TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_send_client_ready_after_adding_an_additional_subscriber)
+{
+	Pipe::utils::at_scope_exit{
+		[saved_offset = malloc_offset](){
+			malloc_offset = saved_offset;
+		}
+	};
+
+	my_port_collection port_collection{};
+	Pipe::worker_fwk::msg_file_subscription_registry registry{port_collection};
+
+	my_activity_subscriber subscriber_0{};
+	port_collection.expect_port_0_ready = true;
+	auto const id_0 = registry.add_port_activity_subscription("port_0", Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0});
+	subscriber_0.expected_id = id_0;
+	registry.notify_data_ready(Pipe::worker_fwk::port_id{0});
+
+	my_activity_subscriber subscriber_1{};
+	registry.add_port_activity_subscription("port_0", Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_1});
+
+	port_collection.expect_port_0_ready = true;
+	registry.notify_client_ready(id_0, Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0});
+}
+
+TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_send_client_ready_after_adding_an_additional_subscriber_wake_up_after_second_add)
+{
+	Pipe::utils::at_scope_exit{
+		[saved_offset = malloc_offset](){
+			malloc_offset = saved_offset;
+		}
+	};
+
+	my_port_collection port_collection{};
+	Pipe::worker_fwk::msg_file_subscription_registry registry{port_collection};
+
+	my_activity_subscriber subscriber_0{};
+	port_collection.expect_port_0_ready = true;
+	auto const id_0 = registry.add_port_activity_subscription("port_0", Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0});
+
+	my_activity_subscriber subscriber_1{};
+	auto const id_1 = registry.add_port_activity_subscription("port_0", Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_1});
+	subscriber_0.expected_id = id_0;
+	subscriber_1.expected_id = id_1;
+	registry.notify_data_ready(Pipe::worker_fwk::port_id{0});
+
+	registry.notify_client_ready(id_0, Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0});
+}
+
 

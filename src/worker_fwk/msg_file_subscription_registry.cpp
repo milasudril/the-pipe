@@ -105,7 +105,11 @@ void Pipe::worker_fwk::msg_file_subscription_registry::remove_port_activity_subs
 	if(i == std::end(m_port_activity_subscriptions) || i->second.subscriber != subscriber)
 	{ throw std::runtime_error{"Invalid subscription id"}; }
 
-	i->second.port->barrier.dec_num_subscribers();
+	if(i->second.status == Pipe::worker_fwk::msg_file_input_port_status::busy)
+	{ i->second.port->barrier.dec_num_subscribers(); }
+	else
+	{ i->second.port->barrier.dec_num_subscribers_without_submitting_result(); }
+
 	std::erase_if(
 		i->second.port->subscriptions,
 		[id](auto const& item){
