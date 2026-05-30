@@ -604,3 +604,35 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_notify_client_ready_success)
 	port_collection.expect_port_0_ready = true;
 	registry.notify_client_ready(id, Pipe::worker_fwk::port_activity_subscriber_ref{subscriber});
 }
+
+TESTCASE(Pipe_worker_fwk_msg_file_subscription_notify_data_ready)
+{
+	Pipe::utils::at_scope_exit{
+		[saved_offset = malloc_offset](){
+			malloc_offset = saved_offset;
+		}
+	};
+
+	my_port_collection port_collection{};
+	Pipe::worker_fwk::msg_file_subscription_registry registry{port_collection};
+
+	my_activity_subscriber subscriber_0{};
+	port_collection.expect_port_0_ready = true;
+	auto const id_0 = registry.add_port_activity_subscription("port_0", Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0});
+
+	my_activity_subscriber subscriber_1{};
+	auto const id_1 = registry.add_port_activity_subscription("port_0", Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_1});
+
+	port_collection.expect_port_1_ready = true;
+	auto const id_2 = registry.add_port_activity_subscription("port_1", Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0});
+
+	auto const id_3 = registry.add_port_activity_subscription("port_1", Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_1});
+
+	subscriber_0.expected_id = id_0;
+	subscriber_1.expected_id = id_1;
+	registry.notify_data_ready(Pipe::worker_fwk::port_id{0});
+
+	subscriber_0.expected_id = id_2;
+	subscriber_1.expected_id = id_3;
+	registry.notify_data_ready(Pipe::worker_fwk::port_id{1});
+}
