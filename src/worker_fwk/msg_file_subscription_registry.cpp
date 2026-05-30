@@ -87,9 +87,10 @@ void Pipe::worker_fwk::msg_file_subscription_registry::notify_data_ready(port_id
 	assert(port != std::end(m_msg_file_output_ports));
 	for(auto const& item : port->second.subscriptions)
 	{
-		item.subscriber.notify_data_ready(item.id);
 		auto const subscription = m_port_activity_subscriptions.find(item.id);
 		assert(subscription != std::end(m_port_activity_subscriptions));
+		assert(subscription->second.status == msg_file_input_port_status::ready);
+		item.subscriber.notify_data_ready(item.id);
 		subscription->second.status = msg_file_input_port_status::busy;
 	}
 }
