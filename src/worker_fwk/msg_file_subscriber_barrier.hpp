@@ -20,10 +20,15 @@ namespace Pipe::worker_fwk
 		void inc_num_subscribers() noexcept
 		{ ++m_num_subscribers; }
 
-		void dec_num_subscribers()
+		void dec_num_subscribers_without_submitting_result() noexcept
 		{
 			m_num_subscribers = m_num_subscribers > 0 ? m_num_subscribers - 1: 0;
 			m_num_ready_subscribers = std::min(m_num_subscribers, m_num_ready_subscribers);
+		}
+
+		void dec_num_subscribers()
+		{
+			dec_num_subscribers_without_submitting_result();
 			submit_result_if_ready();
 		}
 

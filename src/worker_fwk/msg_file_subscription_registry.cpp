@@ -48,7 +48,7 @@ Pipe::worker_fwk::msg_file_subscription_registry::add_port_activity_subscription
 	utils::maybe_at_scope_exit rollback_subscriptions{
 		[&port_data = port->second]() noexcept {
 			port_data.subscriptions.pop_back();
-			port_data.barrier.dec_num_subscribers();
+			port_data.barrier.dec_num_subscribers_without_submitting_result();
 		}
 	};
 
