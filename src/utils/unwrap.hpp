@@ -31,6 +31,9 @@ namespace Pipe::utils
 		{detect_static_array(obj)};
 	};
 
+	template<class T>
+	concept reftype = is_refwrapper<T> || (!is_c_style_array<T> && is_dereferenceable<T>);
+
 	/**
 	 * \brief A utility function to access the object behind ref
 	 */
