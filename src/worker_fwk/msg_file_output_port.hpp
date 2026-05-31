@@ -6,6 +6,7 @@
 #include <cassert>
 #include <utility>
 #include <flat_set>
+#include <functional>
 
 namespace Pipe::worker_fwk
 {
@@ -19,7 +20,7 @@ namespace Pipe::worker_fwk
 	class msg_file_output_port_subscription_ref
 	{
 	public:
-		template<msg_file_output_port_subscription_ref Obj>
+		template<msg_file_output_port_subscription Obj>
 		explicit msg_file_output_port_subscription_ref(std::reference_wrapper<Obj> obj):
 			m_handle{&obj.get()},
 			m_notify_data_ready{
@@ -28,8 +29,8 @@ namespace Pipe::worker_fwk
 				}
 			},
 			m_is_busy{
-				[](void const* obj) {
-					static_cast<Obj const*>(obj)->is_busy();
+				[](void const* obj) noexcept {
+					return static_cast<Obj const*>(obj)->is_busy();
 				}
 			}
 		{}
@@ -37,16 +38,16 @@ namespace Pipe::worker_fwk
 		void notify_data_ready() const
 		{ m_notify_data_ready(m_handle); }
 
-		bool is_busy() const
-		{ m_is_busy(m_handle); }
+		bool is_busy() const noexcept
+		{ return m_is_busy(m_handle); }
 
-		auto operator<=>(msg_file_output_port_subscription_ref const& other) const
+		auto operator<=>(msg_file_output_port_subscription_ref const& other) const noexcept
 		{ return m_handle <=> other.m_handle; }
 
 	private:
 		void* m_handle;
 		void (*m_notify_data_ready)(void*);
-		void (*m_is_busy)(void const*);
+		bool (*m_is_busy)(void const*);
 	};
 
 	class msg_file_output_port
@@ -94,7 +95,7 @@ namespace Pipe::worker_fwk
 			if(ret == 0)
 			{ return false; }
 
-			if(unwrap(subscription).is_busy())
+			if(subscription.is_busy())
 			{ dec_num_busy_subscribers(); }
 			return true;
 		}
