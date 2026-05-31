@@ -4,8 +4,10 @@
 #define PIPE_WORKER_FWK_MSG_FILE_SUBSCRIPTION_REGISTRY_HPP
 
 #include "./port_activity_subscription.hpp"
+#include "src/utils/bound_member_function.hpp"
 #include "src/utils/scope_handling.hpp"
 #include "src/utils/utils.hpp"
+#include "src/utils/unwrap.hpp"
 #include "src/worker_fwk/msg_file_subscriber_barrier.hpp"
 #include "src/worker_sync/worker_sync.hpp"
 
@@ -18,17 +20,13 @@
 
 namespace Pipe::worker_fwk
 {
-	struct msg_file_output_port_subscription
+	class msg_file_output_port_subscription
 	{
 		port_activity_subscriber_ref subscriber;
+		msg_file_output_port* output_port;
 		worker_sync::port_activity_subscription_id id;
 	};
 
-	struct msg_file_output_port
-	{
-		msg_file_subscriber_barrier barrier;
-		std::vector<msg_file_output_port_subscription> subscriptions;
-	};
 
 	enum class msg_file_input_port_status:int{ready, busy};
 
@@ -46,6 +44,7 @@ namespace Pipe::worker_fwk
 		{ obj.get_port_id(port_name) } -> std::same_as<port_id>;
 	};
 
+#if 0
 	class msg_file_subscription_registry
 	{
 	public:
@@ -112,5 +111,6 @@ namespace Pipe::worker_fwk
 		> m_port_activity_subscriptions;
 		worker_sync::port_activity_subscription_id m_current_subscription_id;
 	};
+#endif
 }
 #endif

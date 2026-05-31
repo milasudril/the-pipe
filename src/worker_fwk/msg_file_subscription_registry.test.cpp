@@ -1,4 +1,4 @@
-//@	{"target":{"name":"msg_file_subscription_registry.test"}}
+//	{"target":{"name":"msg_file_subscription_registry.test"}}
 
 #include "./msg_file_subscription_registry.hpp"
 #include "src/utils/scope_handling.hpp"
