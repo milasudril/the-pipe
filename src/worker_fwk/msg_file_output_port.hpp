@@ -56,7 +56,7 @@ namespace Pipe::worker_fwk
 			m_submit_callback{submit_callback}
 		{}
 
-		void dec_num_busy_subscriberes()
+		void dec_num_busy_subscribers()
 		{
 			assert(m_num_busy_subscribers != 0);
 			--m_num_busy_subscribers;
@@ -95,7 +95,7 @@ namespace Pipe::worker_fwk
 			{ return false; }
 
 			if(unwrap(subscription).is_busy())
-			{ dec_num_busy_subscriberes(); }
+			{ dec_num_busy_subscribers(); }
 			return true;
 		}
 
