@@ -43,7 +43,6 @@ namespace Pipe::worker_fwk
 		auto operator<=>(msg_file_output_port_subscription_ref const& other) const
 		{ return m_handle <=> other.m_handle; }
 
-
 	private:
 		void* m_handle;
 		void (*m_notify_data_ready)(void*);
@@ -96,10 +95,7 @@ namespace Pipe::worker_fwk
 			{ return false; }
 
 			if(unwrap(subscription).is_busy())
-			{
-				--m_num_busy_subscribers;
-				submit_results_if_ready();
-			}
+			{ dec_num_busy_subscriberes(); }
 			return true;
 		}
 
