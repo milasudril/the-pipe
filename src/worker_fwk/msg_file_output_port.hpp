@@ -5,8 +5,7 @@
 #include "src/utils/unwrap.hpp"
 
 #include <cassert>
-#include <utility>
-#include <flat_set>
+#include <flat_map>
 #include <functional>
 
 namespace Pipe::worker_fwk
@@ -15,7 +14,7 @@ namespace Pipe::worker_fwk
 	concept msg_file_output_port_subscription = requires(T& obj)
 	{
 		{ obj.notify_data_ready() } -> std::same_as<void>;
-		{ std::as_const(obj).is_busy() } -> std::same_as<bool>;
+		{ obj.is_busy() } -> std::same_as<bool>;
 	};
 
 	template<class T>
@@ -26,12 +25,23 @@ namespace Pipe::worker_fwk
 	class msg_file_output_port
 	{
 	public:
+		enum class subscriber_state:bool{ready = false, busy = true};
+
 		explicit msg_file_output_port(utils::bound_member_function<void> submit_callback):
 			m_submit_callback{submit_callback}
 		{}
 
-		void dec_num_busy_subscribers()
+		void dec_num_busy_subscribers(T const& subscription)
 		{
+			auto const i = m_subscriptions.find(subscription);
+			if(i == std::end(m_subscriptions))
+			{ throw std::runtime_error{"The subscription does not exist on this port"}; }
+
+			if(i->second == subscriber_state::ready)
+			{ throw std::runtime_error{"The subscriber has already released this resource"}; }
+
+			i->second = subscriber_state::ready;
+
 			assert(m_num_busy_subscribers != 0);
 			--m_num_busy_subscribers;
 			submit_results_if_ready();
@@ -39,7 +49,7 @@ namespace Pipe::worker_fwk
 
 		void submit_results_if_ready()
 		{
-			if(m_num_busy_subscribers == 0)
+			if(m_num_busy_subscribers == 0 && !m_result_submitted && !m_subscriptions.empty())
 			{
 				m_submit_callback();
 				m_result_submitted = true;
@@ -51,32 +61,38 @@ namespace Pipe::worker_fwk
 			m_result_submitted = false;
 			for(auto item:m_subscriptions)
 			{
-				item.notify_data_ready();
+				utils::unwrap(item.first).notify_data_ready();
+				item.second = subscriber_state::busy;
 				++m_num_busy_subscribers;
 			}
 		}
 
 		void add_subscription(T const& subscription) __restrict__
 		{
-			m_subscriptions.insert(subscription);
+			m_subscriptions.insert(std::pair{subscription, subscriber_state::ready});
 			submit_results_if_ready();
 		}
 
-		bool remove_subscription(T const& subscription)
+		void remove_subscription(T const& subscription)
 		{
-			auto ret = m_subscriptions.erase(subscription);
-			if(ret == 0)
-			{ return false; }
+			auto const i = m_subscriptions.find(subscription);
+			if(i == std::end(m_subscriptions))
+			{ throw std::runtime_error{"The subscription does not exist on this port"}; }
 
-			if(subscription.is_busy())
-			{ dec_num_busy_subscribers(); }
-			return true;
+			if(i->second == subscriber_state::busy)
+			{
+				assert(m_num_busy_subscribers != 0);
+				--m_num_busy_subscribers;
+				submit_results_if_ready();
+			}
+
+			m_subscriptions.erase(i);
 		}
 
 	private:
 		utils::bound_member_function<void> m_submit_callback;
 		size_t m_num_busy_subscribers{0};
-		std::flat_set<T> m_subscriptions;
+		std::flat_map<T, subscriber_state> m_subscriptions;
 		bool m_result_submitted{false};
 	};
 }
