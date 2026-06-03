@@ -1,6 +1,8 @@
 #ifndef PIPE_WORKER_SYNC_OUTPUT_PORT_HPP
 #define PIPE_WORKER_SYNC_OUTPUT_PORT_HPP
 
+#include "./models.hpp"
+
 #include "src/utils/bound_member_function.hpp"
 #include "src/utils/unwrap.hpp"
 
@@ -10,12 +12,6 @@
 
 namespace Pipe::worker_sync
 {
-	template<class T>
-	concept output_port_activity_subscription_model = requires(T& obj)
-	{
-		{ obj.notify_data_ready() } -> std::same_as<void>;
-	};
-
 	template<class T>
 	requires(
 		utils::reftype<T> &&
