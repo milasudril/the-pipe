@@ -14,7 +14,6 @@ namespace Pipe::worker_fwk
 	concept msg_file_output_port_subscription = requires(T& obj)
 	{
 		{ obj.notify_data_ready() } -> std::same_as<void>;
-		{ obj.is_busy() } -> std::same_as<bool>;
 	};
 
 	template<class T>
