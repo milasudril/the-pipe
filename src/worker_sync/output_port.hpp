@@ -11,7 +11,7 @@
 namespace Pipe::worker_sync
 {
 	template<class T>
-	concept output_port_subscription = requires(T& obj)
+	concept output_port_activity_subscription_model = requires(T& obj)
 	{
 		{ obj.notify_data_ready() } -> std::same_as<void>;
 	};
@@ -19,7 +19,7 @@ namespace Pipe::worker_sync
 	template<class T>
 	requires(
 		utils::reftype<T> &&
-		output_port_subscription<decltype(utils::unwrap(std::declval<T>()))>
+		output_port_activity_subscription_model<decltype(utils::unwrap(std::declval<T>()))>
 	)
 	class output_port
 	{
