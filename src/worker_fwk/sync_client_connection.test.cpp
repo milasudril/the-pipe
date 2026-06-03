@@ -8,7 +8,6 @@
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/ipc/unix_domain_socket.hpp"
 #include "src/os_services/ipc/socket_pair.hpp"
-#include "src/worker_sync/worker_sync.hpp"
 #include "src/utils/utils.hpp"
 #include "testfwk/testsuite.hpp"
 #include "testfwk/validation.hpp"

@@ -1,7 +1,7 @@
 #ifndef PIPE_WORKER_FWK_PORT_ACTIVITY_SUBSCRIPTION_HPP
 #define PIPE_WORKER_FWK_PORT_ACTIVITY_SUBSCRIPTION_HPP
 
-#include "src/worker_sync/worker_sync.hpp"
+#include "src/worker_sync/worker_sync_msg.hpp"
 
 namespace Pipe::worker_fwk
 {

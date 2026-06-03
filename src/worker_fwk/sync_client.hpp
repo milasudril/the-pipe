@@ -5,7 +5,7 @@
 #include "src/os_services/ipc/unix_domain_socket.hpp"
 #include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/worker_fwk/sync_message_channel.hpp"
-#include "src/worker_sync/worker_sync.hpp"
+#include "src/worker_sync/worker_sync_msg.hpp"
 
 namespace Pipe::worker_fwk
 {

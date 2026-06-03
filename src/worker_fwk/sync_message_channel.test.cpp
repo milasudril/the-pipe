@@ -8,8 +8,6 @@
 #include "src/os_services/ipc/unix_domain_socket.hpp"
 #include "src/os_services/ipc/socket_pair.hpp"
 #include "src/utils/utils.hpp"
-#include "src/worker_sync/worker_sync.hpp"
-#include "testfwk/validation.hpp"
 
 #include <limits>
 #include <sys/syscall.h>

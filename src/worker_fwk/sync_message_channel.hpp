@@ -3,7 +3,7 @@
 
 #include "src/os_services/io/io.hpp"
 #include "src/os_services/fd/activity_event_handler_store.hpp"
-#include "src/worker_sync/worker_sync.hpp"
+#include "src/worker_sync/worker_sync_msg.hpp"
 #include "src/utils/variant_utils.hpp"
 #include "src/utils/scope_handling.hpp"
 

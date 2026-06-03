@@ -1,7 +1,7 @@
 #ifndef PIPE_WORKER_SYNC_OUTPUT_PORT_ACTIVITY_SUBSCRIPTION_HPP
 #define PIPE_WORKER_SYNC_OUTPUT_PORT_ACTIVITY_SUBSCRIPTION_HPP
 
-#include "./worker_sync.hpp"
+#include "./worker_sync_msg.hpp"
 
 #include "src/utils/unwrap.hpp"
 

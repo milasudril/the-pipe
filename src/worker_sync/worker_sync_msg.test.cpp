@@ -1,6 +1,6 @@
-//@	{"target":{"name":"./worker_sync.test"}}
+//@	{"target":{"name":"./worker_sync_msg.test"}}
 
-#include "./worker_sync.hpp"
+#include "./worker_sync_msg.hpp"
 #include "testfwk/validation.hpp"
 
 #include <array>

@@ -1,7 +1,6 @@
 //@	{"target":{"name":"port_activity_subscription.test"}}
 
 #include "./port_activity_subscription.hpp"
-#include "src/worker_sync/worker_sync.hpp"
 
 #include <optional>
 #include <testfwk/testfwk.hpp>

@@ -9,7 +9,7 @@
 #include "src/utils/utils.hpp"
 #include "src/utils/unwrap.hpp"
 #include "src/worker_fwk/msg_file_subscriber_barrier.hpp"
-#include "src/worker_sync/worker_sync.hpp"
+#include "src/worker_sync/worker_sync_msg.hpp"
 
 #include <algorithm>
 #include <flat_map>
