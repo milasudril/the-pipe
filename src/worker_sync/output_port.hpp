@@ -1,5 +1,5 @@
-#ifndef PIPE_WORKER_FWK_MSG_FILE_OUTPUT_PORT_HPP
-#define PIPE_WORKER_FWK_MSG_FILE_OUTPUT_PORT_HPP
+#ifndef PIPE_WORKER_SYNC_OUTPUT_PORT_HPP
+#define PIPE_WORKER_SYNC_OUTPUT_PORT_HPP
 
 #include "src/utils/bound_member_function.hpp"
 #include "src/utils/unwrap.hpp"
@@ -8,10 +8,10 @@
 #include <flat_map>
 #include <functional>
 
-namespace Pipe::worker_fwk
+namespace Pipe::worker_sync
 {
 	template<class T>
-	concept msg_file_output_port_subscription = requires(T& obj)
+	concept output_port_subscription = requires(T& obj)
 	{
 		{ obj.notify_data_ready() } -> std::same_as<void>;
 	};
@@ -19,14 +19,14 @@ namespace Pipe::worker_fwk
 	template<class T>
 	requires(
 		utils::reftype<T> &&
-		msg_file_output_port_subscription<decltype(utils::unwrap(std::declval<T>()))>
+		output_port_subscription<decltype(utils::unwrap(std::declval<T>()))>
 	)
-	class msg_file_output_port
+	class output_port
 	{
 	public:
 		enum class subscriber_state:bool{ready = false, busy = true};
 
-		explicit msg_file_output_port(utils::bound_member_function<void> submit_callback):
+		explicit output_port(utils::bound_member_function<void> submit_callback):
 			m_submit_callback{submit_callback}
 		{}
 

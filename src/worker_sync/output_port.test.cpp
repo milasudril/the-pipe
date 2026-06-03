@@ -1,6 +1,6 @@
-//@	{"target":{"name":"msg_file_output_port.test"}}
+//@	{"target":{"name":"output_port.test"}}
 
-#include "./msg_file_output_port.hpp"
+#include "./output_port.hpp"
 #include "src/utils/bound_member_function.hpp"
 
 #include <testfwk/testfwk.hpp>
@@ -47,7 +47,7 @@ namespace
 	};
 }
 
-TESTCASE(Pipe_worker_fwk_msg_file_output_port_add_and_remove_subscriptions)
+TESTCASE(Pipe_worker_sync_output_port_add_and_remove_subscriptions)
 {
 	std::array subscriptions{
 		my_subscription{},
@@ -57,7 +57,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_output_port_add_and_remove_subscriptions)
 
 	my_handler handler;
 
-	Pipe::worker_fwk::msg_file_output_port<my_subscription*> output_port{
+	Pipe::worker_sync::output_port<my_subscription*> output_port{
 		Pipe::utils::bind_member_function<&my_handler::do_it>(handler)
 	};
 
