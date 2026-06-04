@@ -1,8 +1,6 @@
 #ifndef PIPE_WORKER_SYNC_OUTPUT_PORT_HPP
 #define PIPE_WORKER_SYNC_OUTPUT_PORT_HPP
 
-#include "./models.hpp"
-
 #include "src/utils/bound_member_function.hpp"
 #include "src/utils/unwrap.hpp"
 
@@ -12,11 +10,7 @@
 
 namespace Pipe::worker_sync
 {
-	template<class T>
-	requires(
-		utils::reftype<T> &&
-		output_port_activity_subscription_model<decltype(utils::unwrap(std::declval<T>()))>
-	)
+	template<utils::reftype Subscription>
 	class output_port
 	{
 	public:
@@ -26,7 +20,7 @@ namespace Pipe::worker_sync
 			m_submit_callback{submit_callback}
 		{}
 
-		void dec_num_busy_subscribers(T const& subscription)
+		void dec_num_busy_subscribers(Subscription const& subscription)
 		{
 			auto const i = m_subscriptions.find(subscription);
 			if(i == std::end(m_subscriptions))
@@ -62,13 +56,13 @@ namespace Pipe::worker_sync
 			}
 		}
 
-		void add_subscription(T const& subscription) __restrict__
+		void add_subscription(Subscription const& subscription) __restrict__
 		{
 			m_subscriptions.insert(std::pair{subscription, subscriber_state::ready});
 			submit_results_if_ready();
 		}
 
-		void remove_subscription(T const& subscription)
+		void remove_subscription(Subscription const& subscription)
 		{
 			auto const i = m_subscriptions.find(subscription);
 			if(i == std::end(m_subscriptions))
@@ -87,7 +81,7 @@ namespace Pipe::worker_sync
 	private:
 		utils::bound_member_function<void> m_submit_callback;
 		size_t m_num_busy_subscribers{0};
-		std::flat_map<T, subscriber_state> m_subscriptions;
+		std::flat_map<Subscription, subscriber_state> m_subscriptions;
 		bool m_result_submitted{false};
 	};
 }
