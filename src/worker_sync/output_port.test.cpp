@@ -138,3 +138,26 @@ TESTCASE(Pipe_worker_sync_output_port_add_and_remove_subscriptions)
 	handler.call_expected = true;
 	output_port.remove_subscription(&subscriptions[0]);
 }
+
+TESTCASE(Pipe_worker_sync_output_port_remove_subscription_without_flush)
+{
+	std::array subscriptions{
+		my_subscription{},
+		my_subscription{},
+		my_subscription{}
+	};
+
+	my_handler handler;
+
+	Pipe::worker_sync::output_port<my_subscription*> output_port{
+		Pipe::utils::bind_member_function<&my_handler::do_it>(handler)
+	};
+
+	// Since there is a subscription, nothing has been submitted and no subscriber is busy
+	// expect result to be submitted
+	handler.call_expected = true;
+	output_port.add_subscription(&subscriptions[1]);
+	subscriptions[1].expect_data_ready = true;
+	output_port.notify_data_ready();
+	output_port.remove_subscription_without_flush(&subscriptions[1]);
+}

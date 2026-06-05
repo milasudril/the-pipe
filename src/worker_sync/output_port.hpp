@@ -78,6 +78,11 @@ namespace Pipe::worker_sync
 			m_subscriptions.erase(i);
 		}
 
+		void remove_subscription_without_flush(Subscription const& subscriber)
+		{
+			m_subscriptions.erase(subscriber);
+		}
+
 	private:
 		utils::bound_member_function<void> m_submit_callback;
 		size_t m_num_busy_subscribers{0};
