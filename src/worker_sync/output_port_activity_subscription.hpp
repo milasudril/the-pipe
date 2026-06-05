@@ -24,8 +24,24 @@ namespace Pipe::worker_sync
 		~output_port_activity_subscription() noexcept
 		{ reset(); }
 
-		output_port_activity_subscription(output_port_activity_subscription&& other) = delete;
-		output_port_activity_subscription& operator=(output_port_activity_subscription&& other) = delete;
+		output_port_activity_subscription(output_port_activity_subscription&& other) noexcept
+		{
+			other.m_output_port->remove_subscription_without_flush(&other);
+			m_id = std::exchange(other.m_id, worker_sync::port_activity_subscription_id{});
+			m_output_port = std::exchange(other.m_output_port, nullptr);
+			m_subscriber = std::exchange(other.m_subscriber, OutputPortActivitySubscriber{});
+		}
+
+		output_port_activity_subscription& operator=(output_port_activity_subscription&& other) noexcept
+		{
+			m_output_port->remove_subscription_without_flush(this);
+			other.m_output_port->remove_subscription_without_flush(&other);
+			m_id = std::exchange(other.m_id, worker_sync::port_activity_subscription_id{});
+			m_output_port = std::exchange(other.m_output_port, nullptr);
+			m_subscriber = std::exchange(other.m_subscriber, OutputPortActivitySubscriber{});
+			return *this;
+		}
+
 		output_port_activity_subscription(output_port_activity_subscription const&) = delete;
 		output_port_activity_subscription& operator=(output_port_activity_subscription const&) = delete;
 
