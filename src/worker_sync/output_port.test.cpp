@@ -65,12 +65,14 @@ TESTCASE(Pipe_worker_sync_output_port_add_and_remove_subscriptions)
 	// expect result to be submitted
 	handler.call_expected = true;
 	output_port.add_subscription(&subscriptions[1]);
+	EXPECT_EQ(output_port.get_num_subscriptions(), 1);
 
 	// Result already submitted. Do not submit it again
 	output_port.submit_results_if_ready();
 
 	// Result is still already submitted
 	output_port.add_subscription(&subscriptions[0]);
+	EXPECT_EQ(output_port.get_num_subscriptions(), 2);
 
 	// Now tell the subscribers that data is ready
 	subscriptions[0].expect_data_ready = true;
@@ -124,6 +126,7 @@ TESTCASE(Pipe_worker_sync_output_port_add_and_remove_subscriptions)
 
 	// Removing a ready subscription doesn't call handler
 	output_port.remove_subscription(&subscriptions[1]);
+	EXPECT_EQ(output_port.get_num_subscriptions(), 1);
 	try
 	{
 		output_port.remove_subscription(&subscriptions[1]);
@@ -137,6 +140,7 @@ TESTCASE(Pipe_worker_sync_output_port_add_and_remove_subscriptions)
 	output_port.notify_data_ready();
 	handler.call_expected = true;
 	output_port.remove_subscription(&subscriptions[0]);
+	EXPECT_EQ(output_port.get_num_subscriptions(), 0);
 }
 
 TESTCASE(Pipe_worker_sync_output_port_remove_subscription_without_flush)
@@ -157,7 +161,9 @@ TESTCASE(Pipe_worker_sync_output_port_remove_subscription_without_flush)
 	// expect result to be submitted
 	handler.call_expected = true;
 	output_port.add_subscription(&subscriptions[1]);
+	EXPECT_EQ(output_port.get_num_subscriptions(), 1);
 	subscriptions[1].expect_data_ready = true;
 	output_port.notify_data_ready();
 	output_port.remove_subscription_without_flush(&subscriptions[1]);
+	EXPECT_EQ(output_port.get_num_subscriptions(), 0);
 }

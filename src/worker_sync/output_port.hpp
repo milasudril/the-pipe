@@ -79,9 +79,10 @@ namespace Pipe::worker_sync
 		}
 
 		void remove_subscription_without_flush(Subscription const& subscriber)
-		{
-			m_subscriptions.erase(subscriber);
-		}
+		{ m_subscriptions.erase(subscriber); }
+
+		size_t get_num_subscriptions() const
+		{ return std::size(m_subscriptions); }
 
 	private:
 		utils::bound_member_function<void> m_submit_callback;
