@@ -10,6 +10,14 @@
 
 namespace Pipe::worker_sync
 {
+	template<class T>
+	struct to_remove
+	{ T value; };
+
+	template<class T>
+	struct to_add
+	{ T value; };
+
 	template<utils::reftype Subscription>
 	class output_port
 	{
@@ -20,7 +28,7 @@ namespace Pipe::worker_sync
 			m_submit_callback{submit_callback}
 		{}
 
-		void dec_num_busy_subscribers(Subscription const& subscription)
+		void dec_num_busy_subscribers(Subscription subscription)
 		{
 			auto const i = m_subscriptions.find(subscription);
 			if(i == std::end(m_subscriptions))
@@ -56,13 +64,13 @@ namespace Pipe::worker_sync
 			}
 		}
 
-		void add_subscription(Subscription const& subscription) __restrict__
+		void add_subscription(Subscription subscription) __restrict__
 		{
 			m_subscriptions.insert(std::pair{subscription, subscriber_state::ready});
 			submit_results_if_ready();
 		}
 
-		void remove_subscription(Subscription const& subscription)
+		void remove_subscription(Subscription subscription)
 		{
 			auto const i = m_subscriptions.find(subscription);
 			if(i == std::end(m_subscriptions))
@@ -77,9 +85,6 @@ namespace Pipe::worker_sync
 
 			m_subscriptions.erase(i);
 		}
-
-		void remove_subscription_without_flush(Subscription const& subscriber)
-		{ m_subscriptions.erase(subscriber); }
 
 		size_t get_num_subscriptions() const
 		{ return std::size(m_subscriptions); }

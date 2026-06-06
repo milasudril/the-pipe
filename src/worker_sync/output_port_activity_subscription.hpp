@@ -22,34 +22,12 @@ namespace Pipe::worker_sync
 		{ m_output_port->add_subscription(this); }
 
 		~output_port_activity_subscription() noexcept
-		{ reset(); }
+		{ m_output_port->remove_subscription(this); }
 
-		output_port_activity_subscription(output_port_activity_subscription&& other) noexcept
-		{
-			other.m_output_port->remove_subscription_without_flush(&other);
-			m_id = std::exchange(other.m_id, worker_sync::port_activity_subscription_id{});
-			m_output_port = std::exchange(other.m_output_port, nullptr);
-			m_subscriber = std::exchange(other.m_subscriber, OutputPortActivitySubscriber{});
-		}
-
-		output_port_activity_subscription& operator=(output_port_activity_subscription&& other) noexcept
-		{
-			m_output_port->remove_subscription_without_flush(this);
-			other.m_output_port->remove_subscription_without_flush(&other);
-			m_id = std::exchange(other.m_id, worker_sync::port_activity_subscription_id{});
-			m_output_port = std::exchange(other.m_output_port, nullptr);
-			m_subscriber = std::exchange(other.m_subscriber, OutputPortActivitySubscriber{});
-			return *this;
-		}
-
+		output_port_activity_subscription(output_port_activity_subscription&& other) = delete;
+		output_port_activity_subscription& operator=(output_port_activity_subscription&& other) = delete;
 		output_port_activity_subscription(output_port_activity_subscription const&) = delete;
 		output_port_activity_subscription& operator=(output_port_activity_subscription const&) = delete;
-
-		void reset() noexcept
-		{
-			if(m_output_port != nullptr)
-			{ m_output_port->remove_subscription(this); }
-		}
 
 		void notify_data_ready()
 		{ utils::unwrap(m_subscriber).notify_data_ready(m_id); }
