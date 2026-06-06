@@ -27,14 +27,6 @@ namespace
 			return ret;
 		}
 
-		std::optional<size_t> return_id;
-		size_t get_id()
-		{
-			auto const ret_id = return_id.value();
-			return_id.reset();
-			return ret_id;
-		}
-
 		~my_subscription()
 		{
 			EXPECT_EQ(expect_data_ready, false);
