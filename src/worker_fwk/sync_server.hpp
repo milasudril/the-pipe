@@ -3,7 +3,6 @@
 
 #include "./sync_client_connection.hpp"
 
-#include "./port_activity_subscription.hpp"
 #include "src/utils/utils.hpp"
 #include "src/os_services/ipc/socket.hpp"
 #include "src/os_services/ipc/unix_domain_socket.hpp"

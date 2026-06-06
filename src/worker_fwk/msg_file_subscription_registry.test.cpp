@@ -2,8 +2,6 @@
 
 #include "./msg_file_subscription_registry.hpp"
 #include "src/utils/scope_handling.hpp"
-#include "src/worker_fwk/port_activity_subscription.hpp"
-#include "testfwk/validation.hpp"
 
 #include <testfwk/testfwk.hpp>
 

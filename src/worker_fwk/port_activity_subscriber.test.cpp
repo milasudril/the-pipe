@@ -1,6 +1,6 @@
-//@	{"target":{"name":"port_activity_subscription.test"}}
+//@	{"target":{"name":"port_activity_subscriber.test"}}
 
-#include "./port_activity_subscription.hpp"
+#include "./port_activity_subscriber.hpp"
 
 #include <optional>
 #include <testfwk/testfwk.hpp>

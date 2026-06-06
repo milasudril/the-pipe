@@ -3,7 +3,7 @@
 #ifndef PIPE_WORKER_FWK_MSG_FILE_SUBSCRIPTION_REGISTRY_HPP
 #define PIPE_WORKER_FWK_MSG_FILE_SUBSCRIPTION_REGISTRY_HPP
 
-#include "./port_activity_subscription.hpp"
+#include "./port_activity_subscriber.hpp"
 #include "src/utils/bound_member_function.hpp"
 #include "src/utils/scope_handling.hpp"
 #include "src/utils/utils.hpp"

@@ -1,7 +1,6 @@
 //@	{"target":{"name":"sync_client_connection.test"}}
 
 #include "./sync_client_connection.hpp"
-#include "./port_activity_subscription.hpp"
 
 #include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/os_services/fd/file_descriptor.hpp"
@@ -19,7 +18,6 @@
 #include <string_view>
 #include <sys/socket.h>
 #include <testfwk/testfwk.hpp>
-#include <dlfcn.h>
 
 namespace
 {
