@@ -2,6 +2,7 @@
 #define PIPE_WORKER_SYNC_OUTPUT_PORT_HPP
 
 #include "src/utils/bound_member_function.hpp"
+#include "src/utils/scope_handling.hpp"
 #include "src/utils/unwrap.hpp"
 
 #include <cassert>
@@ -66,8 +67,14 @@ namespace Pipe::worker_sync
 
 		void add_subscription(Subscription subscription) __restrict__
 		{
-			m_subscriptions.insert(std::pair{subscription, subscriber_state::ready});
+			auto const ip = m_subscriptions.insert(std::pair{subscription, subscriber_state::ready});
+			assert(ip.second == true);
+
+			utils::maybe_at_scope_exit cleanup{[i = ip.first, this](){
+				m_subscriptions.erase(i);
+			}};
 			submit_results_if_ready();
+			cleanup.reset();
 		}
 
 		void remove_subscription(Subscription subscription)
@@ -88,6 +95,9 @@ namespace Pipe::worker_sync
 
 		size_t get_num_subscriptions() const
 		{ return std::size(m_subscriptions); }
+
+		bool is_bound_to(utils::bound_member_function<void> submit_callback) const
+		{return m_submit_callback == submit_callback; }
 
 	private:
 		utils::bound_member_function<void> m_submit_callback;
