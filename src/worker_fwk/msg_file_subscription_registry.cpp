@@ -1,4 +1,4 @@
-//	{"target":{"name":"msg_file_subscription_registry.o"}}
+//@	{"target":{"name":"msg_file_subscription_registry.o"}}
 
 #include "./msg_file_subscription_registry.hpp"
 
@@ -23,64 +23,50 @@ Pipe::worker_fwk::msg_file_subscription_registry::add_port_activity_subscription
 		}
 	};
 
-	auto const i = m_port_activity_subscriptions.insert(
+	m_subscriptions.insert(
 		std::pair{
 			id,
-			msg_file_subscription_handle{
-				.port = &port->second,
-				.subscriber = subscriber,
-				.status = msg_file_input_port_status::ready
-			}
-		}
-	).first;
-	utils::maybe_at_scope_exit rollback_subscription{
-		[this, i]() noexcept{
-			m_port_activity_subscriptions.erase(i);
-		}
-	};
-
-	port->second.subscriptions.push_back(
-		msg_file_output_port_subscription{
-			.subscriber = subscriber,
-			.id = id
+			std::make_unique<subscription_type>(
+				id,
+				&port->second,
+				subscriber
+			)
 		}
 	);
-	utils::maybe_at_scope_exit rollback_subscriptions{
-		[&port_data = port->second]() noexcept {
-			port_data.subscriptions.pop_back();
-			port_data.barrier.dec_num_subscribers_without_submitting_result();
-		}
-	};
 
-	port->second.barrier.inc_num_subscribers();
-	port->second.barrier.inc_num_ready_subscribers();
-
-	rollback_subscriptions.reset();
-	rollback_subscription.reset();
 	rollback_id.reset();
-
 	return id;
 }
+
+void Pipe::worker_fwk::msg_file_subscription_registry::remove_port_activity_subscription(
+	worker_sync::port_activity_subscription_id id,
+	port_activity_subscriber_ref subscriber
+)
+{
+	auto const i = m_subscriptions.find(id);
+	if(i == std::end(m_subscriptions) || i->second->get_subscriber() != subscriber)
+	{ throw std::runtime_error{"Invalid subscription id"}; }
+	m_subscriptions.erase(i);
+}
+
 
 void Pipe::worker_fwk::msg_file_subscription_registry::notify_client_ready(
 	worker_sync::port_activity_subscription_id id,
 	port_activity_subscriber_ref subscriber
-) const
+)
 {
-	auto const i = std::as_const(m_port_activity_subscriptions).find(id);
-	if(i == std::end(m_port_activity_subscriptions))
+	auto const i = m_subscriptions.find(id);
+	if(i == std::end(m_subscriptions))
 	{ throw std::runtime_error{"Invalid subscription id"}; }
 
-	auto& item = i->second;
-	if(item.subscriber != subscriber)
+	auto& item = *(i->second);
+	if(item.get_subscriber() != subscriber)
 	{ throw std::runtime_error{"Invalid subscription id"}; }
 
-	if(item.status == msg_file_input_port_status::ready)
-	{ throw std::runtime_error{"Port activity subscriber is already ready"}; }
-
-	item.port->barrier.inc_num_ready_subscribers();
+	item.notify_client_ready();
 }
 
+#if 0
 void Pipe::worker_fwk::msg_file_subscription_registry::notify_data_ready(port_id id)
 {
 	auto const port = std::as_const(m_msg_file_output_ports).find(id);
@@ -95,28 +81,7 @@ void Pipe::worker_fwk::msg_file_subscription_registry::notify_data_ready(port_id
 	}
 }
 
-void Pipe::worker_fwk::msg_file_subscription_registry::remove_port_activity_subscription(
-	worker_sync::port_activity_subscription_id id,
-	port_activity_subscriber_ref subscriber
-) const
-{
-	auto const i = m_port_activity_subscriptions.find(id);
 
-	if(i == std::end(m_port_activity_subscriptions) || i->second.subscriber != subscriber)
-	{ throw std::runtime_error{"Invalid subscription id"}; }
-
-	if(i->second.status == Pipe::worker_fwk::msg_file_input_port_status::busy)
-	{ i->second.port->barrier.dec_num_subscribers(); }
-	else
-	{ i->second.port->barrier.dec_num_subscribers_without_submitting_result(); }
-
-	std::erase_if(
-		i->second.port->subscriptions,
-		[id](auto const& item){
-			return item.id == id;
-		}
-	);
-}
 
 void Pipe::worker_fwk::msg_file_subscription_registry::remove_port_activity_subscriber(
 	port_activity_subscriber_ref subscriber
@@ -139,3 +104,4 @@ void Pipe::worker_fwk::msg_file_subscription_registry::remove_port_activity_subs
 		}
 	);
 }
+#endif

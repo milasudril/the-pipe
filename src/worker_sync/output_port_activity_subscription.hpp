@@ -35,6 +35,9 @@ namespace Pipe::worker_sync
 		void notify_client_ready()
 		{ m_output_port->dec_num_busy_subscribers(this); }
 
+		auto const& get_subscriber() const
+		{ return m_subscriber; }
+
 	private:
 		worker_sync::port_activity_subscription_id m_id;
 		OutputPort* m_output_port;

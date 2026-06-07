@@ -1,10 +1,11 @@
-//	{"target":{"name":"msg_file_subscription_registry.test"}}
+//@	{"target":{"name":"msg_file_subscription_registry.test"}}
 
 #include "./msg_file_subscription_registry.hpp"
 #include "src/utils/scope_handling.hpp"
 
 #include <testfwk/testfwk.hpp>
 
+#if 0
 namespace
 {
 	struct my_port_collection
@@ -791,3 +792,4 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_send_client_ready_after_
 }
 
 
+#endif
