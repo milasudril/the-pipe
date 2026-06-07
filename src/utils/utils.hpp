@@ -285,6 +285,55 @@ namespace Pipe::utils
 		{ *std::ranges::begin(obj) } -> pair_like<First, Second>;
 		{ *std::ranges::end(obj) } -> pair_like<First, Second>;
 	};
+
+	template<class FirstView, class SecondView, class Pred>
+	auto pair_remove_if(std::ranges::zip_view<FirstView, SecondView> range, Pred pred)
+	{
+		using first_type = std::remove_cvref_t<decltype(std::get<0>(*std::begin(range)))>;
+		using second_type = std::remove_cvref_t<decltype(std::get<1>(*std::begin(range)))>;
+		using ret_type = std::ranges::borrowed_subrange_t<
+			std::ranges::zip_view<FirstView, SecondView>
+		>;
+
+		auto my_pred = [pred = std::forward<Pred>(pred)](auto const& item) {
+			return pred(
+				std::pair<first_type const&, second_type const&>{
+					std::get<0>(item),
+					std::get<1>(item)
+				}
+			);
+		};
+
+		auto first = std::ranges::find_if(range, my_pred);
+		auto const last = std::end(range);
+
+		if (first != last)
+		{
+			for (auto i = std::next(first); i != last; ++i)
+			{
+				if (!my_pred(*i))
+				{
+					*first = std::ranges::iter_move(i);
+					++first;
+				}
+			}
+		}
+		return ret_type{first, last};
+	}
+
+	template<class Map, class Pred>
+	void flatmap_erase_if(Map& map, Pred&& pred)
+	{
+		auto [keys, values] = std::move(map).extract();
+		std::ranges::zip_view remove_from{keys, values};
+		auto const removed_range = pair_remove_if(remove_from, std::forward<Pred>(pred));
+
+		std::ranges::subrange const remaining{std::begin(remove_from), std::begin(removed_range)};
+		auto const cut_at = std::size(remaining);
+		keys.erase(std::begin(keys) + cut_at, std::end(keys));
+		values.erase(std::begin(values) + cut_at, std::end(values));
+		map.replace(std::move(keys), std::move(values));;
+	}
 };
 
 #endif

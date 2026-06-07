@@ -4,6 +4,8 @@
 #include "testfwk/validation.hpp"
 
 #include <testfwk/testfwk.hpp>
+#include <flat_map>
+#include <string>
 
 TESTCASE(Pipe_utils_random_printable_ascii_string)
 {
@@ -483,4 +485,53 @@ TESTCASE(Pipe_utils_write_buffer_puts)
 	EXPECT_EQ(flush_count, 2);
 	EXPECT_EQ(std::size(written_data), 24);
 	EXPECT_EQ(written_data, " !\"#$%&'()*+,-./01234567");
+}
+
+TESTCASE(Pipe_utils_pair_remove_if)
+{
+	std::flat_map<std::string, std::unique_ptr<int>> vals;
+
+	vals.insert({"foo", std::make_unique<int>(1)});
+	vals.insert({"bar", std::make_unique<int>(2)});
+	vals.insert({"bajs", std::make_unique<int>(2)});
+	vals.insert({"bulle", std::make_unique<int>(2)});
+	vals.insert({"kaka", std::make_unique<int>(3)});
+
+	auto [keys, values] = std::move(vals).extract();
+	std::ranges::zip_view remove_from{keys, values};
+	auto const removed_part = Pipe::utils::pair_remove_if(
+		remove_from,
+		[](auto const& item) {
+			return *item.second == 2;
+		}
+	);
+	EXPECT_EQ(std::size(removed_part), 3);
+
+	std::ranges::subrange const remaining{std::begin(remove_from), std::begin(removed_part)};
+	EXPECT_EQ(std::size(remaining), 2);
+	EXPECT_EQ(std::get<0>(remaining[0]), "foo");
+	EXPECT_EQ(std::get<0>(remaining[1]), "kaka");
+}
+
+
+TESTCASE(Pipe_utils_flatmap_erase_if)
+{
+	std::flat_map<std::string, std::unique_ptr<int>> vals;
+
+	vals.insert({"foo", std::make_unique<int>(1)});
+	vals.insert({"bar", std::make_unique<int>(2)});
+	vals.insert({"bajs", std::make_unique<int>(2)});
+	vals.insert({"bulle", std::make_unique<int>(2)});
+	vals.insert({"kaka", std::make_unique<int>(3)});
+
+	Pipe::utils::flatmap_erase_if(
+		vals,
+		[](auto const& item) {
+			return *item.second == 2;
+		}
+	);
+
+	EXPECT_EQ(std::size(vals), 2);
+	EXPECT_EQ(*vals.at("foo"), 1);
+	EXPECT_EQ(*vals.at("kaka"), 3);
 }

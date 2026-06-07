@@ -75,26 +75,24 @@ namespace Pipe::worker_fwk
 			port_activity_subscriber_ref subscriber
 		);
 
+		void remove_port_activity_subscriber(port_activity_subscriber_ref subscriber);
+
 		void notify_client_ready(
 			worker_sync::port_activity_subscription_id id,
 			port_activity_subscriber_ref subscriber
 		);
 
-#if 0
 		void notify_data_ready(port_id id);
-
-
-		void remove_port_activity_subscriber(port_activity_subscriber_ref subscriber);
 
 		auto const& get_msg_file_output_ports() const
 		{ return m_msg_file_output_ports; }
 
 		auto const& get_port_acivity_subscriptions() const
-		{ return m_port_activity_subscriptions; }
+		{ return m_subscriptions; }
 
 		auto get_current_subscription_id() const
 		{ return m_current_subscription_id; }
-#endif
+
 	private:
 		void* m_ports;
 		port_id (*m_get_port_id)(void*, std::string const&);
