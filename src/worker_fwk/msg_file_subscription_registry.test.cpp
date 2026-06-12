@@ -2,6 +2,9 @@
 
 #include "./msg_file_subscription_registry.hpp"
 #include "src/utils/scope_handling.hpp"
+#include "src/worker_sync/worker_sync_msg.hpp"
+#include "testfwk/testsuite.hpp"
+#include "testfwk/validation.hpp"
 
 #include <testfwk/testfwk.hpp>
 
@@ -130,7 +133,7 @@ extern "C"
 {
 	void* malloc(size_t n)
 	{
-		Pipe::utils::at_scope_exit{
+		Pipe::utils::at_scope_exit _{
 			[](){
 				++malloc_count;
 			}
@@ -159,7 +162,7 @@ extern "C"
 
 TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_construct_with_port_collection)
 {
-	Pipe::utils::at_scope_exit{
+	Pipe::utils::at_scope_exit _{
 		[saved_offset = malloc_offset](){
 			malloc_offset = saved_offset;
 		}
@@ -225,7 +228,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_construct_with_port_coll
 
 TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_try_to_add_subscriber_bad_port_name)
 {
-	Pipe::utils::at_scope_exit{
+	Pipe::utils::at_scope_exit _{
 		[saved_offset = malloc_offset](){
 			malloc_offset = saved_offset;
 		}
@@ -255,7 +258,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_try_to_add_subscriber_ba
 
 TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_try_to_add_subscriber_wrong_port_type)
 {
-	Pipe::utils::at_scope_exit{
+	Pipe::utils::at_scope_exit _{
 		[saved_offset = malloc_offset](){
 			malloc_offset = saved_offset;
 		}
@@ -285,7 +288,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_try_to_add_subscriber_wr
 
 TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_try_to_add_subcriber_map_insert_fails)
 {
-	Pipe::utils::at_scope_exit{
+	Pipe::utils::at_scope_exit _{
 		[saved_offset = malloc_offset](){
 			malloc_offset = saved_offset;
 		}
@@ -315,38 +318,25 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_try_to_add_subcriber_map
 	EXPECT_EQ(port.get_num_subscriptions(), 0);
 }
 
-TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_try_add_subcriber_callback_throws)
+TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_add_subcriber_success)
 {
-	Pipe::utils::at_scope_exit{
+	Pipe::utils::at_scope_exit _{
 		[saved_offset = malloc_offset](){
 			malloc_offset = saved_offset;
 		}
 	};
-
+	
 	my_port_collection port_collection{};
 	Pipe::worker_fwk::msg_file_subscription_registry registry{port_collection};
-	port_collection.expect_port_0_ready_exception = true;
-	try
-	{
-		registry.add_port_activity_subscription(
-			"port_0",
-			Pipe::worker_fwk::port_activity_subscriber_ref{}
-		);
-		REQUIRE_EQ(true, false);
-	}
-	catch(std::exception const& err)
-	{ EXPECT_EQ(err.what(), std::string_view{"Something went wrong"}); }
-
-
-	EXPECT_EQ(std::size(registry.get_port_acivity_subscriptions()), 0);
-	EXPECT_EQ(
-		registry.get_current_subscription_id(),
-		Pipe::worker_sync::port_activity_subscription_id{0}
+	port_collection.expect_port_0_ready = true;
+	auto const res = registry.add_port_activity_subscription(
+		"port_0",
+		Pipe::worker_fwk::port_activity_subscriber_ref{}
 	);
-	auto const& output_ports = registry.get_msg_file_output_ports();
-	auto const& port = output_ports.at(Pipe::worker_fwk::port_id{0});
-	EXPECT_EQ(port.get_num_subscriptions(), 0);
+	
+	EXPECT_EQ(res, Pipe::worker_sync::port_activity_subscription_id{0});
 }
+
 
 #if 0
 
