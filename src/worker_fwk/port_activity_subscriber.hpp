@@ -73,8 +73,8 @@ namespace Pipe::worker_fwk
 	)
 	{
 		{ utils::unwrap(obj).add_port_activity_subscription(str, port_activity_subscriber) } -> std::same_as<worker_sync::port_activity_subscription_id>;
-		{ utils::unwrap(obj).remove_port_activity_subscription(port_activity_subscriber, port_activity_subscription) } -> std::same_as<void>;
-		{ utils::unwrap(obj).notify_client_ready(port_activity_subscription) } -> std::same_as<void>;
+		{ utils::unwrap(obj).remove_port_activity_subscription(port_activity_subscription, port_activity_subscriber) } -> std::same_as<void>;
+		{ utils::unwrap(obj).notify_client_ready(port_activity_subscription, port_activity_subscriber) } -> std::same_as<void>;
 	};
 }
 #endif

@@ -163,6 +163,8 @@ extern "C"
 	{}
 }
 
+static_assert(Pipe::worker_fwk::port_activity_subscription_registry<Pipe::worker_fwk::msg_file_subscription_registry>);
+
 TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_construct_with_port_collection)
 {
 	Pipe::utils::at_scope_exit _{

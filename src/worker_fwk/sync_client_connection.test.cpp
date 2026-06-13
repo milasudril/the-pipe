@@ -47,15 +47,18 @@ namespace
 		}
 
 		void remove_port_activity_subscription(
-			Pipe::worker_fwk::port_activity_subscriber_ref,
-			Pipe::worker_sync::port_activity_subscription_id subscription_id
+			Pipe::worker_sync::port_activity_subscription_id subscription_id,
+			Pipe::worker_fwk::port_activity_subscriber_ref
 		)
 		{
 			EXPECT_EQ(subscription_id, remove_expected_subscription_id);
 			remove_expected_subscription_id.reset();
 		}
 
-		void notify_client_ready(Pipe::worker_sync::port_activity_subscription_id subscription_id)
+		void notify_client_ready(
+			Pipe::worker_sync::port_activity_subscription_id subscription_id,
+			Pipe::worker_fwk::port_activity_subscriber_ref
+		)
 		{
 			EXPECT_EQ(subscription_id, notify_expected_subscription_id);
 			notify_expected_subscription_id.reset();

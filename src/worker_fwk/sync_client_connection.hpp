@@ -74,8 +74,8 @@ namespace Pipe::worker_fwk
 		)
 		{
 			utils::unwrap(m_port_activity_subscriber_registry).remove_port_activity_subscription(
-				port_activity_subscriber_ref{*this},
-				msg.id
+				msg.id,
+				port_activity_subscriber_ref{*this}
 			);
 
 			ec.enable_exception_rethrow();
@@ -98,7 +98,12 @@ namespace Pipe::worker_fwk
 		}
 
 		void handle_message(worker_sync::client_ready_event event)
-		{ utils::unwrap(m_port_activity_subscriber_registry).notify_client_ready(event.id); }
+		{
+			utils::unwrap(m_port_activity_subscriber_registry).notify_client_ready(
+				event.id,
+				port_activity_subscriber_ref{*this}
+			);
+		}
 
 		void notify_data_ready(worker_sync::port_activity_subscription_id id)
 		{
