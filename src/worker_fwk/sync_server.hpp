@@ -10,7 +10,7 @@
 
 namespace Pipe::worker_fwk
 {
-	template<class PortActivitySubscriptionRegistry>
+	template<port_activity_subscription_registry PortActivitySubscriptionRegistry>
 	class sync_server
 	{
 	public:
@@ -52,7 +52,7 @@ namespace Pipe::worker_fwk
 		std::string socket_name;
 	};
 
-	template<class PortActivitySubscriptionRegistry>
+	template<port_activity_subscription_registry PortActivitySubscriptionRegistry>
 	inline server_info make_sync_server(
 		os_services::fd::activity_event_handler_store& event_handler_store,
 		PortActivitySubscriptionRegistry port_activity_subscriber_registry

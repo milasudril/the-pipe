@@ -24,7 +24,7 @@ namespace Pipe::worker_fwk
 		using sync_fd_activity_event = os_services::fd::activity_event<client_activity, fd_tag>;
 	};
 
-	template<class PortActivitySubscriptionRegistry>
+	template<port_activity_subscription_registry PortActivitySubscriptionRegistry>
 	class sync_client_connection:
 		public sync_message_channel<sync_message_channel_server_traits>,
 		public sync_message_channel_server_traits
