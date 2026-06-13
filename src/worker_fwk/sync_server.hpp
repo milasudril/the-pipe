@@ -10,10 +10,11 @@
 
 namespace Pipe::worker_fwk
 {
+	template<class PortActivitySubscriptionRegistry>
 	class sync_server
 	{
 	public:
-		explicit sync_server(port_activity_subscriber_registry_ref port_activity_subscriber_registry):
+		explicit sync_server(PortActivitySubscriptionRegistry port_activity_subscriber_registry):
 			m_port_activity_subscriber_registry{port_activity_subscriber_registry}
 		{}
 
@@ -31,7 +32,7 @@ namespace Pipe::worker_fwk
 		{
 			if(event.status == os_services::fd::activity_status::read)
 			{
-				std::ignore = m_registration.event_handler_store->add<sync_client_connection::client_activity>(
+				std::ignore = m_registration.event_handler_store->template add<sync_client_connection::client_activity>(
 					sync_client_connection{m_port_activity_subscriber_registry},
 					accept(m_registration.fd),
 					Pipe::os_services::fd::activity_status::read
@@ -40,7 +41,7 @@ namespace Pipe::worker_fwk
 		}
 
 	private:
-		port_activity_subscriber_registry_ref m_port_activity_subscriber_registry;
+		PortActivitySubscriptionRegistry m_port_activity_subscriber_registry;
 		activity_event_handler_registered_event m_registration;
 	};
 
@@ -50,15 +51,18 @@ namespace Pipe::worker_fwk
 		std::string socket_name;
 	};
 
+	template<class PortActivitySubscriptionRegistry>
 	inline server_info make_sync_server(
 		os_services::fd::activity_event_handler_store& event_handler_store,
-		port_activity_subscriber_registry_ref port_activity_subscriber_registry
+		PortActivitySubscriptionRegistry port_activity_subscriber_registry
 	)
 	{
+		using sync_server_type = sync_server<PortActivitySubscriptionRegistry>;
+
 		auto socket_name = utils::random_printable_ascii_string(os_services::ipc::abstract_sunpath_maxlength);
 		return server_info{
-			.event_handler_id = event_handler_store.add<sync_server::server_socket_activity>(
-				sync_server{port_activity_subscriber_registry},
+			.event_handler_id = event_handler_store.add<sync_server_type::server_socket_activity>(
+				sync_server_type{port_activity_subscriber_registry},
 				os_services::ipc::make_server_socket<SOCK_STREAM>(
 					os_services::ipc::make_abstract_sockaddr_un(socket_name),
 					1024
