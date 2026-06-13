@@ -21,7 +21,7 @@
 
 namespace
 {
-	struct my_port_activity_subscriber_registry
+	struct my_port_activity_subscription_registry
 	{
 		std::optional<std::string> expected_server_portname;
 		bool fail_port_activity_subscription = false;
@@ -61,6 +61,8 @@ namespace
 			notify_expected_subscription_id.reset();
 		}
 	};
+
+	using sync_client_connection = Pipe::worker_fwk::sync_client_connection<my_port_activity_subscription_registry>;
 
 	struct my_event_handler_registry:Pipe::os_services::fd::activity_event_handler_store
 	{
@@ -139,7 +141,7 @@ namespace
 
 TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_subscription_request_fail_to_add_subscriber)
 {
-	my_port_activity_subscriber_registry registry;
+	my_port_activity_subscription_registry registry;
 	Pipe::worker_fwk::sync_client_connection conn{
 		Pipe::worker_fwk::port_activity_subscriber_registry_ref{registry},
 		65536
@@ -169,7 +171,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_subscription_reque
 TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_subscription_request_succeeds)
 {
 	my_event_handler_registry eh_registry;
-	my_port_activity_subscriber_registry registry;
+	my_port_activity_subscription_registry registry;
 	Pipe::worker_fwk::sync_client_connection conn{
 		Pipe::worker_fwk::port_activity_subscriber_registry_ref{registry},
 		65536
@@ -194,7 +196,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_subscription_reque
 		.new_status = Pipe::os_services::fd::activity_status::read_or_write
 	};
 	conn.handle_event(
-		Pipe::worker_fwk::sync_client_connection::sync_fd_activity_event_handler_registred_event{
+		sync_client_connection::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
 			.event_handler = {},
@@ -208,7 +210,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_subscription_reque
 		.new_status = Pipe::os_services::fd::activity_status::read
 	};
 	auto const send_result = conn.send_pending_messages();
-	EXPECT_EQ(send_result, Pipe::worker_fwk::sync_client_connection::io_status::ok);
+	EXPECT_EQ(send_result,sync_client_connection::io_status::ok);
 
 	auto const header = receive_message<Pipe::worker_sync::msg_header, 16>(sockets.socket_b());
 	EXPECT_EQ(header.tx_id, Pipe::worker_sync::transaction_id{325});
@@ -231,7 +233,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_subscription_reque
 TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_unsubscription_succeeds)
 {
 	my_event_handler_registry eh_registry;
-	my_port_activity_subscriber_registry registry;
+	my_port_activity_subscription_registry registry;
 	Pipe::worker_fwk::sync_client_connection conn{
 		Pipe::worker_fwk::port_activity_subscriber_registry_ref{registry},
 		65536
@@ -257,7 +259,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_unsubscription_suc
 		.new_status = Pipe::os_services::fd::activity_status::read_or_write
 	};
 	conn.handle_event(
-		Pipe::worker_fwk::sync_client_connection::sync_fd_activity_event_handler_registred_event{
+		sync_client_connection::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
 			.event_handler = {},
@@ -271,7 +273,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_unsubscription_suc
 		.new_status = Pipe::os_services::fd::activity_status::read
 	};
 	auto const send_result = conn.send_pending_messages();
-	EXPECT_EQ(send_result, Pipe::worker_fwk::sync_client_connection::io_status::ok);
+	EXPECT_EQ(send_result, sync_client_connection::io_status::ok);
 
 	{
 		auto const header = receive_message<Pipe::worker_sync::msg_header, 16>(sockets.socket_b());
@@ -295,7 +297,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_unsubscription_suc
 TESTCASE(Pipe_worker_fwk_sync_client_connection_client_ready)
 {
 	my_event_handler_registry eh_registry;
-	my_port_activity_subscriber_registry registry;
+	my_port_activity_subscription_registry registry;
 	Pipe::worker_fwk::sync_client_connection conn{
 		Pipe::worker_fwk::port_activity_subscriber_registry_ref{registry},
 		65536
@@ -313,7 +315,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_client_ready)
 TESTCASE(Pipe_worker_fwk_sync_client_connection_notify_data_ready)
 {
 	my_event_handler_registry eh_registry;
-	my_port_activity_subscriber_registry registry;
+	my_port_activity_subscription_registry registry;
 	Pipe::worker_fwk::sync_client_connection conn{
 		Pipe::worker_fwk::port_activity_subscriber_registry_ref{registry},
 		65536
@@ -328,7 +330,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_notify_data_ready)
 		.new_status = Pipe::os_services::fd::activity_status::read_or_write
 	};
 	conn.handle_event(
-		Pipe::worker_fwk::sync_client_connection::sync_fd_activity_event_handler_registred_event{
+		sync_client_connection::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
 			.event_handler = {},
@@ -342,7 +344,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_notify_data_ready)
 		.new_status = Pipe::os_services::fd::activity_status::read
 	};
 	auto const send_result = conn.send_pending_messages();
-	EXPECT_EQ(send_result, Pipe::worker_fwk::sync_client_connection::io_status::ok);
+	EXPECT_EQ(send_result, sync_client_connection::io_status::ok);
 
 	auto const header = receive_message<Pipe::worker_sync::msg_header, 16>(sockets.socket_b());
 	EXPECT_EQ(header.tx_id, Pipe::worker_sync::transaction_id{});

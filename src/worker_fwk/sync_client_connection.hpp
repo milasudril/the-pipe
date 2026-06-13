@@ -24,6 +24,7 @@ namespace Pipe::worker_fwk
 		using sync_fd_activity_event = os_services::fd::activity_event<client_activity, fd_tag>;
 	};
 
+	template<class PortActivitySubscriptionRegistry>
 	class sync_client_connection:
 		public sync_message_channel<sync_message_channel_server_traits>,
 		public sync_message_channel_server_traits
@@ -32,7 +33,7 @@ namespace Pipe::worker_fwk
 		using client_activity_event_handler_registered_event = sync_fd_activity_event_handler_registred_event;
 		using client_activity_event = sync_fd_activity_event;
 
-		explicit sync_client_connection(port_activity_subscriber_registry_ref port_activity_subscriber_registry, size_t buffer_size = 65536):
+		explicit sync_client_connection(PortActivitySubscriptionRegistry port_activity_subscriber_registry, size_t buffer_size = 65536):
 			sync_message_channel<sync_message_channel_server_traits>{buffer_size},
 			m_port_activity_subscriber_registry{port_activity_subscriber_registry}
 		{}
@@ -112,7 +113,7 @@ namespace Pipe::worker_fwk
 		using sync_message_channel<sync_message_channel_server_traits>::handle_message;
 
 	private:
-		port_activity_subscriber_registry_ref m_port_activity_subscriber_registry;
+		PortActivitySubscriptionRegistry m_port_activity_subscriber_registry;
 	};
 }
 #endif
