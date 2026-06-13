@@ -6,6 +6,7 @@
 #include "./port_activity_subscriber.hpp"
 #include "src/os_services/ipc/unix_domain_socket.hpp"
 #include "src/os_services/fd/activity_event_handler_store.hpp"
+#include "src/utils/unwrap.hpp"
 #include "src/worker_sync/worker_sync_msg.hpp"
 
 #include <queue>
@@ -40,7 +41,9 @@ namespace Pipe::worker_fwk
 
 		~sync_client_connection()
 		{
-		// TODO: Add support for connection closed
+			utils::unwrap(m_port_activity_subscriber_registry).remove_port_activity_subscriber(
+				port_activity_subscriber_ref{*this}
+			);
 		}
 
 		sync_client_connection(sync_client_connection&&) = default;

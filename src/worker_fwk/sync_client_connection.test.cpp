@@ -63,6 +63,8 @@ namespace
 			EXPECT_EQ(subscription_id, notify_expected_subscription_id);
 			notify_expected_subscription_id.reset();
 		}
+
+		void remove_port_activity_subscriber(Pipe::worker_fwk::port_activity_subscriber_ref){}
 	};
 
 	using sync_client_connection = Pipe::worker_fwk::sync_client_connection<my_port_activity_subscription_registry>;

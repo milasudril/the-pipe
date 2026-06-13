@@ -68,13 +68,14 @@ namespace Pipe::worker_fwk
 	concept port_activity_subscription_registry = requires(
 		T obj,
 		std::string const& str,
-		worker_sync::port_activity_subscription_id port_activity_subscription,
-		port_activity_subscriber_ref port_activity_subscriber
+		worker_sync::port_activity_subscription_id subscription,
+		port_activity_subscriber_ref subscriber
 	)
 	{
-		{ utils::unwrap(obj).add_port_activity_subscription(str, port_activity_subscriber) } -> std::same_as<worker_sync::port_activity_subscription_id>;
-		{ utils::unwrap(obj).remove_port_activity_subscription(port_activity_subscription, port_activity_subscriber) } -> std::same_as<void>;
-		{ utils::unwrap(obj).notify_client_ready(port_activity_subscription, port_activity_subscriber) } -> std::same_as<void>;
+		{ utils::unwrap(obj).add_port_activity_subscription(str, subscriber) } -> std::same_as<worker_sync::port_activity_subscription_id>;
+		{ utils::unwrap(obj).remove_port_activity_subscription(subscription, subscriber) } -> std::same_as<void>;
+		{ utils::unwrap(obj).notify_client_ready(subscription, subscriber) } -> std::same_as<void>;
+		{ utils::unwrap(obj).remove_port_activity_subscriber(subscriber) } -> std::same_as<void>;
 	};
 }
 #endif
