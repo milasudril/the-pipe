@@ -588,3 +588,79 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_remove_port_activity_sub
 	);
 }
 
+TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_remove_port_activity_subscriber)
+{
+	Pipe::utils::at_scope_exit _{
+		[saved_offset = malloc_offset](){
+			malloc_offset = saved_offset;
+		}
+	};
+
+	my_activity_subscriber subscriber_0{};
+	my_activity_subscriber subscriber_1{};
+
+	my_port_collection port_collection{};
+	Pipe::worker_fwk::msg_file_subscription_registry registry{port_collection};
+
+	port_collection.expect_port_0_ready = true;
+	auto const res_0 = registry.add_port_activity_subscription(
+		"port_0",
+		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0}
+	);
+	EXPECT_EQ(res_0, Pipe::worker_sync::port_activity_subscription_id{0});
+
+	port_collection.expect_port_1_ready = true;
+	auto const res_1 = registry.add_port_activity_subscription(
+		"port_1",
+		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0}
+	);
+	EXPECT_EQ(res_1, Pipe::worker_sync::port_activity_subscription_id{1});
+
+	port_collection.expect_port_2_ready = true;
+	auto const res_2 = registry.add_port_activity_subscription(
+		"port_2",
+		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0}
+	);
+	EXPECT_EQ(res_2, Pipe::worker_sync::port_activity_subscription_id{2});
+
+	auto const res_3 = registry.add_port_activity_subscription(
+		"port_2",
+		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_1}
+	);
+	EXPECT_EQ(res_3, Pipe::worker_sync::port_activity_subscription_id{3});
+
+	auto const res_4 = registry.add_port_activity_subscription(
+		"port_2",
+		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_1}
+	);
+	EXPECT_EQ(res_4, Pipe::worker_sync::port_activity_subscription_id{4});
+
+	subscriber_0.expected_ids.push_back(res_0);
+	port_collection.expect_port_0_ready = true;
+	registry.notify_data_ready(Pipe::worker_fwk::port_id{0});
+
+	subscriber_0.expected_ids.push_back(res_1);
+	port_collection.expect_port_1_ready = true;
+	registry.notify_data_ready(Pipe::worker_fwk::port_id{1});
+
+	subscriber_0.expected_ids.push_back(res_2);
+	subscriber_1.expected_ids.push_back(res_3);
+	subscriber_1.expected_ids.push_back(res_4);
+	port_collection.expect_port_2_ready = true;
+	registry.notify_data_ready(Pipe::worker_fwk::port_id{2});
+
+	registry.notify_data_ready(Pipe::worker_fwk::port_id{3});
+	registry.notify_data_ready(Pipe::worker_fwk::port_id{4});
+
+	my_activity_subscriber dummy{};
+	registry.remove_port_activity_subscriber(Pipe::worker_fwk::port_activity_subscriber_ref{dummy});
+
+	puts("--- Removing subscriber");
+	registry.remove_port_activity_subscriber(Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0});
+
+	port_collection.expect_port_2_ready = true;
+	registry.remove_port_activity_subscription(
+		res_3,
+		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_1}
+	);
+}
