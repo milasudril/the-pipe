@@ -143,7 +143,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_subscription_reque
 {
 	my_port_activity_subscription_registry registry;
 	Pipe::worker_fwk::sync_client_connection conn{
-		Pipe::worker_fwk::port_activity_subscription_registry_ref{registry},
+		std::ref(registry),
 		65536
 	};
 
@@ -173,7 +173,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_subscription_reque
 	my_event_handler_registry eh_registry;
 	my_port_activity_subscription_registry registry;
 	Pipe::worker_fwk::sync_client_connection conn{
-		Pipe::worker_fwk::port_activity_subscription_registry_ref{registry},
+		std::ref(registry),
 		65536
 	};
 
@@ -235,7 +235,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_unsubscription_suc
 	my_event_handler_registry eh_registry;
 	my_port_activity_subscription_registry registry;
 	Pipe::worker_fwk::sync_client_connection conn{
-		Pipe::worker_fwk::port_activity_subscription_registry_ref{registry},
+		std::ref(registry),
 		65536
 	};
 
@@ -299,7 +299,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_client_ready)
 	my_event_handler_registry eh_registry;
 	my_port_activity_subscription_registry registry;
 	Pipe::worker_fwk::sync_client_connection conn{
-		Pipe::worker_fwk::port_activity_subscription_registry_ref{registry},
+		std::ref(registry),
 		65536
 	};
 
@@ -317,7 +317,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_notify_data_ready)
 	my_event_handler_registry eh_registry;
 	my_port_activity_subscription_registry registry;
 	Pipe::worker_fwk::sync_client_connection conn{
-		Pipe::worker_fwk::port_activity_subscription_registry_ref{registry},
+		std::ref(registry),
 		65536
 	};
 

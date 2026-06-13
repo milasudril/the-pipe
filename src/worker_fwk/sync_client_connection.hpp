@@ -54,7 +54,7 @@ namespace Pipe::worker_fwk
 			worker_sync::exception_controller& ec
 		)
 		{
-			auto const subscription_id = m_port_activity_subscriber_registry.add_port_activity_subscription(
+			auto const subscription_id = utils::unwrap(m_port_activity_subscriber_registry).add_port_activity_subscription(
 				msg.server_portname,
 				port_activity_subscriber_ref{*this}
 			);
@@ -73,7 +73,7 @@ namespace Pipe::worker_fwk
 			worker_sync::exception_controller& ec
 		)
 		{
-			m_port_activity_subscriber_registry.remove_port_activity_subscription(
+			utils::unwrap(m_port_activity_subscriber_registry).remove_port_activity_subscription(
 				port_activity_subscriber_ref{*this},
 				msg.id
 			);
@@ -98,7 +98,7 @@ namespace Pipe::worker_fwk
 		}
 
 		void handle_message(worker_sync::client_ready_event event)
-		{ m_port_activity_subscriber_registry.notify_client_ready(event.id); }
+		{ utils::unwrap(m_port_activity_subscriber_registry).notify_client_ready(event.id); }
 
 		void notify_data_ready(worker_sync::port_activity_subscription_id id)
 		{
@@ -115,5 +115,10 @@ namespace Pipe::worker_fwk
 	private:
 		PortActivitySubscriptionRegistry m_port_activity_subscriber_registry;
 	};
+
+
+	template<port_activity_subscription_registry PortActivitySubscriptionRegistry>
+	sync_client_connection(std::reference_wrapper<PortActivitySubscriptionRegistry>, size_t)->
+		sync_client_connection<std::reference_wrapper<PortActivitySubscriptionRegistry>>;
 }
 #endif
