@@ -49,7 +49,7 @@ TESTCASE(Pipe_worker_fwk_port_activity_subscriber_notify_data_ready)
 
 namespace
 {
-	struct port_activity_subscriber_registry
+	struct port_activity_subscription_registry
 	{
 		std::optional<std::string_view> expected_port_name;
 		std::optional<Pipe::worker_fwk::port_activity_subscriber_ref> expected_subscriber_ref;
@@ -87,10 +87,10 @@ namespace
 	};
 }
 
-TESTCASE(port_activity_subscriber_registry_ref_test_callbacks)
+TESTCASE(port_activity_subscription_registry_ref_test_callbacks)
 {
-	port_activity_subscriber_registry my_registry;
-	Pipe::worker_fwk::port_activity_subscriber_registry_ref reg_ref{my_registry};
+	port_activity_subscription_registry my_registry;
+	Pipe::worker_fwk::port_activity_subscription_registry_ref reg_ref{my_registry};
 
 	my_registry.expected_subscription_id = Pipe::worker_sync::port_activity_subscription_id{435};
 	reg_ref.notify_client_ready(Pipe::worker_sync::port_activity_subscription_id{435});

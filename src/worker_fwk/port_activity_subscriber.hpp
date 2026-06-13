@@ -64,7 +64,7 @@ namespace Pipe::worker_fwk
 	};
 
 	template<class T>
-	concept port_activity_subscriber_registry = requires(
+	concept port_activity_subscription_registry = requires(
 		T& obj,
 		std::string const& str,
 		worker_sync::port_activity_subscription_id port_activity_subscription,
@@ -76,12 +76,12 @@ namespace Pipe::worker_fwk
 		{ obj.notify_client_ready(port_activity_subscription) } -> std::same_as<void>;
 	};
 
-	class port_activity_subscriber_registry_ref
+	class port_activity_subscription_registry_ref
 	{
 	public:
-		template<port_activity_subscriber_registry T>
-		requires(!std::is_same_v<std::remove_cvref_t<T>, port_activity_subscriber_registry_ref>)
-		explicit port_activity_subscriber_registry_ref(T& object):
+		template<port_activity_subscription_registry T>
+		requires(!std::is_same_v<std::remove_cvref_t<T>, port_activity_subscription_registry_ref>)
+		explicit port_activity_subscription_registry_ref(T& object):
 			m_object{&object},
 			m_notify_client_ready{
 				[](void* object, worker_sync::port_activity_subscription_id id) static {
