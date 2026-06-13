@@ -489,6 +489,102 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_notify_client_ready)
 		res_1,
 		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_1}
 	);
+}
 
+TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_remove_port_activity_subscription_subscription_not_found)
+{
+	Pipe::utils::at_scope_exit _{
+		[saved_offset = malloc_offset](){
+			malloc_offset = saved_offset;
+		}
+	};
+
+	my_port_collection port_collection{};
+	Pipe::worker_fwk::msg_file_subscription_registry registry{port_collection};
+
+	try
+	{
+		registry.remove_port_activity_subscription(
+			Pipe::worker_sync::port_activity_subscription_id{324},
+			Pipe::worker_fwk::port_activity_subscriber_ref{}
+		);
+		EXPECT_EQ(true, false);
+	}
+	catch(std::exception const& err)
+	{
+		EXPECT_EQ(err.what(), std::string_view{"Invalid subscription id"});
+	}
+}
+
+TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_remove_port_activity_subscription)
+{
+	Pipe::utils::at_scope_exit _{
+		[saved_offset = malloc_offset](){
+			malloc_offset = saved_offset;
+		}
+	};
+
+	my_activity_subscriber subscriber_0{};
+	my_activity_subscriber subscriber_1{};
+
+	my_port_collection port_collection{};
+	Pipe::worker_fwk::msg_file_subscription_registry registry{port_collection};
+
+	port_collection.expect_port_0_ready = true;
+	auto const res_0 = registry.add_port_activity_subscription(
+		"port_0",
+		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0}
+	);
+	EXPECT_EQ(res_0, Pipe::worker_sync::port_activity_subscription_id{0});
+
+	port_collection.expect_port_1_ready = true;
+	auto const res_1 = registry.add_port_activity_subscription(
+		"port_1",
+		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_1}
+	);
+	EXPECT_EQ(res_1, Pipe::worker_sync::port_activity_subscription_id{1});
+
+	subscriber_0.expected_ids.push_back(res_0);
+	registry.notify_data_ready(Pipe::worker_fwk::port_id{0});
+	subscriber_1.expected_ids.push_back(res_1);
+	registry.notify_data_ready(Pipe::worker_fwk::port_id{1});
+
+	try
+	{
+		registry.remove_port_activity_subscription(
+			res_0,
+			Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_1}
+		);
+		EXPECT_EQ(true, false);
+	}
+	catch(std::exception const& err)
+	{
+		EXPECT_EQ(err.what(), std::string_view{"Invalid subscription id"});
+	}
+
+	try
+	{
+		registry.remove_port_activity_subscription(
+			res_1,
+			Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0}
+		);
+		EXPECT_EQ(true, false);
+	}
+	catch(std::exception const& err)
+	{
+		EXPECT_EQ(err.what(), std::string_view{"Invalid subscription id"});
+	}
+
+	port_collection.expect_port_0_ready = true;
+	registry.remove_port_activity_subscription(
+		res_0,
+		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0}
+	);
+
+	port_collection.expect_port_1_ready = true;
+	registry.remove_port_activity_subscription(
+		res_1,
+		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_1}
+	);
 }
 
