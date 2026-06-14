@@ -36,7 +36,7 @@ namespace Pipe::worker_fwk
 
 		explicit sync_client_connection(PortActivitySubscriptionRegistry port_activity_subscriber_registry, size_t buffer_size = 65536):
 			sync_message_channel<sync_message_channel_server_traits>{buffer_size},
-			m_port_activity_subscriber_registry{port_activity_subscriber_registry}
+			m_port_activity_subscriber_registry{std::move(port_activity_subscriber_registry)}
 		{}
 
 		~sync_client_connection()

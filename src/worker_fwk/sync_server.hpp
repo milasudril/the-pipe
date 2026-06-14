@@ -15,7 +15,7 @@ namespace Pipe::worker_fwk
 	{
 	public:
 		explicit sync_server(PortActivitySubscriptionRegistry port_activity_subscriber_registry):
-			m_port_activity_subscriber_registry{port_activity_subscriber_registry}
+			m_port_activity_subscriber_registry{std::move(port_activity_subscriber_registry)}
 		{}
 
 		using fd_tag = os_services::ipc::server_socket_tag<SOCK_STREAM, sockaddr_un>;
@@ -55,7 +55,7 @@ namespace Pipe::worker_fwk
 	template<port_activity_subscription_registry PortActivitySubscriptionRegistry>
 	inline server_info make_sync_server(
 		os_services::fd::activity_event_handler_store& event_handler_store,
-		PortActivitySubscriptionRegistry port_activity_subscriber_registry
+		PortActivitySubscriptionRegistry&& port_activity_subscriber_registry
 	)
 	{
 		using sync_server_type = sync_server<PortActivitySubscriptionRegistry>;
@@ -63,7 +63,7 @@ namespace Pipe::worker_fwk
 		auto socket_name = utils::random_printable_ascii_string(os_services::ipc::abstract_sunpath_maxlength);
 		return server_info{
 			.event_handler_id = event_handler_store.add<sync_server_type::server_socket_activity>(
-				sync_server_type{port_activity_subscriber_registry},
+				sync_server_type{std::forward<PortActivitySubscriptionRegistry>(port_activity_subscriber_registry)},
 				os_services::ipc::make_server_socket<SOCK_STREAM>(
 					os_services::ipc::make_abstract_sockaddr_un(socket_name),
 					1024
