@@ -168,12 +168,12 @@ namespace
 		{
 			if(can_read(event.status))
 			{
-				auto const id  = m_registration.event_handler_store->add<void>(
+				auto const res  = m_registration.event_handler_store->add<void>(
 					my_worker{},
 					accept(m_registration.fd),
 					Pipe::os_services::fd::activity_status::read
 				);
-				EXPECT_EQ(id, Pipe::os_services::fd::event_handler_id{1});
+				EXPECT_EQ(res.second, Pipe::os_services::fd::event_handler_id{1});
 			}
 		}
 
@@ -224,7 +224,7 @@ TESTCASE(Pipe_os_services_io_multiplexer_epoll_instance)
 				my_server_event_handler{},
 				Pipe::os_services::ipc::make_server_socket<SOCK_SEQPACKET>(address, 1024),
 				Pipe::os_services::fd::activity_status::read
-			),
+			).second,
 			Pipe::os_services::fd::event_handler_id{0}
 		);
 

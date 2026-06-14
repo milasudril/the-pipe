@@ -18,7 +18,7 @@ namespace
 	};
 }
 
-Pipe::os_services::fd::event_handler_id
+std::pair<void*, Pipe::os_services::fd::event_handler_id>
 Pipe::os_services::io_multiplexer::epoll_instance::do_add(
 	event_handler_info const& info,
 	fd::file_descriptor fd_to_watch,
@@ -66,7 +66,7 @@ Pipe::os_services::io_multiplexer::epoll_instance::do_add(
 		}
 	);
 
-	return eh_id;
+	return std::pair{event_handler + 1, eh_id};
 }
 
 Pipe::os_services::io_multiplexer::epoll_entry_data::epoll_entry_data(

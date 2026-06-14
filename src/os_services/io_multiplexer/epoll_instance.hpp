@@ -189,7 +189,7 @@ namespace Pipe::os_services::io_multiplexer
 			m_listeners.erase(i);
 		}
 
-		fd::event_handler_id do_add(
+		std::pair<void*, fd::event_handler_id> do_add(
 			event_handler_info const& info,
 			fd::file_descriptor fd_to_watch,
 			fd::activity_status initial_listening_status

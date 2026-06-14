@@ -133,14 +133,14 @@ namespace
 		void remove(Pipe::os_services::fd::event_handler_id) noexcept override
 		{}
 
-		Pipe::os_services::fd::event_handler_id do_add(
+		std::pair<void*, Pipe::os_services::fd::event_handler_id> do_add(
 			event_handler_info const& eh_info,
 			Pipe::os_services::fd::file_descriptor fd,
 			Pipe::os_services::fd::activity_status activity_status
 		) override
 		{
 			obj = blob{eh_info, std::move(fd), activity_status, Pipe::os_services::fd::event_handler_id{123}};
-			return Pipe::os_services::fd::event_handler_id{123};
+			return std::pair{obj.get_event_handler_ptr(), Pipe::os_services::fd::event_handler_id{123}};
 		}
 
 
@@ -196,7 +196,7 @@ TESTCASE(Pipe_os_services_fd_activity_event_handler_store_add_fd)
 	my_event_handler eh;
 	fd_activity_event_handler_store_stub monitor;
 	Pipe::os_services::ipc::pipe my_pipe;
-	auto const id = monitor.add<my_tag>(
+	auto [saved_ptr, id] = monitor.add<my_tag>(
 		std::ref(eh), my_pipe.take_read_end(), Pipe::os_services::fd::activity_status::read
 	);
 	EXPECT_EQ(id, Pipe::os_services::fd::event_handler_id{123});
@@ -206,6 +206,7 @@ TESTCASE(Pipe_os_services_fd_activity_event_handler_store_add_fd)
 	);
 	auto const expected_eh_ptr = std::bit_cast<std::array<std::byte, 8>>(&eh);
 	REQUIRE_EQ(event_handler_ptr, expected_eh_ptr);
+	EXPECT_EQ(monitor.get_event_handler_ptr(), &saved_ptr.get());
 
 	EXPECT_NE(eh.saved_event.status, Pipe::os_services::fd::activity_status::read);
 	monitor.trigger();

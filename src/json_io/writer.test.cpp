@@ -34,7 +34,7 @@ namespace
 			expected_remove_id.reset();
 		}
 
-		Pipe::os_services::fd::event_handler_id do_add(
+		std::pair<void*, Pipe::os_services::fd::event_handler_id> do_add(
 			event_handler_info const&,
 			Pipe::os_services::fd::file_descriptor,
 			Pipe::os_services::fd::activity_status

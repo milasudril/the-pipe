@@ -203,8 +203,8 @@ namespace Pipe::os_services::fd
 			template<class Tag, class ... Args>
 			auto& add(Args&&... args)
 			{
-				auto const id = m_store.get().add<Tag>(std::forward<Args>(args)...);
-				m_added_ids.push_back(id);
+				auto const res = m_store.get().add<Tag>(std::forward<Args>(args)...);
+				m_added_ids.push_back(res.second);
 				return *this;
 			}
 
@@ -239,13 +239,13 @@ namespace Pipe::os_services::fd
 			class FileDescriptorTag,
 			activity_event_handler<CallbackTag, FileDescriptorTag> EventHandler
 		>
-		[[nodiscard]] fd::event_handler_id add(
+		[[nodiscard]] std::pair<std::reference_wrapper<EventHandler>, event_handler_id> add(
 			EventHandler eh,
 			tagged_file_descriptor<FileDescriptorTag> fd_to_watch,
 			activity_status initial_listening_status
 		)
 		{
-			return do_add(
+			auto const res = do_add(
 				event_handler_info{
 					.object_address = source_object_location{.address = &eh},
 					.object_size = sizeof(EventHandler),
@@ -279,6 +279,11 @@ namespace Pipe::os_services::fd
 				make_generic_file_descriptor(std::move(fd_to_watch)),
 				initial_listening_status
 			);
+
+			return std::pair<std::reference_wrapper<EventHandler>, event_handler_id>{
+				*static_cast<EventHandler*>(res.first),
+				res.second
+			};
 		}
 
 		/**
@@ -317,7 +322,7 @@ namespace Pipe::os_services::fd
 		};
 
 	private:
-		virtual event_handler_id do_add(
+		virtual std::pair<void*, event_handler_id> do_add(
 			event_handler_info const& info,
 			fd::file_descriptor fd_to_watch,
 			activity_status initial_listening_status

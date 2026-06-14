@@ -115,16 +115,13 @@ namespace
 			expected_update_listening_status_call.reset();
 		}
 
-		Pipe::os_services::fd::event_handler_id do_add(
+		std::pair<void*, Pipe::os_services::fd::event_handler_id> do_add(
 			event_handler_info const&,
-			Pipe::os_services::fd::file_descriptor fd,
-			Pipe::os_services::fd::activity_status activity_status
+			Pipe::os_services::fd::file_descriptor,
+			Pipe::os_services::fd::activity_status
 		) override
 		{
-			REQUIRE_EQ(expected_do_add_call.has_value(), true);
-			expected_do_add_call->registred_fd = std::move(fd);
-			EXPECT_EQ(expected_do_add_call->initial_listening_status, activity_status);
-			return expected_do_add_call->retval;
+			throw std::runtime_error{"Unexpected call to do_add"};
 		}
 
 		std::optional<Pipe::os_services::fd::event_handler_id> expected_remove_id;
