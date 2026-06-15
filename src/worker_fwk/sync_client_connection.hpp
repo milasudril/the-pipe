@@ -123,10 +123,5 @@ namespace Pipe::worker_fwk
 	private:
 		OutputPortActivitySubscriptionRegistry m_output_port_activity_subscriber_registry;
 	};
-
-
-	template<output_port_activity_subscription_registry OutputPortActivitySubscriptionRegistry>
-	sync_client_connection(std::reference_wrapper<OutputPortActivitySubscriptionRegistry>, size_t)->
-		sync_client_connection<std::reference_wrapper<OutputPortActivitySubscriptionRegistry>>;
 }
 #endif
