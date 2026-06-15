@@ -36,6 +36,7 @@ namespace Pipe::worker_fwk
 		using subscriber_type = typename std::remove_cvref_t<
 			decltype(utils::unwrap(std::declval<InputPortActivitySubscriber>()))
 		>;
+		using client_activity_event_handler_registered_event = sync_fd_activity_event_handler_registred_event;
 
 		explicit sync_client(InputPortActivitySubscriber subscriber, size_t buffer_size = 65536):
 			sync_message_channel{buffer_size},
