@@ -5,6 +5,7 @@
 #include "src/os_services/ipc/unix_domain_socket.hpp"
 #include "src/os_services/fd/activity_event_handler_store.hpp"
 #include "src/utils/scope_handling.hpp"
+#include "src/utils/unwrap.hpp"
 #include "src/worker_fwk/sync_message_channel.hpp"
 #include "src/worker_sync/worker_sync_msg.hpp"
 
@@ -30,7 +31,10 @@ namespace Pipe::worker_fwk
 		explicit sync_client(MsgFileSubscriber subscriber, size_t buffer_size):
 			sync_message_channel{buffer_size},
 			m_subscriber{std::move(subscriber)}
-		{}
+		{ }
+
+		~sync_client()
+		{ utils::unwrap(m_subscriber).sync_client_lost_connection_to_server(static_cast<void*>(this)); }
 
 		void handle_response(
 			worker_sync::error_response const& err,
@@ -45,7 +49,7 @@ namespace Pipe::worker_fwk
 		void handle_message(worker_sync::data_ready_event event, worker_sync::exception_controller& ec)
 		{
 			ec.enable_exception_rethrow();
-			m_subscriber.notify_data_ready(event.id);
+			utils::unwrap(m_subscriber).notify_data_ready(event.id);
 		}
 
 		void handle_response(
@@ -55,7 +59,7 @@ namespace Pipe::worker_fwk
 		)
 		{
 			ec.enable_exception_rethrow();
-			m_subscriber.subscription_completed(tx_id, response.id);
+			utils::unwrap(m_subscriber).subscription_completed(tx_id, response.id);
 		}
 
 		void handle_response(
@@ -65,7 +69,7 @@ namespace Pipe::worker_fwk
 		)
 		{
 			ec.enable_exception_rethrow();
-			m_subscriber.unsubscription_completed(tx_id);
+			utils::unwrap(m_subscriber).unsubscription_completed(tx_id);
 		}
 
 		void notify_client_ready(worker_sync::port_activity_subscription_id id)
