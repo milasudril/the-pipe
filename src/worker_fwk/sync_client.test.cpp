@@ -135,3 +135,16 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_error_response_existing_transaction)
 	EXPECT_EQ(ec.exceptions_should_be_rethrown(), true);
 }
 
+TESTCASE(Pipe_worker_fwk_sync_client_handle_data_ready_event)
+{
+	input_port_activity_subscriber subscriber;
+	Pipe::worker_fwk::sync_client client{std::ref(subscriber)};
+	subscriber.expected_data_ready_id = Pipe::worker_sync::port_activity_subscription_id{3};
+	client.handle_message(
+		Pipe::worker_sync::data_ready_event{
+			.id = Pipe::worker_sync::port_activity_subscription_id{3}
+		}
+	);
+	subscriber.expected_conn_lost_ptr = &client;
+}
+

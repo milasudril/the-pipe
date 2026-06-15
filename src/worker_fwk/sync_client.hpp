@@ -58,11 +58,8 @@ namespace Pipe::worker_fwk
 			throw std::runtime_error{err.content()};
 		}
 
-		void handle_message(worker_sync::data_ready_event event, worker_sync::exception_controller& ec)
-		{
-			ec.enable_exception_rethrow();
-			utils::unwrap(m_subscriber).notify_data_ready(event.id);
-		}
+		void handle_message(worker_sync::data_ready_event event)
+		{ utils::unwrap(m_subscriber).notify_data_ready(event.id); }
 
 		void handle_response(
 			worker_sync::port_activity_subscription_response const& response,
