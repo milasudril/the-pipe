@@ -65,14 +65,14 @@ namespace
 		std::optional<do_add_call> expected_do_add_call;
 	};
 
-	struct my_port_activity_subscriber_registry
+	struct my_output_port_activity_subscriber_registry
 	{
 		std::optional<std::string> expected_server_portname;
 		bool fail_port_activity_subscription = false;
 
 		Pipe::worker_sync::port_activity_subscription_id add_port_activity_subscription(
 			std::string const&,
-			Pipe::worker_fwk::port_activity_subscriber_ref
+			Pipe::worker_fwk::output_port_activity_subscriber_ref
 		)
 		{
 			throw std::runtime_error{"Unexpected call to add_port_activity_subscription"};
@@ -80,7 +80,7 @@ namespace
 
 		void remove_port_activity_subscription(
 			Pipe::worker_sync::port_activity_subscription_id,
-			Pipe::worker_fwk::port_activity_subscriber_ref
+			Pipe::worker_fwk::output_port_activity_subscriber_ref
 		)
 		{
 			throw std::runtime_error{"Unexpected call to remove_port_activity_subscription"};
@@ -88,13 +88,13 @@ namespace
 
 		void notify_client_ready(
 			Pipe::worker_sync::port_activity_subscription_id,
-			Pipe::worker_fwk::port_activity_subscriber_ref
+			Pipe::worker_fwk::output_port_activity_subscriber_ref
 		)
 		{
 			throw std::runtime_error{"Unexpected call to notify_client_ready"};
 		}
 
-		void remove_port_activity_subscriber(Pipe::worker_fwk::port_activity_subscriber_ref)
+		void remove_output_port_activity_subscriber(Pipe::worker_fwk::output_port_activity_subscriber_ref)
 		{}
 	};
 }
@@ -108,10 +108,10 @@ TESTCASE(Pipe_worker_fwk_sync_server_create)
 		Pipe::os_services::fd::event_handler_id{324}
 	};
 
-	my_port_activity_subscriber_registry port_activity_subscriber_registry;
+	my_output_port_activity_subscriber_registry output_port_activity_subscriber_registry;
 	auto const server_info = Pipe::worker_fwk::make_sync_server(
 		event_handlers,
-		std::ref(port_activity_subscriber_registry)
+		std::ref(output_port_activity_subscriber_registry)
 	);
 	auto registered_fd = std::move(event_handlers.expected_do_add_call->registred_fd);
 
@@ -136,7 +136,7 @@ TESTCASE(Pipe_worker_fwk_sync_server_create)
 	);
 	EXPECT_EQ(
 		&server_info.event_handler.first.get().get_registry().get(),
-		&port_activity_subscriber_registry
+		&output_port_activity_subscriber_registry
 	);
 }
 
@@ -151,11 +151,11 @@ TESTCASE(Pipe_worker_fwk_sync_server_register_and_accept_connection)
 		1024
 	);
 
-	my_port_activity_subscriber_registry port_activity_subscriber_registry;
-	Pipe::worker_fwk::sync_server server{std::ref(port_activity_subscriber_registry)};
+	my_output_port_activity_subscriber_registry output_port_activity_subscriber_registry;
+	Pipe::worker_fwk::sync_server server{std::ref(output_port_activity_subscriber_registry)};
 
 	server.handle_event(
-		Pipe::worker_fwk::sync_server<std::reference_wrapper<my_port_activity_subscriber_registry>>::activity_event_handler_registered_event{
+		Pipe::worker_fwk::sync_server<std::reference_wrapper<my_output_port_activity_subscriber_registry>>::activity_event_handler_registered_event{
 			.fd = server_socket.get(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
 			.event_handler = {},
@@ -178,7 +178,7 @@ TESTCASE(Pipe_worker_fwk_sync_server_register_and_accept_connection)
 	};
 
 	server.handle_event(
-		Pipe::worker_fwk::sync_server<std::reference_wrapper<my_port_activity_subscriber_registry>>::server_activity_event{
+		Pipe::worker_fwk::sync_server<std::reference_wrapper<my_output_port_activity_subscriber_registry>>::server_activity_event{
 			.status = Pipe::os_services::fd::activity_status::read
 		}
 	);

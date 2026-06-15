@@ -8,7 +8,6 @@
 #include "src/os_services/ipc/unix_domain_socket.hpp"
 #include "src/os_services/ipc/socket_pair.hpp"
 #include "src/utils/utils.hpp"
-#include "src/worker_fwk/port_activity_subscriber.hpp"
 #include "src/worker_sync/worker_sync_msg.hpp"
 #include "testfwk/testsuite.hpp"
 #include "testfwk/validation.hpp"
@@ -25,13 +24,13 @@ namespace
 {
 	struct my_port_activity_subscription_registry
 	{
-		std::optional<Pipe::worker_fwk::port_activity_subscriber_ref> saved_subscriber_ref;
+		std::optional<Pipe::worker_fwk::output_port_activity_subscriber_ref> saved_subscriber_ref;
 
 		std::optional<std::string> expected_server_portname;
 		std::optional<Pipe::worker_sync::port_activity_subscription_id> returned_subscription_id;
 		Pipe::worker_sync::port_activity_subscription_id add_port_activity_subscription(
 			std::string const& server_portname,
-			Pipe::worker_fwk::port_activity_subscriber_ref subscriber_ref
+			Pipe::worker_fwk::output_port_activity_subscriber_ref subscriber_ref
 		)
 		{
 			EXPECT_EQ(server_portname, expected_server_portname);
@@ -44,11 +43,11 @@ namespace
 		}
 
 		std::optional<Pipe::worker_sync::port_activity_subscription_id> remove_subscription_subscription_id;
-		std::optional<Pipe::worker_fwk::port_activity_subscriber_ref>  remove_subscription_subscriber;
+		std::optional<Pipe::worker_fwk::output_port_activity_subscriber_ref>  remove_subscription_subscriber;
 
 		void remove_port_activity_subscription(
 			Pipe::worker_sync::port_activity_subscription_id subscription_id,
-			Pipe::worker_fwk::port_activity_subscriber_ref subscriber
+			Pipe::worker_fwk::output_port_activity_subscriber_ref subscriber
 		)
 		{
 			EXPECT_EQ(remove_subscription_subscription_id.has_value(), true);
@@ -60,10 +59,10 @@ namespace
 		}
 
 		std::optional<Pipe::worker_sync::port_activity_subscription_id> notify_subscription_subscription_id;
-		std::optional<Pipe::worker_fwk::port_activity_subscriber_ref>  notify_subscription_subscriber;
+		std::optional<Pipe::worker_fwk::output_port_activity_subscriber_ref>  notify_subscription_subscriber;
 		void notify_client_ready(
 			Pipe::worker_sync::port_activity_subscription_id subscription_id,
-			Pipe::worker_fwk::port_activity_subscriber_ref subscriber
+			Pipe::worker_fwk::output_port_activity_subscriber_ref subscriber
 		)
 		{
 			EXPECT_EQ(notify_subscription_subscription_id.has_value(), true);
@@ -74,8 +73,8 @@ namespace
 			notify_subscription_subscriber.reset();
 		}
 
-		std::optional<Pipe::worker_fwk::port_activity_subscriber_ref> remove_subscriber_subscriber;
-		void remove_port_activity_subscriber(Pipe::worker_fwk::port_activity_subscriber_ref subscriber)
+		std::optional<Pipe::worker_fwk::output_port_activity_subscriber_ref> remove_subscriber_subscriber;
+		void remove_output_port_activity_subscriber(Pipe::worker_fwk::output_port_activity_subscriber_ref subscriber)
 		{
 			EXPECT_EQ(remove_subscriber_subscriber.has_value(), true);
 			EXPECT_EQ(subscriber, remove_subscriber_subscriber);
@@ -229,7 +228,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_subscription_reque
 	);
 	EXPECT_EQ(body.id, Pipe::worker_sync::port_activity_subscription_id{54});
 
-	registry.remove_subscriber_subscriber = Pipe::worker_fwk::port_activity_subscriber_ref{conn};
+	registry.remove_subscriber_subscriber = Pipe::worker_fwk::output_port_activity_subscriber_ref{conn};
 }
 
 TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_unsubscription)
@@ -245,7 +244,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_unsubscription)
 
 	// Remove subscription
 	registry.remove_subscription_subscription_id = Pipe::worker_sync::port_activity_subscription_id{64365};
-	registry.remove_subscription_subscriber = Pipe::worker_fwk::port_activity_subscriber_ref{conn};
+	registry.remove_subscription_subscriber = Pipe::worker_fwk::output_port_activity_subscriber_ref{conn};
 	conn.handle_request(
 		Pipe::worker_sync::port_activity_unsubscription{
 			.id = Pipe::worker_sync::port_activity_subscription_id{64365}
@@ -296,7 +295,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_unsubscription)
 		EXPECT_EQ(body.id, Pipe::worker_sync::port_activity_subscription_id{64365});
 	}
 
-	registry.remove_subscriber_subscriber = Pipe::worker_fwk::port_activity_subscriber_ref{conn};
+	registry.remove_subscriber_subscriber = Pipe::worker_fwk::output_port_activity_subscriber_ref{conn};
 }
 
 TESTCASE(Pipe_worker_fwk_sync_client_connection_client_ready)
@@ -309,7 +308,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_client_ready)
 	};
 
 	registry.notify_subscription_subscription_id = Pipe::worker_sync::port_activity_subscription_id{54};
-	registry.notify_subscription_subscriber = Pipe::worker_fwk::port_activity_subscriber_ref{conn};
+	registry.notify_subscription_subscriber = Pipe::worker_fwk::output_port_activity_subscriber_ref{conn};
 	conn.handle_message(
 		Pipe::worker_sync::client_ready_event{
 			.id = Pipe::worker_sync::port_activity_subscription_id{54}
@@ -317,7 +316,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_client_ready)
 	);
 	EXPECT_EQ(conn.num_messages_to_send(), 0);
 
-	registry.remove_subscriber_subscriber = Pipe::worker_fwk::port_activity_subscriber_ref{conn};
+	registry.remove_subscriber_subscriber = Pipe::worker_fwk::output_port_activity_subscriber_ref{conn};
 }
 
 TESTCASE(Pipe_worker_fwk_sync_client_connection_notify_data_ready)
@@ -371,7 +370,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_notify_data_ready)
 	);
 	EXPECT_EQ(body.id, Pipe::worker_sync::port_activity_subscription_id{4365});
 
-	registry.remove_subscriber_subscriber = Pipe::worker_fwk::port_activity_subscriber_ref{conn};
+	registry.remove_subscriber_subscriber = Pipe::worker_fwk::output_port_activity_subscriber_ref{conn};
 }
 
 TESTCASE(Pipe_worker_fwk_sync_client_connection_handle_error_response)
@@ -401,5 +400,5 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_handle_error_response)
 	}
 
 	EXPECT_EQ(ec.exceptions_should_be_rethrown(), true);
-	registry.remove_subscriber_subscriber = Pipe::worker_fwk::port_activity_subscriber_ref{conn};
+	registry.remove_subscriber_subscriber = Pipe::worker_fwk::output_port_activity_subscriber_ref{conn};
 }

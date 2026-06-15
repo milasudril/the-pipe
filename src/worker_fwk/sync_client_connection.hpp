@@ -34,15 +34,15 @@ namespace Pipe::worker_fwk
 		using client_activity_event_handler_registered_event = sync_fd_activity_event_handler_registred_event;
 		using client_activity_event = sync_fd_activity_event;
 
-		explicit sync_client_connection(PortActivitySubscriptionRegistry port_activity_subscriber_registry, size_t buffer_size = 65536):
+		explicit sync_client_connection(PortActivitySubscriptionRegistry output_port_activity_subscriber_registry, size_t buffer_size = 65536):
 			sync_message_channel<sync_message_channel_server_traits>{buffer_size},
-			m_port_activity_subscriber_registry{std::move(port_activity_subscriber_registry)}
+			m_output_port_activity_subscriber_registry{std::move(output_port_activity_subscriber_registry)}
 		{}
 
 		~sync_client_connection()
 		{
-			utils::unwrap(m_port_activity_subscriber_registry).remove_port_activity_subscriber(
-				port_activity_subscriber_ref{*this}
+			utils::unwrap(m_output_port_activity_subscriber_registry).remove_output_port_activity_subscriber(
+				output_port_activity_subscriber_ref{*this}
 			);
 		}
 
@@ -57,9 +57,9 @@ namespace Pipe::worker_fwk
 			worker_sync::exception_controller& ec
 		)
 		{
-			auto const subscription_id = utils::unwrap(m_port_activity_subscriber_registry).add_port_activity_subscription(
+			auto const subscription_id = utils::unwrap(m_output_port_activity_subscriber_registry).add_port_activity_subscription(
 				msg.server_portname,
-				port_activity_subscriber_ref{*this}
+				output_port_activity_subscriber_ref{*this}
 			);
 			ec.enable_exception_rethrow();
 			send(
@@ -76,9 +76,9 @@ namespace Pipe::worker_fwk
 			worker_sync::exception_controller& ec
 		)
 		{
-			utils::unwrap(m_port_activity_subscriber_registry).remove_port_activity_subscription(
+			utils::unwrap(m_output_port_activity_subscriber_registry).remove_port_activity_subscription(
 				msg.id,
-				port_activity_subscriber_ref{*this}
+				output_port_activity_subscriber_ref{*this}
 			);
 
 			ec.enable_exception_rethrow();
@@ -102,9 +102,9 @@ namespace Pipe::worker_fwk
 
 		void handle_message(worker_sync::client_ready_event event)
 		{
-			utils::unwrap(m_port_activity_subscriber_registry).notify_client_ready(
+			utils::unwrap(m_output_port_activity_subscriber_registry).notify_client_ready(
 				event.id,
-				port_activity_subscriber_ref{*this}
+				output_port_activity_subscriber_ref{*this}
 			);
 		}
 
@@ -121,7 +121,7 @@ namespace Pipe::worker_fwk
 		using sync_message_channel<sync_message_channel_server_traits>::handle_message;
 
 	private:
-		PortActivitySubscriptionRegistry m_port_activity_subscriber_registry;
+		PortActivitySubscriptionRegistry m_output_port_activity_subscriber_registry;
 	};
 
 

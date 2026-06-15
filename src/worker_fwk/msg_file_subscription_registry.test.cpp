@@ -2,7 +2,6 @@
 
 #include "./msg_file_subscription_registry.hpp"
 #include "src/utils/scope_handling.hpp"
-#include "src/worker_fwk/port_activity_subscriber.hpp"
 #include "src/worker_sync/worker_sync_msg.hpp"
 #include "testfwk/testsuite.hpp"
 #include "testfwk/validation.hpp"
@@ -245,7 +244,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_try_to_add_subscriber_ba
 	{
 		registry.add_port_activity_subscription(
 			"some_unknown_port",
-			Pipe::worker_fwk::port_activity_subscriber_ref{}
+			Pipe::worker_fwk::output_port_activity_subscriber_ref{}
 		);
 		REQUIRE_EQ(false, true);
 	}
@@ -275,7 +274,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_try_to_add_subscriber_wr
 	{
 		registry.add_port_activity_subscription(
 			"port_5",
-			Pipe::worker_fwk::port_activity_subscriber_ref{}
+			Pipe::worker_fwk::output_port_activity_subscriber_ref{}
 		);
 		REQUIRE_EQ(false, true);
 	}
@@ -306,7 +305,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_try_to_add_subcriber_map
 		fail_malloc_no = malloc_count + 1;
 		registry.add_port_activity_subscription(
 			"port_0",
-			Pipe::worker_fwk::port_activity_subscriber_ref{}
+			Pipe::worker_fwk::output_port_activity_subscriber_ref{}
 		);
 		REQUIRE_EQ(false, true);
 	}
@@ -336,7 +335,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_add_subcriber_success)
 	port_collection.expect_port_0_ready = true;
 	auto const res = registry.add_port_activity_subscription(
 		"port_0",
-		Pipe::worker_fwk::port_activity_subscriber_ref{}
+		Pipe::worker_fwk::output_port_activity_subscriber_ref{}
 	);
 
 	EXPECT_EQ(res, Pipe::worker_sync::port_activity_subscription_id{0});
@@ -359,27 +358,27 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_add_subcribers_notify_da
 	port_collection.expect_port_0_ready = true;
 	auto const res_0 = registry.add_port_activity_subscription(
 		"port_0",
-		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0}
+		Pipe::worker_fwk::output_port_activity_subscriber_ref{subscriber_0}
 	);
 	EXPECT_EQ(res_0, Pipe::worker_sync::port_activity_subscription_id{0});
 
 	port_collection.expect_port_0_ready = true;
 	auto const res_1 = registry.add_port_activity_subscription(
 		"port_0",
-		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0}
+		Pipe::worker_fwk::output_port_activity_subscriber_ref{subscriber_0}
 	);
 	EXPECT_EQ(res_1, Pipe::worker_sync::port_activity_subscription_id{1});
 
 	port_collection.expect_port_1_ready = true;
 	auto const res_2 = registry.add_port_activity_subscription(
 		"port_1",
-		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0}
+		Pipe::worker_fwk::output_port_activity_subscriber_ref{subscriber_0}
 	);
 	EXPECT_EQ(res_2, Pipe::worker_sync::port_activity_subscription_id{2});
 
 	auto const res_3 = registry.add_port_activity_subscription(
 		"port_1",
-		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_1}
+		Pipe::worker_fwk::output_port_activity_subscriber_ref{subscriber_1}
 	);
 	EXPECT_EQ(res_3, Pipe::worker_sync::port_activity_subscription_id{3});
 
@@ -411,7 +410,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_notify_client_ready_subs
 	{
 		registry.notify_client_ready(
 			Pipe::worker_sync::port_activity_subscription_id{324},
-			Pipe::worker_fwk::port_activity_subscriber_ref{}
+			Pipe::worker_fwk::output_port_activity_subscriber_ref{}
 		);
 		EXPECT_EQ(true, false);
 	}
@@ -438,14 +437,14 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_notify_client_ready)
 	port_collection.expect_port_0_ready = true;
 	auto const res_0 = registry.add_port_activity_subscription(
 		"port_0",
-		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0}
+		Pipe::worker_fwk::output_port_activity_subscriber_ref{subscriber_0}
 	);
 	EXPECT_EQ(res_0, Pipe::worker_sync::port_activity_subscription_id{0});
 
 	port_collection.expect_port_1_ready = true;
 	auto const res_1 = registry.add_port_activity_subscription(
 		"port_1",
-		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_1}
+		Pipe::worker_fwk::output_port_activity_subscriber_ref{subscriber_1}
 	);
 	EXPECT_EQ(res_1, Pipe::worker_sync::port_activity_subscription_id{1});
 
@@ -458,7 +457,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_notify_client_ready)
 	{
 		registry.notify_client_ready(
 			res_0,
-			Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_1}
+			Pipe::worker_fwk::output_port_activity_subscriber_ref{subscriber_1}
 		);
 		EXPECT_EQ(true, false);
 	}
@@ -471,7 +470,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_notify_client_ready)
 	{
 		registry.notify_client_ready(
 			res_1,
-			Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0}
+			Pipe::worker_fwk::output_port_activity_subscriber_ref{subscriber_0}
 		);
 		EXPECT_EQ(true, false);
 	}
@@ -483,13 +482,13 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_notify_client_ready)
 	port_collection.expect_port_0_ready = true;
 	registry.notify_client_ready(
 		res_0,
-		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0}
+		Pipe::worker_fwk::output_port_activity_subscriber_ref{subscriber_0}
 	);
 
 	port_collection.expect_port_1_ready = true;
 	registry.notify_client_ready(
 		res_1,
-		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_1}
+		Pipe::worker_fwk::output_port_activity_subscriber_ref{subscriber_1}
 	);
 }
 
@@ -508,7 +507,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_remove_port_activity_sub
 	{
 		registry.remove_port_activity_subscription(
 			Pipe::worker_sync::port_activity_subscription_id{324},
-			Pipe::worker_fwk::port_activity_subscriber_ref{}
+			Pipe::worker_fwk::output_port_activity_subscriber_ref{}
 		);
 		EXPECT_EQ(true, false);
 	}
@@ -535,14 +534,14 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_remove_port_activity_sub
 	port_collection.expect_port_0_ready = true;
 	auto const res_0 = registry.add_port_activity_subscription(
 		"port_0",
-		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0}
+		Pipe::worker_fwk::output_port_activity_subscriber_ref{subscriber_0}
 	);
 	EXPECT_EQ(res_0, Pipe::worker_sync::port_activity_subscription_id{0});
 
 	port_collection.expect_port_1_ready = true;
 	auto const res_1 = registry.add_port_activity_subscription(
 		"port_1",
-		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_1}
+		Pipe::worker_fwk::output_port_activity_subscriber_ref{subscriber_1}
 	);
 	EXPECT_EQ(res_1, Pipe::worker_sync::port_activity_subscription_id{1});
 
@@ -555,7 +554,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_remove_port_activity_sub
 	{
 		registry.remove_port_activity_subscription(
 			res_0,
-			Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_1}
+			Pipe::worker_fwk::output_port_activity_subscriber_ref{subscriber_1}
 		);
 		EXPECT_EQ(true, false);
 	}
@@ -568,7 +567,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_remove_port_activity_sub
 	{
 		registry.remove_port_activity_subscription(
 			res_1,
-			Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0}
+			Pipe::worker_fwk::output_port_activity_subscriber_ref{subscriber_0}
 		);
 		EXPECT_EQ(true, false);
 	}
@@ -580,17 +579,17 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_remove_port_activity_sub
 	port_collection.expect_port_0_ready = true;
 	registry.remove_port_activity_subscription(
 		res_0,
-		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0}
+		Pipe::worker_fwk::output_port_activity_subscriber_ref{subscriber_0}
 	);
 
 	port_collection.expect_port_1_ready = true;
 	registry.remove_port_activity_subscription(
 		res_1,
-		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_1}
+		Pipe::worker_fwk::output_port_activity_subscriber_ref{subscriber_1}
 	);
 }
 
-TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_remove_port_activity_subscriber)
+TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_remove_output_port_activity_subscriber)
 {
 	Pipe::utils::at_scope_exit _{
 		[saved_offset = malloc_offset](){
@@ -607,33 +606,33 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_remove_port_activity_sub
 	port_collection.expect_port_0_ready = true;
 	auto const res_0 = registry.add_port_activity_subscription(
 		"port_0",
-		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0}
+		Pipe::worker_fwk::output_port_activity_subscriber_ref{subscriber_0}
 	);
 	EXPECT_EQ(res_0, Pipe::worker_sync::port_activity_subscription_id{0});
 
 	port_collection.expect_port_1_ready = true;
 	auto const res_1 = registry.add_port_activity_subscription(
 		"port_1",
-		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0}
+		Pipe::worker_fwk::output_port_activity_subscriber_ref{subscriber_0}
 	);
 	EXPECT_EQ(res_1, Pipe::worker_sync::port_activity_subscription_id{1});
 
 	port_collection.expect_port_2_ready = true;
 	auto const res_2 = registry.add_port_activity_subscription(
 		"port_2",
-		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0}
+		Pipe::worker_fwk::output_port_activity_subscriber_ref{subscriber_0}
 	);
 	EXPECT_EQ(res_2, Pipe::worker_sync::port_activity_subscription_id{2});
 
 	auto const res_3 = registry.add_port_activity_subscription(
 		"port_2",
-		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_1}
+		Pipe::worker_fwk::output_port_activity_subscriber_ref{subscriber_1}
 	);
 	EXPECT_EQ(res_3, Pipe::worker_sync::port_activity_subscription_id{3});
 
 	auto const res_4 = registry.add_port_activity_subscription(
 		"port_2",
-		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_1}
+		Pipe::worker_fwk::output_port_activity_subscriber_ref{subscriber_1}
 	);
 	EXPECT_EQ(res_4, Pipe::worker_sync::port_activity_subscription_id{4});
 
@@ -655,14 +654,12 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_remove_port_activity_sub
 	registry.notify_data_ready(Pipe::worker_fwk::port_id{4});
 
 	my_activity_subscriber dummy{};
-	registry.remove_port_activity_subscriber(Pipe::worker_fwk::port_activity_subscriber_ref{dummy});
-
-	puts("--- Removing subscriber");
-	registry.remove_port_activity_subscriber(Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_0});
+	registry.remove_output_port_activity_subscriber(Pipe::worker_fwk::output_port_activity_subscriber_ref{dummy});
+	registry.remove_output_port_activity_subscriber(Pipe::worker_fwk::output_port_activity_subscriber_ref{subscriber_0});
 
 	port_collection.expect_port_2_ready = true;
 	registry.remove_port_activity_subscription(
 		res_3,
-		Pipe::worker_fwk::port_activity_subscriber_ref{subscriber_1}
+		Pipe::worker_fwk::output_port_activity_subscriber_ref{subscriber_1}
 	);
 }

@@ -14,8 +14,8 @@ namespace Pipe::worker_fwk
 	class sync_server
 	{
 	public:
-		explicit sync_server(PortActivitySubscriptionRegistry port_activity_subscriber_registry):
-			m_port_activity_subscriber_registry{std::move(port_activity_subscriber_registry)}
+		explicit sync_server(PortActivitySubscriptionRegistry output_port_activity_subscriber_registry):
+			m_output_port_activity_subscriber_registry{std::move(output_port_activity_subscriber_registry)}
 		{}
 
 		using fd_tag = os_services::ipc::server_socket_tag<SOCK_STREAM, sockaddr_un>;
@@ -34,7 +34,7 @@ namespace Pipe::worker_fwk
 			{
 				std::ignore = m_registration.event_handler_store->
 					template add<typename sync_client_connection<PortActivitySubscriptionRegistry>::client_activity>(
-					sync_client_connection{m_port_activity_subscriber_registry},
+					sync_client_connection{m_output_port_activity_subscriber_registry},
 					accept(m_registration.fd),
 					Pipe::os_services::fd::activity_status::read
 				);
@@ -42,10 +42,10 @@ namespace Pipe::worker_fwk
 		}
 
 		PortActivitySubscriptionRegistry const& get_registry() const
-		{ return m_port_activity_subscriber_registry; }
+		{ return m_output_port_activity_subscriber_registry; }
 
 	private:
-		PortActivitySubscriptionRegistry m_port_activity_subscriber_registry;
+		PortActivitySubscriptionRegistry m_output_port_activity_subscriber_registry;
 		activity_event_handler_registered_event m_registration;
 	};
 
@@ -62,7 +62,7 @@ namespace Pipe::worker_fwk
 	template<port_activity_subscription_registry PortActivitySubscriptionRegistry>
 	inline server_info<PortActivitySubscriptionRegistry> make_sync_server(
 		os_services::fd::activity_event_handler_store& event_handler_store,
-		PortActivitySubscriptionRegistry&& port_activity_subscriber_registry
+		PortActivitySubscriptionRegistry&& output_port_activity_subscriber_registry
 	)
 	{
 		using sync_server_type = sync_server<PortActivitySubscriptionRegistry>;
@@ -70,7 +70,7 @@ namespace Pipe::worker_fwk
 		auto socket_name = utils::random_printable_ascii_string(os_services::ipc::abstract_sunpath_maxlength);
 		return server_info<PortActivitySubscriptionRegistry>{
 			.event_handler = event_handler_store.add<typename sync_server_type::server_socket_activity>(
-				sync_server_type{std::forward<PortActivitySubscriptionRegistry>(port_activity_subscriber_registry)},
+				sync_server_type{std::forward<PortActivitySubscriptionRegistry>(output_port_activity_subscriber_registry)},
 				os_services::ipc::make_server_socket<SOCK_STREAM>(
 					os_services::ipc::make_abstract_sockaddr_un(socket_name),
 					1024

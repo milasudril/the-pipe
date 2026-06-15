@@ -1,4 +1,4 @@
-//@	{"target":{"name":"port_activity_subscriber.test"}}
+//@	{"target":{"name":"output_port_activity_subscriber.test"}}
 
 #include "./port_activity_subscriber.hpp"
 
@@ -17,7 +17,7 @@ TESTCASE(Pipe_worker_fwk_port_id_test)
 
 namespace
 {
-	struct port_activity_subscriber
+	struct output_port_activity_subscriber
 	{
 		std::optional<Pipe::worker_sync::port_activity_subscription_id> expected_subscription_id;
 		void notify_data_ready(Pipe::worker_sync::port_activity_subscription_id id)
@@ -28,21 +28,21 @@ namespace
 	};
 }
 
-TESTCASE(Pipe_worker_fwk_port_activity_subscriber_ref_equality)
+TESTCASE(Pipe_worker_fwk_output_port_activity_subscriber_ref_equality)
 {
-	port_activity_subscriber my_subscriber_a;
-	port_activity_subscriber my_subscriber_b;
-	Pipe::worker_fwk::port_activity_subscriber_ref subscriber_ref_a{my_subscriber_a};
-	Pipe::worker_fwk::port_activity_subscriber_ref subscriber_ref_b{my_subscriber_b};
+	output_port_activity_subscriber my_subscriber_a;
+	output_port_activity_subscriber my_subscriber_b;
+	Pipe::worker_fwk::output_port_activity_subscriber_ref subscriber_ref_a{my_subscriber_a};
+	Pipe::worker_fwk::output_port_activity_subscriber_ref subscriber_ref_b{my_subscriber_b};
 	auto const subscriber_ref_c = subscriber_ref_a;
 	EXPECT_NE(subscriber_ref_a, subscriber_ref_b);
 	EXPECT_EQ(subscriber_ref_a, subscriber_ref_c);
 }
 
-TESTCASE(Pipe_worker_fwk_port_activity_subscriber_notify_data_ready)
+TESTCASE(Pipe_worker_fwk_output_port_activity_subscriber_notify_data_ready)
 {
-	port_activity_subscriber my_subscriber;
-	Pipe::worker_fwk::port_activity_subscriber_ref subscriber_ref{my_subscriber};
+	output_port_activity_subscriber my_subscriber;
+	Pipe::worker_fwk::output_port_activity_subscriber_ref subscriber_ref{my_subscriber};
 	my_subscriber.expected_subscription_id = Pipe::worker_sync::port_activity_subscription_id{435};
 	subscriber_ref.notify_data_ready(Pipe::worker_sync::port_activity_subscription_id{435});
 }

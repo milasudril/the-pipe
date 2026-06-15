@@ -32,19 +32,19 @@ namespace Pipe::worker_fwk
 	};
 
 	template<class T>
-	concept port_activity_subscriber = requires(T& obj, worker_sync::port_activity_subscription_id id)
+	concept output_port_activity_subscriber = requires(T& obj, worker_sync::port_activity_subscription_id id)
 	{
 		{ obj.notify_data_ready(id) } -> std::same_as<void>;
 	};
 
-	class port_activity_subscriber_ref
+	class output_port_activity_subscriber_ref
 	{
 	public:
-		port_activity_subscriber_ref() = default;
+		output_port_activity_subscriber_ref() = default;
 
-		template<port_activity_subscriber T>
-		requires(!std::is_same_v<std::remove_cvref_t<T>, port_activity_subscriber_ref>)
-		explicit port_activity_subscriber_ref(T& object):
+		template<output_port_activity_subscriber T>
+		requires(!std::is_same_v<std::remove_cvref_t<T>, output_port_activity_subscriber_ref>)
+		explicit output_port_activity_subscriber_ref(T& object):
 			m_object{&object},
 			m_notify_data_ready{
 				[](void* object, worker_sync::port_activity_subscription_id id) static {
@@ -56,8 +56,8 @@ namespace Pipe::worker_fwk
 		void notify_data_ready(worker_sync::port_activity_subscription_id id) const
 		{ m_notify_data_ready(m_object, id); }
 
-		bool operator==(port_activity_subscriber_ref const&) const = default;
-		bool operator!=(port_activity_subscriber_ref const&) const = default;
+		bool operator==(output_port_activity_subscriber_ref const&) const = default;
+		bool operator!=(output_port_activity_subscriber_ref const&) const = default;
 
 	private:
 		void* m_object = nullptr;
@@ -69,13 +69,13 @@ namespace Pipe::worker_fwk
 		T obj,
 		std::string const& str,
 		worker_sync::port_activity_subscription_id subscription,
-		port_activity_subscriber_ref subscriber
+		output_port_activity_subscriber_ref subscriber
 	)
 	{
 		{ utils::unwrap(obj).add_port_activity_subscription(str, subscriber) } -> std::same_as<worker_sync::port_activity_subscription_id>;
 		{ utils::unwrap(obj).remove_port_activity_subscription(subscription, subscriber) } -> std::same_as<void>;
 		{ utils::unwrap(obj).notify_client_ready(subscription, subscriber) } -> std::same_as<void>;
-		{ utils::unwrap(obj).remove_port_activity_subscriber(subscriber) } -> std::same_as<void>;
+		{ utils::unwrap(obj).remove_output_port_activity_subscriber(subscriber) } -> std::same_as<void>;
 	};
 }
 #endif

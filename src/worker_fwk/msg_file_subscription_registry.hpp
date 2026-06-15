@@ -35,7 +35,7 @@ namespace Pipe::worker_fwk
 
 		using subscription_type = worker_sync::output_port_activity_subscription<
 			output_port,
-			port_activity_subscriber_ref
+			output_port_activity_subscriber_ref
 		>;
 
 		struct output_port:public worker_sync::output_port<subscription_type*>
@@ -67,19 +67,19 @@ namespace Pipe::worker_fwk
 
 		worker_sync::port_activity_subscription_id add_port_activity_subscription(
 			std::string const& port_name,
-			port_activity_subscriber_ref subscriber
+			output_port_activity_subscriber_ref subscriber
 		);
 
 		void remove_port_activity_subscription(
 			worker_sync::port_activity_subscription_id id,
-			port_activity_subscriber_ref subscriber
+			output_port_activity_subscriber_ref subscriber
 		);
 
-		void remove_port_activity_subscriber(port_activity_subscriber_ref subscriber);
+		void remove_output_port_activity_subscriber(output_port_activity_subscriber_ref subscriber);
 
 		void notify_client_ready(
 			worker_sync::port_activity_subscription_id id,
-			port_activity_subscriber_ref subscriber
+			output_port_activity_subscriber_ref subscriber
 		);
 
 		void notify_data_ready(port_id id);

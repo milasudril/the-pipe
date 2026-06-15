@@ -8,7 +8,7 @@
 Pipe::worker_sync::port_activity_subscription_id
 Pipe::worker_fwk::msg_file_subscription_registry::add_port_activity_subscription(
 	std::string const& port_name,
-	port_activity_subscriber_ref subscriber
+	output_port_activity_subscriber_ref subscriber
 )
 {
 	auto const port = [&](){
@@ -43,7 +43,7 @@ Pipe::worker_fwk::msg_file_subscription_registry::add_port_activity_subscription
 
 void Pipe::worker_fwk::msg_file_subscription_registry::remove_port_activity_subscription(
 	worker_sync::port_activity_subscription_id id,
-	port_activity_subscriber_ref subscriber
+	output_port_activity_subscriber_ref subscriber
 )
 {
 	auto const i = m_subscriptions.find(id);
@@ -52,8 +52,8 @@ void Pipe::worker_fwk::msg_file_subscription_registry::remove_port_activity_subs
 	m_subscriptions.erase(i);
 }
 
-void Pipe::worker_fwk::msg_file_subscription_registry::remove_port_activity_subscriber(
-	port_activity_subscriber_ref subscriber
+void Pipe::worker_fwk::msg_file_subscription_registry::remove_output_port_activity_subscriber(
+	output_port_activity_subscriber_ref subscriber
 )
 {
 	utils::flatmap_erase_if(
@@ -66,7 +66,7 @@ void Pipe::worker_fwk::msg_file_subscription_registry::remove_port_activity_subs
 
 void Pipe::worker_fwk::msg_file_subscription_registry::notify_client_ready(
 	worker_sync::port_activity_subscription_id id,
-	port_activity_subscriber_ref subscriber
+	output_port_activity_subscriber_ref subscriber
 )
 {
 	auto const i = m_subscriptions.find(id);
