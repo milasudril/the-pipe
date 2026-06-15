@@ -1,6 +1,8 @@
 #ifndef PIPE_WORKER_FWK_SYNC_CLIENT_HPP
 #define PIPE_WORKER_FWK_SYNC_CLIENT_HPP
 
+#include "./port_activity_subscriber.hpp"
+
 #include "src/os_services/ipc/socket.hpp"
 #include "src/os_services/ipc/unix_domain_socket.hpp"
 #include "src/os_services/fd/activity_event_handler_store.hpp"
@@ -22,19 +24,19 @@ namespace Pipe::worker_fwk
 		using sync_fd_activity_event = os_services::fd::activity_event<client_activity, fd_tag>;
 	};
 
-	template<class MsgFileSubscriber>
+	template<input_port_activity_subscriber InputPortActivitySubscriber>
 	class sync_client:
 		public sync_message_channel<sync_message_channel_client_traits>,
 		public sync_message_channel_client_traits
 	{
 	public:
-		explicit sync_client(MsgFileSubscriber subscriber, size_t buffer_size):
+		explicit sync_client(InputPortActivitySubscriber subscriber, size_t buffer_size):
 			sync_message_channel{buffer_size},
 			m_subscriber{std::move(subscriber)}
 		{ }
 
 		~sync_client()
-		{ utils::unwrap(m_subscriber).sync_client_lost_connection_to_server(static_cast<void*>(this)); }
+		{ utils::unwrap(m_subscriber).sync_client_lost_connection_to_server(static_cast<void const*>(this)); }
 
 		void handle_response(
 			worker_sync::error_response const& err,
@@ -125,7 +127,7 @@ namespace Pipe::worker_fwk
 		using sync_message_channel<sync_message_channel_client_traits>::handle_message;
 
 	private:
-		MsgFileSubscriber m_subscriber;
+		InputPortActivitySubscriber m_subscriber;
 		Pipe::worker_sync::transaction_id m_current_transaction_id{0};
 	};
 
@@ -134,15 +136,15 @@ namespace Pipe::worker_fwk
 		os_services::fd::event_handler_id event_handler_id;
 	};
 
-	template<class MsgFileSubscriber>
+	template<class InputPortActivitySubscriber>
 	inline client_info make_sync_client(
 		os_services::fd::activity_event_handler_store& event_handler_store,
-		MsgFileSubscriber subscriber,
+		InputPortActivitySubscriber subscriber,
 		std::string const& socket_name
 	)
 	{
 		return client_info{
-			.event_handler_id = event_handler_store.add<sync_client<MsgFileSubscriber>::client_activity>(
+			.event_handler_id = event_handler_store.add<sync_client<InputPortActivitySubscriber>::client_activity>(
 				sync_client{std::move(subscriber), 65536},
 				os_services::ipc::make_connection<SOCK_STREAM>(
 					os_services::ipc::make_abstract_sockaddr_un(socket_name)

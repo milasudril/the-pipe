@@ -3,6 +3,7 @@
 
 #include "src/worker_sync/worker_sync_msg.hpp"
 #include "src/utils/unwrap.hpp"
+#include <concepts>
 
 namespace Pipe::worker_fwk
 {
@@ -76,6 +77,20 @@ namespace Pipe::worker_fwk
 		{ utils::unwrap(obj).remove_port_activity_subscription(subscription, subscriber) } -> std::same_as<void>;
 		{ utils::unwrap(obj).notify_client_ready(subscription, subscriber) } -> std::same_as<void>;
 		{ utils::unwrap(obj).remove_output_port_activity_subscriber(subscriber) } -> std::same_as<void>;
+	};
+
+	template<class T>
+	concept input_port_activity_subscriber = requires(
+		T obj,
+		void const* conn_ptr,
+		worker_sync::port_activity_subscription_id subscription_id,
+		worker_sync::transaction_id tx_id
+	)
+	{
+		{ utils::unwrap(obj).sync_client_lost_connection_to_server(conn_ptr) } -> std::same_as<void>;
+		{ utils::unwrap(obj).notify_data_ready(subscription_id) } -> std::same_as<void>;
+		{ utils::unwrap(obj).subscription_completed(tx_id, subscription_id) } -> std::same_as<void>;
+		{ utils::unwrap(obj).unsubscription_completed(tx_id) } -> std::same_as<void>;
 	};
 }
 #endif
