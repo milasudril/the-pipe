@@ -67,18 +67,26 @@ namespace Pipe::worker_fwk
 			worker_sync::exception_controller& ec
 		)
 		{
+			auto transaction = take_transaction(tx_id);
+			auto const tx = std::get_if<typename subscriber_type::subscription_transaction>(&transaction);
+			if(tx == nullptr)
+			{ throw std::runtime_error{"Unexpected transaction type"}; }
 			ec.enable_exception_rethrow();
-			utils::unwrap(m_subscriber).subscription_completed(tx_id, response.id);
+			utils::unwrap(m_subscriber).subscription_completed(std::move(*tx), response.id);
 		}
 
 		void handle_response(
-			worker_sync::port_activity_unsubscription_response const& response,
+			worker_sync::port_activity_unsubscription_response const&,
 			worker_sync::transaction_id tx_id,
 			worker_sync::exception_controller& ec
 		)
 		{
+			auto transaction = take_transaction(tx_id);
+			auto const tx = std::get_if<typename subscriber_type::unsubscription_transaction>(&transaction);
+			if(tx == nullptr)
+			{ throw std::runtime_error{"Unexpected transaction type"}; }
 			ec.enable_exception_rethrow();
-			utils::unwrap(m_subscriber).unsubscription_completed(tx_id);
+			utils::unwrap(m_subscriber).unsubscription_completed(std::move(*tx));
 		}
 
 		void notify_client_ready(worker_sync::port_activity_subscription_id id)

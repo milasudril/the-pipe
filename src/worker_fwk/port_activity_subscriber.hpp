@@ -92,8 +92,17 @@ namespace Pipe::worker_fwk
 
 		{ utils::unwrap(obj).sync_client_lost_connection_to_server(conn_ptr) } -> std::same_as<void>;
 		{ utils::unwrap(obj).notify_data_ready(subscription_id) } -> std::same_as<void>;
-		{ utils::unwrap(obj).subscription_completed(tx_id, subscription_id) } -> std::same_as<void>;
-		{ utils::unwrap(obj).unsubscription_completed(tx_id) } -> std::same_as<void>;
+		{
+			utils::unwrap(obj).subscription_completed(
+				std::declval<typename std::remove_cvref_t<decltype(utils::unwrap(obj))>::subscription_transaction>(),
+				subscription_id
+			)
+		} -> std::same_as<void>;
+		{
+			utils::unwrap(obj).unsubscription_completed(
+				std::declval<typename std::remove_cvref_t<decltype(utils::unwrap(obj))>::unsubscription_transaction>()
+			)
+		} -> std::same_as<void>;
 	};
 }
 #endif
