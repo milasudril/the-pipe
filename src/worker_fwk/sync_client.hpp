@@ -11,6 +11,8 @@
 #include "src/worker_fwk/sync_message_channel.hpp"
 #include "src/worker_sync/worker_sync_msg.hpp"
 
+#include <type_traits>
+
 namespace Pipe::worker_fwk
 {
 	struct sync_message_channel_client_traits
@@ -30,6 +32,10 @@ namespace Pipe::worker_fwk
 		public sync_message_channel_client_traits
 	{
 	public:
+		using subscriber_type = typename std::remove_cvref_t<
+			decltype(utils::unwrap(std::declval<InputPortActivitySubscriber>()))
+		>;
+
 		explicit sync_client(InputPortActivitySubscriber subscriber, size_t buffer_size = 65536):
 			sync_message_channel{buffer_size},
 			m_subscriber{std::move(subscriber)}
@@ -84,44 +90,52 @@ namespace Pipe::worker_fwk
 			);
 		}
 
-		auto subscribe_to_port(std::string const& server_portname)
+		void subscribe_to_port(
+			std::string const& server_portname,
+			typename subscriber_type::subscription_transaction&& transaction
+		)
 		{
-			auto const ret = m_current_transaction_id.next();
+			auto const tx_id = m_current_transaction_id.next();
 			utils::maybe_at_scope_exit restore_tx_id{
-				[this, ret]() {
-					m_current_transaction_id = ret;
+				[this, tx_id]() {
+					m_current_transaction_id = tx_id;
 				}
 			};
+
+			m_outstanding_transactions.push_back(std::pair{tx_id, std::move(transaction)});
 
 			send(
 				Pipe::worker_sync::port_activity_subscription_request{
 					.server_portname = server_portname
 				},
-				ret
+				tx_id
 			);
 
 			restore_tx_id.reset();
-			return ret;
 		}
 
-		auto unsubscribe_from_port(worker_sync::port_activity_subscription_id id)
+		void unsubscribe_from_port(
+			worker_sync::port_activity_subscription_id id,
+			typename subscriber_type::unsubscription_transaction&& transaction
+		)
 		{
-			auto const ret = m_current_transaction_id.next();
+			auto const tx_id = m_current_transaction_id.next();
 			utils::maybe_at_scope_exit restore_tx_id{
-				[this, ret]() {
-					m_current_transaction_id = ret;
+				[this, tx_id]() {
+					m_current_transaction_id = tx_id;
 				}
 			};
+
+			m_outstanding_transactions.push_back(std::pair{tx_id, std::move(transaction)});
 
 			send(
 				Pipe::worker_sync::port_activity_unsubscription{
 					.id = id
 				},
-				ret
+				tx_id
 			);
 
 			restore_tx_id.reset();
-			return ret;
 		}
 
 		using sync_message_channel<sync_message_channel_client_traits>::handle_message;
@@ -129,6 +143,16 @@ namespace Pipe::worker_fwk
 	private:
 		InputPortActivitySubscriber m_subscriber;
 		Pipe::worker_sync::transaction_id m_current_transaction_id{0};
+
+		std::deque<
+			std::pair<
+				Pipe::worker_sync::transaction_id,
+				std::variant<
+					typename subscriber_type::subscription_transaction,
+					typename subscriber_type::unsubscription_transaction
+				>
+			>
+		> m_outstanding_transactions;
 	};
 
 	template<class InputPortActivitySubscriber>
