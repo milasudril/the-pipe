@@ -56,6 +56,30 @@ TESTCASE(Pipe_worker_fwk_sync_client_construct)
 	subscriber.expected_conn_lost_ptr = &client;
 }
 
+TESTCASE(Pipe_worker_fwk_sync_client_handle_error_response_without_tx_id)
+{
+	input_port_activity_subscriber subscriber;
+	Pipe::worker_fwk::sync_client client{std::ref(subscriber)};
+	Pipe::worker_sync::exception_controller ec;
+	try
+	{
+		client.handle_response(
+			Pipe::worker_sync::error_response{
+				.message = "The error message"
+			},
+			Pipe::worker_sync::transaction_id{},
+			ec
+		);
+		EXPECT_EQ(false, true);
+	}
+	catch(std::exception const& err)
+	{
+		EXPECT_EQ(err.what(), std::string_view{"The error message"});
+	}
+	subscriber.expected_conn_lost_ptr = &client;
+	EXPECT_EQ(ec.exceptions_should_be_rethrown(), true);
+}
+
 TESTCASE(Pipe_worker_fwk_sync_client_handle_error_response_no_ongoing_transaction)
 {
 	input_port_activity_subscriber subscriber;
