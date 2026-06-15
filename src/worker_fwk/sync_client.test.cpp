@@ -1,8 +1,10 @@
 //@	{"target":{"name":"sync_client.test"}}
 
 #include "./sync_client.hpp"
+#include "src/os_services/fd/file_descriptor.hpp"
 #include "src/worker_sync/worker_sync_msg.hpp"
 #include "src/os_services/ipc/socket_pair.hpp"
+#include "src/utils/utils.hpp"
 
 #include <testfwk/testfwk.hpp>
 
@@ -94,15 +96,36 @@ namespace
 		}
 
 		std::pair<void*, Pipe::os_services::fd::event_handler_id> do_add(
-			event_handler_info const&,
-			Pipe::os_services::fd::file_descriptor,
-			Pipe::os_services::fd::activity_status
+			event_handler_info const& event_handler,
+			Pipe::os_services::fd::file_descriptor fd,
+			Pipe::os_services::fd::activity_status activity_status
 		) override
 		{
-			throw std::runtime_error{"Unexpected call to do_add"};
+			REQUIRE_EQ(expected_do_add_call.has_value(), true);
+			expected_do_add_call->registred_fd = std::move(fd);
+			EXPECT_EQ(expected_do_add_call->initial_listening_status, activity_status);
+
+			saved_event_handler.reset();
+
+			saved_event_handler_buffer = std::make_unique<std::byte[]>(event_handler.object_size);
+			event_handler.construct_event_handler_at(
+				Pipe::os_services::fd::activity_event_handler_store::dest_object_location{
+					.address = saved_event_handler_buffer.get()
+				},
+				event_handler.object_address
+			);
+
+			saved_event_handler = std::unique_ptr<void, void(*)(void*)>{
+				saved_event_handler_buffer.get(),
+				event_handler.destroy_event_handler_at
+			};
+
+			return std::pair{saved_event_handler.get(), expected_do_add_call->retval};
 		}
 
 		std::optional<Pipe::os_services::fd::event_handler_id> expected_remove_id;
+		std::unique_ptr<std::byte[]> saved_event_handler_buffer;
+		std::unique_ptr<void, void(*)(void*)> saved_event_handler{nullptr, nullptr};
 
 		struct update_listening_status_call
 		{
@@ -150,7 +173,6 @@ TESTCASE(Pipe_worker_fwk_sync_client_construct)
 {
 	input_port_activity_subscriber subscriber;
 	Pipe::worker_fwk::sync_client client{std::ref(subscriber)};
-	subscriber.expected_conn_lost_ptr = &client;
 }
 
 TESTCASE(Pipe_worker_fwk_sync_client_handle_error_response_without_tx_id)
@@ -173,7 +195,6 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_error_response_without_tx_id)
 	{
 		EXPECT_EQ(err.what(), std::string_view{"The error message"});
 	}
-	subscriber.expected_conn_lost_ptr = &client;
 	EXPECT_EQ(ec.exceptions_should_be_rethrown(), true);
 }
 
@@ -197,7 +218,6 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_error_response_no_ongoing_transactio
 	{
 		EXPECT_EQ(err.what(), std::string_view{"Client has no outstanding transactions"});
 	}
-	subscriber.expected_conn_lost_ptr = &client;
 	EXPECT_EQ(ec.exceptions_should_be_rethrown(), false);
 }
 
@@ -228,7 +248,6 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_error_response_existing_transaction)
 	{
 		EXPECT_EQ(err.what(), std::string_view{"The error message"});
 	}
-	subscriber.expected_conn_lost_ptr = &client;
 	EXPECT_EQ(ec.exceptions_should_be_rethrown(), true);
 }
 
@@ -242,7 +261,6 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_data_ready_event)
 			.id = Pipe::worker_sync::port_activity_subscription_id{3}
 		}
 	);
-	subscriber.expected_conn_lost_ptr = &client;
 }
 
 TESTCASE(Pipe_worker_fwk_sync_client_handle_subscription_response_no_transaction)
@@ -266,8 +284,6 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_subscription_response_no_transaction
 	{ EXPECT_EQ(err.what(), std::string_view{"Client has no outstanding transactions"}); }
 
 	EXPECT_EQ(ec.exceptions_should_be_rethrown(), false);
-
-	subscriber.expected_conn_lost_ptr = &client;
 }
 
 TESTCASE(Pipe_worker_fwk_sync_client_handle_subscription_response_wrong_transaction_type)
@@ -296,8 +312,6 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_subscription_response_wrong_transact
 	{ EXPECT_EQ(err.what(), std::string_view{"Unexpected transaction type"}); }
 
 	EXPECT_EQ(ec.exceptions_should_be_rethrown(), false);
-
-	subscriber.expected_conn_lost_ptr = &client;
 }
 
 TESTCASE(Pipe_worker_fwk_sync_client_handle_subscription_response)
@@ -322,8 +336,6 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_subscription_response)
 	);
 
 	EXPECT_EQ(ec.exceptions_should_be_rethrown(), true);
-
-	subscriber.expected_conn_lost_ptr = &client;
 }
 
 TESTCASE(Pipe_worker_fwk_sync_client_handle_unsubscription_response_no_transaction)
@@ -347,8 +359,6 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_unsubscription_response_no_transacti
 	{ EXPECT_EQ(err.what(), std::string_view{"Client has no outstanding transactions"}); }
 
 	EXPECT_EQ(ec.exceptions_should_be_rethrown(), false);
-
-	subscriber.expected_conn_lost_ptr = &client;
 }
 
 TESTCASE(Pipe_worker_fwk_sync_client_handle_unsubscription_response_wrong_transaction_type)
@@ -377,8 +387,6 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_unsubscription_response_wrong_transa
 	{ EXPECT_EQ(err.what(), std::string_view{"Unexpected transaction type"}); }
 
 	EXPECT_EQ(ec.exceptions_should_be_rethrown(), false);
-
-	subscriber.expected_conn_lost_ptr = &client;
 }
 
 TESTCASE(Pipe_worker_fwk_sync_client_handle_unsubscription_response)
@@ -402,8 +410,6 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_unsubscription_response)
 	);
 
 	EXPECT_EQ(ec.exceptions_should_be_rethrown(), true);
-
-	subscriber.expected_conn_lost_ptr = &client;
 }
 
 TESTCASE(Pipe_worker_fwk_sync_client_notify_client_ready)
@@ -579,8 +585,6 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_subscription_response_nonexisting_tr
 	{ EXPECT_EQ(err.what(), std::string_view{"Client has no matching ongoing transaction"}); }
 
 	EXPECT_EQ(ec.exceptions_should_be_rethrown(), false);
-
-	subscriber.expected_conn_lost_ptr = &client;
 }
 
 
@@ -639,6 +643,76 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_subscription_response_transactions_o
 	{ EXPECT_EQ(err.what(), std::string_view{"Client has no outstanding transactions"}); }
 
 	EXPECT_EQ(ec.exceptions_should_be_rethrown(), false);
+}
 
-	subscriber.expected_conn_lost_ptr = &client;
+TESTCASE(Pipe_worker_fwk_make_sync_client)
+{
+	input_port_activity_subscriber subscriber;
+	my_event_handler_registry eh_registry;
+
+	auto const socket_name = Pipe::utils::random_printable_ascii_string(
+		Pipe::os_services::ipc::abstract_sunpath_maxlength
+	);
+	auto const server_socket = Pipe::os_services::ipc::make_server_socket<SOCK_STREAM>(
+		Pipe::os_services::ipc::make_abstract_sockaddr_un(socket_name),
+		1024
+	);
+	eh_registry.expected_do_add_call = my_event_handler_registry::do_add_call{
+		Pipe::os_services::fd::activity_status::read,
+		Pipe::os_services::fd::file_descriptor{},
+		Pipe::os_services::fd::event_handler_id{324}
+	};
+	auto const result = Pipe::worker_fwk::make_sync_client(eh_registry, std::ref(subscriber), socket_name);
+	EXPECT_EQ(result.second, Pipe::os_services::fd::event_handler_id{324});
+
+	eh_registry.expected_update_listening_status_call = my_event_handler_registry::update_listening_status_call{
+		.handle = Pipe::os_services::fd::saved_event_handler_ref{},
+		.new_status = Pipe::os_services::fd::activity_status::read_or_write
+	};
+	result.first.get().handle_event(
+		sync_client::sync_fd_activity_event_handler_registred_event{
+			.fd = Pipe::os_services::fd::tagged_file_descriptor_ref<
+				Pipe::os_services::ipc::connected_socket_tag<SOCK_STREAM, sockaddr_un>
+			>(eh_registry.expected_do_add_call->registred_fd.get().native_handle()),
+			.id = Pipe::os_services::fd::event_handler_id{345},
+			.event_handler = {},
+			.event_handler_store = &eh_registry,
+		}
+	);
+
+	subscriber.expected_conn_lost_ptr = &result.first.get();
+
+	auto const server_fd = accept(server_socket.get());
+	{
+		auto const fd = server_fd.get().native_handle();
+		auto const flags = ::fcntl(fd, F_GETFL);
+		assert(flags != -1);
+		::fcntl(fd, F_SETFL, O_NONBLOCK|flags);
+	}
+
+	result.first.get().subscribe_to_port(
+		"port_name",
+		input_port_activity_subscriber::subscription_transaction{}
+	);
+	EXPECT_EQ(result.first.get().is_connected(), true);
+		eh_registry.expected_update_listening_status_call = my_event_handler_registry::update_listening_status_call{
+		.handle = Pipe::os_services::fd::saved_event_handler_ref{},
+		.new_status = Pipe::os_services::fd::activity_status::read
+	};
+	std::ignore = result.first.get().send_pending_messages();
+	auto const header = receive_message<Pipe::worker_sync::msg_header, 16>(server_fd.get());
+	EXPECT_EQ(header.tx_id, Pipe::worker_sync::transaction_id{0});
+	EXPECT_EQ(header.msg_id,
+		(
+			Pipe::utils::variant_index_v<
+				Pipe::worker_sync::port_activity_subscription_request,
+				Pipe::worker_sync::client_to_server_message
+			>
+		)
+	);
+
+	auto const body = receive_message<Pipe::worker_sync::port_activity_subscription_request, 17>(
+		server_fd.get()
+	);
+	EXPECT_EQ(body.server_portname, "port_name");
 }

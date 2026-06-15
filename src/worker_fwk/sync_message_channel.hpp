@@ -46,13 +46,13 @@ namespace Pipe::worker_fwk
 			auto const fd = reg_event.fd.native_handle();
 			auto const flags = ::fcntl(fd, F_GETFL);
 			assert(flags != -1);
-			::fcntl(reg_event.fd.native_handle(), F_SETFL, O_NONBLOCK|flags);
+			::fcntl(fd, F_SETFL, O_NONBLOCK|flags);
 			m_registration = reg_event;
 
 			if(!m_msgs_to_send.empty())
 			{ enable_write_listening(); }
-
 		}
+
 		enum class io_status{ok, operation_would_have_blocked, remote_endpoint_closed};
 
 		template<class Self>
@@ -239,6 +239,9 @@ namespace Pipe::worker_fwk
 
 		size_t num_messages_to_send() const
 		{ return std::size(m_msgs_to_send)/2; }
+
+		bool is_connected() const
+		{ return m_registration.fd != nullptr; }
 
 	protected:
 		void handle_message(worker_sync::msg_header header)

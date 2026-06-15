@@ -44,7 +44,15 @@ namespace Pipe::worker_fwk
 		{ }
 
 		~sync_client()
-		{ utils::unwrap(m_subscriber).sync_client_lost_connection_to_server(static_cast<void const*>(this)); }
+		{
+			if(is_connected())
+			{ utils::unwrap(m_subscriber).sync_client_lost_connection_to_server(static_cast<void const*>(this)); }
+		}
+
+		sync_client(sync_client&&) = default;
+		sync_client& operator=(sync_client&&) = delete;
+		sync_client(sync_client const&) = default;
+		sync_client& operator=(sync_client const&) = delete;
 
 		void handle_response(
 			worker_sync::error_response const& err,
@@ -105,10 +113,10 @@ namespace Pipe::worker_fwk
 			typename subscriber_type::subscription_transaction&& transaction
 		)
 		{
-			auto const tx_id = m_current_transaction_id.next();
+			auto const tx_id = m_tx_id_to_send.next();
 			utils::maybe_at_scope_exit restore_tx_id{
 				[this, tx_id]() {
-					m_current_transaction_id = tx_id;
+					m_tx_id_to_send = tx_id;
 				}
 			};
 
@@ -129,10 +137,10 @@ namespace Pipe::worker_fwk
 			typename subscriber_type::unsubscription_transaction&& transaction
 		)
 		{
-			auto const tx_id = m_current_transaction_id.next();
+			auto const tx_id = m_tx_id_to_send.next();
 			utils::maybe_at_scope_exit restore_tx_id{
 				[this, tx_id]() {
-					m_current_transaction_id = tx_id;
+					m_tx_id_to_send = tx_id;
 				}
 			};
 
@@ -152,7 +160,7 @@ namespace Pipe::worker_fwk
 
 	private:
 		InputPortActivitySubscriber m_subscriber;
-		worker_sync::transaction_id m_current_transaction_id{0};
+		worker_sync::transaction_id m_tx_id_to_send{0};
 
 		std::deque<
 			std::pair<
@@ -197,7 +205,7 @@ namespace Pipe::worker_fwk
 		std::string const& socket_name
 	)
 	{
-		return event_handler_store.add<sync_client<InputPortActivitySubscriber>::client_activity>(
+		return event_handler_store.add<typename sync_client<InputPortActivitySubscriber>::client_activity>(
 			sync_client{std::move(subscriber), 65536},
 			os_services::ipc::make_connection<SOCK_STREAM>(
 				os_services::ipc::make_abstract_sockaddr_un(socket_name)
