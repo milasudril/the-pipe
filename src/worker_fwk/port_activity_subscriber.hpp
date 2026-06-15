@@ -65,7 +65,7 @@ namespace Pipe::worker_fwk
 	};
 
 	template<class T>
-	concept port_activity_subscription_registry = requires(
+	concept output_port_activity_subscription_registry = requires(
 		T obj,
 		std::string const& str,
 		worker_sync::port_activity_subscription_id subscription,

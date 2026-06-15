@@ -10,11 +10,11 @@
 
 namespace Pipe::worker_fwk
 {
-	template<port_activity_subscription_registry PortActivitySubscriptionRegistry>
+	template<output_port_activity_subscription_registry OutputPortActivitySubscriptionRegistry>
 	class sync_server
 	{
 	public:
-		explicit sync_server(PortActivitySubscriptionRegistry output_port_activity_subscriber_registry):
+		explicit sync_server(OutputPortActivitySubscriptionRegistry output_port_activity_subscriber_registry):
 			m_output_port_activity_subscriber_registry{std::move(output_port_activity_subscriber_registry)}
 		{ }
 
@@ -33,7 +33,7 @@ namespace Pipe::worker_fwk
 			if(event.status == os_services::fd::activity_status::read)
 			{
 				std::ignore = m_registration.event_handler_store->
-					template add<typename sync_client_connection<PortActivitySubscriptionRegistry>::client_activity>(
+					template add<typename sync_client_connection<OutputPortActivitySubscriptionRegistry>::client_activity>(
 					sync_client_connection{m_output_port_activity_subscriber_registry},
 					accept(m_registration.fd),
 					Pipe::os_services::fd::activity_status::read
@@ -41,36 +41,36 @@ namespace Pipe::worker_fwk
 			}
 		}
 
-		PortActivitySubscriptionRegistry const& get_registry() const
+		OutputPortActivitySubscriptionRegistry const& get_registry() const
 		{ return m_output_port_activity_subscriber_registry; }
 
 	private:
-		PortActivitySubscriptionRegistry m_output_port_activity_subscriber_registry;
+		OutputPortActivitySubscriptionRegistry m_output_port_activity_subscriber_registry;
 		activity_event_handler_registered_event m_registration;
 	};
 
-	template<port_activity_subscription_registry PortActivitySubscriptionRegistry>
+	template<output_port_activity_subscription_registry OutputPortActivitySubscriptionRegistry>
 	struct server_info
 	{
 		std::pair<
-			std::reference_wrapper<sync_server<PortActivitySubscriptionRegistry>>,
+			std::reference_wrapper<sync_server<OutputPortActivitySubscriptionRegistry>>,
 			os_services::fd::event_handler_id
 		> event_handler;
 		std::string socket_name;
 	};
 
-	template<port_activity_subscription_registry PortActivitySubscriptionRegistry>
-	inline server_info<PortActivitySubscriptionRegistry> make_sync_server(
+	template<output_port_activity_subscription_registry OutputPortActivitySubscriptionRegistry>
+	inline server_info<OutputPortActivitySubscriptionRegistry> make_sync_server(
 		os_services::fd::activity_event_handler_store& event_handler_store,
-		PortActivitySubscriptionRegistry&& output_port_activity_subscriber_registry
+		OutputPortActivitySubscriptionRegistry&& output_port_activity_subscriber_registry
 	)
 	{
-		using sync_server_type = sync_server<PortActivitySubscriptionRegistry>;
+		using sync_server_type = sync_server<OutputPortActivitySubscriptionRegistry>;
 
 		auto socket_name = utils::random_printable_ascii_string(os_services::ipc::abstract_sunpath_maxlength);
-		return server_info<PortActivitySubscriptionRegistry>{
+		return server_info<OutputPortActivitySubscriptionRegistry>{
 			.event_handler = event_handler_store.add<typename sync_server_type::server_socket_activity>(
-				sync_server_type{std::forward<PortActivitySubscriptionRegistry>(output_port_activity_subscriber_registry)},
+				sync_server_type{std::forward<OutputPortActivitySubscriptionRegistry>(output_port_activity_subscriber_registry)},
 				os_services::ipc::make_server_socket<SOCK_STREAM>(
 					os_services::ipc::make_abstract_sockaddr_un(socket_name),
 					1024

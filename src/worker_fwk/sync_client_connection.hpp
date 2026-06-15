@@ -25,7 +25,7 @@ namespace Pipe::worker_fwk
 		using sync_fd_activity_event = os_services::fd::activity_event<client_activity, fd_tag>;
 	};
 
-	template<port_activity_subscription_registry PortActivitySubscriptionRegistry>
+	template<output_port_activity_subscription_registry OutputPortActivitySubscriptionRegistry>
 	class sync_client_connection:
 		public sync_message_channel<sync_message_channel_server_traits>,
 		public sync_message_channel_server_traits
@@ -34,7 +34,7 @@ namespace Pipe::worker_fwk
 		using client_activity_event_handler_registered_event = sync_fd_activity_event_handler_registred_event;
 		using client_activity_event = sync_fd_activity_event;
 
-		explicit sync_client_connection(PortActivitySubscriptionRegistry output_port_activity_subscriber_registry, size_t buffer_size = 65536):
+		explicit sync_client_connection(OutputPortActivitySubscriptionRegistry output_port_activity_subscriber_registry, size_t buffer_size = 65536):
 			sync_message_channel<sync_message_channel_server_traits>{buffer_size},
 			m_output_port_activity_subscriber_registry{std::move(output_port_activity_subscriber_registry)}
 		{}
@@ -121,12 +121,12 @@ namespace Pipe::worker_fwk
 		using sync_message_channel<sync_message_channel_server_traits>::handle_message;
 
 	private:
-		PortActivitySubscriptionRegistry m_output_port_activity_subscriber_registry;
+		OutputPortActivitySubscriptionRegistry m_output_port_activity_subscriber_registry;
 	};
 
 
-	template<port_activity_subscription_registry PortActivitySubscriptionRegistry>
-	sync_client_connection(std::reference_wrapper<PortActivitySubscriptionRegistry>, size_t)->
-		sync_client_connection<std::reference_wrapper<PortActivitySubscriptionRegistry>>;
+	template<output_port_activity_subscription_registry OutputPortActivitySubscriptionRegistry>
+	sync_client_connection(std::reference_wrapper<OutputPortActivitySubscriptionRegistry>, size_t)->
+		sync_client_connection<std::reference_wrapper<OutputPortActivitySubscriptionRegistry>>;
 }
 #endif
