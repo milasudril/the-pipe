@@ -582,3 +582,63 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_subscription_response_nonexisting_tr
 
 	subscriber.expected_conn_lost_ptr = &client;
 }
+
+
+TESTCASE(Pipe_worker_fwk_sync_client_handle_subscription_response_transactions_out_of_order)
+{
+	input_port_activity_subscriber subscriber;
+	Pipe::worker_sync::exception_controller ec;
+	Pipe::worker_fwk::sync_client client{std::ref(subscriber)};
+
+	client.subscribe_to_port(
+		"port_a",
+		input_port_activity_subscriber::subscription_transaction{1}
+	);
+	client.subscribe_to_port(
+		"port_b",
+		input_port_activity_subscriber::subscription_transaction{2}
+	);
+
+	subscriber.expected_subscription_transaction = input_port_activity_subscriber::subscription_transaction{2};
+	subscriber.expected_subscription_id = Pipe::worker_sync::port_activity_subscription_id{435};
+	ec.disable_exception_rethrow();
+	client.handle_response(
+		Pipe::worker_sync::port_activity_subscription_response{
+			.id = Pipe::worker_sync::port_activity_subscription_id{435}
+		},
+		Pipe::worker_sync::transaction_id{1},
+		ec
+	);
+	EXPECT_EQ(ec.exceptions_should_be_rethrown(), true);
+
+	subscriber.expected_subscription_transaction = input_port_activity_subscriber::subscription_transaction{1};
+	subscriber.expected_subscription_id = Pipe::worker_sync::port_activity_subscription_id{436};
+	ec.disable_exception_rethrow();
+	client.handle_response(
+		Pipe::worker_sync::port_activity_subscription_response{
+			.id = Pipe::worker_sync::port_activity_subscription_id{436}
+		},
+		Pipe::worker_sync::transaction_id{0},
+		ec
+	);
+	EXPECT_EQ(ec.exceptions_should_be_rethrown(), true);
+
+	ec.disable_exception_rethrow();
+	try
+	{
+		client.handle_response(
+			Pipe::worker_sync::port_activity_unsubscription_response{
+				.id = Pipe::worker_sync::port_activity_subscription_id{435}
+			},
+			Pipe::worker_sync::transaction_id{0},
+			ec
+		);
+		EXPECT_EQ(true, false);
+	}
+	catch(std::exception const& err)
+	{ EXPECT_EQ(err.what(), std::string_view{"Client has no outstanding transactions"}); }
+
+	EXPECT_EQ(ec.exceptions_should_be_rethrown(), false);
+
+	subscriber.expected_conn_lost_ptr = &client;
+}
