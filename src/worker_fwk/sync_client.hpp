@@ -11,6 +11,7 @@
 #include "src/worker_fwk/sync_message_channel.hpp"
 #include "src/worker_sync/worker_sync_msg.hpp"
 
+#include <algorithm>
 #include <type_traits>
 
 namespace Pipe::worker_fwk
@@ -46,10 +47,13 @@ namespace Pipe::worker_fwk
 
 		void handle_response(
 			worker_sync::error_response const& err,
-			worker_sync::transaction_id,
+			worker_sync::transaction_id tx_id,
 			worker_sync::exception_controller& ec
 		)
 		{
+			if(tx_id.is_valid())
+			{ std::ignore = take_transaction(tx_id); }
+
 			ec.enable_exception_rethrow();
 			throw std::runtime_error{err.content()};
 		}
@@ -83,10 +87,10 @@ namespace Pipe::worker_fwk
 		void notify_client_ready(worker_sync::port_activity_subscription_id id)
 		{
 			send(
-				Pipe::worker_sync::client_ready_event{
+				worker_sync::client_ready_event{
 					.id = id
 				},
-				Pipe::worker_sync::transaction_id{}
+				worker_sync::transaction_id{}
 			);
 		}
 
@@ -105,7 +109,7 @@ namespace Pipe::worker_fwk
 			m_outstanding_transactions.push_back(std::pair{tx_id, std::move(transaction)});
 
 			send(
-				Pipe::worker_sync::port_activity_subscription_request{
+				worker_sync::port_activity_subscription_request{
 					.server_portname = server_portname
 				},
 				tx_id
@@ -129,7 +133,7 @@ namespace Pipe::worker_fwk
 			m_outstanding_transactions.push_back(std::pair{tx_id, std::move(transaction)});
 
 			send(
-				Pipe::worker_sync::port_activity_unsubscription{
+				worker_sync::port_activity_unsubscription{
 					.id = id
 				},
 				tx_id
@@ -142,17 +146,42 @@ namespace Pipe::worker_fwk
 
 	private:
 		InputPortActivitySubscriber m_subscriber;
-		Pipe::worker_sync::transaction_id m_current_transaction_id{0};
+		worker_sync::transaction_id m_current_transaction_id{0};
 
 		std::deque<
 			std::pair<
-				Pipe::worker_sync::transaction_id,
+				worker_sync::transaction_id,
 				std::variant<
 					typename subscriber_type::subscription_transaction,
 					typename subscriber_type::unsubscription_transaction
 				>
 			>
 		> m_outstanding_transactions;
+
+		auto take_transaction(worker_sync::transaction_id tx_id)
+		{
+			if(m_outstanding_transactions.empty())
+			{ throw std::runtime_error{"Client has no outstanding transactions"}; }
+
+			{
+				auto front = std::move(m_outstanding_transactions.front());
+				if(front.first == tx_id) [[likely]]
+				{
+					m_outstanding_transactions.pop_front();
+					return std::move(front.second);
+				}
+			}
+
+			auto const i = std::ranges::find_if(m_outstanding_transactions, [tx_id](auto const& item){
+				return item.first == tx_id;
+			});
+			if(i == std::end(m_outstanding_transactions))
+			{ throw std::runtime_error{"Client has no matching ongoing transaction"}; }
+
+			auto ret = std::move(i->second);
+			m_outstanding_transactions.erase(i);
+			return ret;
+		}
 	};
 
 	template<class InputPortActivitySubscriber>

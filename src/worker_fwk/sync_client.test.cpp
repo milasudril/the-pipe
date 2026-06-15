@@ -56,7 +56,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_construct)
 	subscriber.expected_conn_lost_ptr = &client;
 }
 
-TESTCASE(Pipe_worker_fwk_sync_client_handle_error_response)
+TESTCASE(Pipe_worker_fwk_sync_client_handle_error_response_no_ongoing_transaction)
 {
 	input_port_activity_subscriber subscriber;
 	Pipe::worker_fwk::sync_client client{std::ref(subscriber)};
@@ -74,8 +74,9 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_error_response)
 	}
 	catch(std::exception const& err)
 	{
-		EXPECT_EQ(err.what(), std::string_view{"The error message"});
+		EXPECT_EQ(err.what(), std::string_view{"Client has no outstanding transactions"});
 	}
 	subscriber.expected_conn_lost_ptr = &client;
+	EXPECT_EQ(ec.exceptions_should_be_rethrown(), false);
 }
 
