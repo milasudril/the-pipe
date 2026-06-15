@@ -104,3 +104,34 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_error_response_no_ongoing_transactio
 	EXPECT_EQ(ec.exceptions_should_be_rethrown(), false);
 }
 
+
+TESTCASE(Pipe_worker_fwk_sync_client_handle_error_response_existing_transaction)
+{
+	input_port_activity_subscriber subscriber;
+	Pipe::worker_sync::exception_controller ec;
+	Pipe::worker_fwk::sync_client client{std::ref(subscriber)};
+
+	client.subscribe_to_port(
+		"My port",
+		input_port_activity_subscriber::subscription_transaction{}
+	);
+
+	try
+	{
+		client.handle_response(
+			Pipe::worker_sync::error_response{
+				.message = "The error message"
+			},
+			Pipe::worker_sync::transaction_id{0},
+			ec
+		);
+		EXPECT_EQ(false, true);
+	}
+	catch(std::exception const& err)
+	{
+		EXPECT_EQ(err.what(), std::string_view{"The error message"});
+	}
+	subscriber.expected_conn_lost_ptr = &client;
+	EXPECT_EQ(ec.exceptions_should_be_rethrown(), true);
+}
+
