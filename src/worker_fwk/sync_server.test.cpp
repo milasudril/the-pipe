@@ -44,10 +44,28 @@ namespace
 			REQUIRE_EQ(expected_do_add_call.has_value(), true);
 			expected_do_add_call->registred_fd = std::move(fd);
 			EXPECT_EQ(expected_do_add_call->initial_listening_status, activity_status);
-			return std::pair{event_handler.object_address.address, expected_do_add_call->retval};
+
+			saved_event_handler.reset();
+
+			saved_event_handler_buffer = std::make_unique<std::byte[]>(event_handler.object_size);
+			event_handler.construct_event_handler_at(
+				Pipe::os_services::fd::activity_event_handler_store::dest_object_location{
+					.address = saved_event_handler_buffer.get()
+				},
+				event_handler.object_address
+			);
+
+			saved_event_handler = std::unique_ptr<void, void(*)(void*)>{
+				saved_event_handler_buffer.get(),
+				event_handler.destroy_event_handler_at
+			};
+
+			return std::pair{saved_event_handler.get(), expected_do_add_call->retval};
 		}
 
 		std::optional<Pipe::os_services::fd::event_handler_id> expected_remove_id;
+		std::unique_ptr<std::byte[]> saved_event_handler_buffer;
+		std::unique_ptr<void, void(*)(void*)> saved_event_handler{nullptr, nullptr};
 
 		struct update_listening_status_call
 		{
@@ -134,6 +152,7 @@ TESTCASE(Pipe_worker_fwk_sync_server_create)
 		(std::string_view{std::begin(addr_string) + 1, std::end(addr_string)}),
 		server_info.socket_name
 	);
+
 	EXPECT_EQ(
 		&server_info.event_handler.first.get().get_registry().get(),
 		&output_port_activity_subscriber_registry

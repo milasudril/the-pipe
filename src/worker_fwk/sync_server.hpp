@@ -16,7 +16,7 @@ namespace Pipe::worker_fwk
 	public:
 		explicit sync_server(PortActivitySubscriptionRegistry output_port_activity_subscriber_registry):
 			m_output_port_activity_subscriber_registry{std::move(output_port_activity_subscriber_registry)}
-		{}
+		{ }
 
 		using fd_tag = os_services::ipc::server_socket_tag<SOCK_STREAM, sockaddr_un>;
 
