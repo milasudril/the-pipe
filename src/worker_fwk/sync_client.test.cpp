@@ -9,6 +9,12 @@ namespace
 {
 	struct input_port_activity_subscriber
 	{
+		struct subscription_transaction
+		{};
+
+		struct unsubscription_transaction
+		{};
+
 		std::optional<void const*> expected_conn_lost_ptr;
 		void sync_client_lost_connection_to_server(void const* ptr)
 		{
