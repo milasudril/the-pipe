@@ -406,7 +406,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_unsubscription_response)
 	subscriber.expected_conn_lost_ptr = &client;
 }
 
-TESTCASE(Pipe_worker_fwk_sunc_client_notify_client_ready)
+TESTCASE(Pipe_worker_fwk_sync_client_notify_client_ready)
 {
 	input_port_activity_subscriber subscriber;
 	Pipe::worker_sync::exception_controller ec;
@@ -451,7 +451,7 @@ TESTCASE(Pipe_worker_fwk_sunc_client_notify_client_ready)
 	subscriber.expected_conn_lost_ptr = &client;
 }
 
-TESTCASE(Pipe_worker_fwk_sunc_client_subscribe_to_port)
+TESTCASE(Pipe_worker_fwk_sync_client_subscribe_to_port)
 {
 	input_port_activity_subscriber subscriber;
 	Pipe::worker_sync::exception_controller ec;
@@ -502,7 +502,7 @@ TESTCASE(Pipe_worker_fwk_sunc_client_subscribe_to_port)
 	subscriber.expected_conn_lost_ptr = &client;
 }
 
-TESTCASE(Pipe_worker_fwk_sunc_client_unsubscribe_from_port)
+TESTCASE(Pipe_worker_fwk_sync_client_unsubscribe_from_port)
 {
 	input_port_activity_subscriber subscriber;
 	Pipe::worker_sync::exception_controller ec;
@@ -549,6 +549,36 @@ TESTCASE(Pipe_worker_fwk_sunc_client_unsubscribe_from_port)
 		8
 	>(sockets.socket_b());
 	EXPECT_EQ(body.id, Pipe::worker_sync::port_activity_subscription_id{6});
+
+	subscriber.expected_conn_lost_ptr = &client;
+}
+
+TESTCASE(Pipe_worker_fwk_sync_client_handle_subscription_response_nonexisting_transaction)
+{
+	input_port_activity_subscriber subscriber;
+	Pipe::worker_sync::exception_controller ec;
+	Pipe::worker_fwk::sync_client client{std::ref(subscriber)};
+
+	client.subscribe_to_port(
+		"The port",
+		input_port_activity_subscriber::subscription_transaction{1}
+	);
+
+	try
+	{
+		client.handle_response(
+			Pipe::worker_sync::port_activity_subscription_response{
+				.id = Pipe::worker_sync::port_activity_subscription_id{435}
+			},
+			Pipe::worker_sync::transaction_id{1},
+			ec
+		);
+		EXPECT_EQ(true, false);
+	}
+	catch(std::exception const& err)
+	{ EXPECT_EQ(err.what(), std::string_view{"Client has no matching ongoing transaction"}); }
+
+	EXPECT_EQ(ec.exceptions_should_be_rethrown(), false);
 
 	subscriber.expected_conn_lost_ptr = &client;
 }
