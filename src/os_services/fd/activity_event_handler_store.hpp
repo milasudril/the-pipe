@@ -281,6 +281,7 @@ namespace Pipe::os_services::fd
 			activity_status initial_listening_status
 		)
 		{
+			auto const fd = fd_to_watch.get();
 			auto const res = do_add(
 				event_handler_info{
 					.object_address = source_object_location{.address = &eh},
@@ -304,16 +305,22 @@ namespace Pipe::os_services::fd
 						::new(dest.address)EventHandler(std::move(*static_cast<EventHandler*>(src.address)));
 					},
 					.handle_activity_event_handler_registered_event = [](
-						void* object,
-						activity_event_handler_registered_event<void, generic_fd_tag> const& event
+						void*,
+						activity_event_handler_registered_event<void, generic_fd_tag> const&
 					){
-						utils::unwrap(*static_cast<EventHandler*>(object)).handle_event(
-							std::bit_cast<activity_event_handler_registered_event<CallbackTag, FileDescriptorTag>>(event)
-						);
 					}
 				},
 				make_generic_file_descriptor(std::move(fd_to_watch)),
 				initial_listening_status
+			);
+
+			utils::unwrap(*static_cast<EventHandler*>(res.event_handler.get())).handle_event(
+				activity_event_handler_registered_event<CallbackTag, FileDescriptorTag>{
+					.fd = fd,
+					.id = res.id,
+					.cookie = res.cookie,
+					.event_handler_store = this
+				}
 			);
 
 			if constexpr(utils::reftype<EventHandler>)

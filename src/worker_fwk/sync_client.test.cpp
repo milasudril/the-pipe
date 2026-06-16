@@ -668,22 +668,6 @@ TESTCASE(Pipe_worker_fwk_make_sync_client)
 	};
 	auto const result = Pipe::worker_fwk::make_sync_client(eh_registry, std::ref(subscriber), socket_name);
 	EXPECT_EQ(result.second, Pipe::os_services::fd::event_handler_id{324});
-
-	eh_registry.expected_update_listening_status_call = my_event_handler_registry::update_listening_status_call{
-		.handle = Pipe::os_services::fd::event_handler_cookie{},
-		.new_status = Pipe::os_services::fd::activity_status::read_or_write
-	};
-	result.first.get().handle_event(
-		sync_client::sync_fd_activity_event_handler_registred_event{
-			.fd = Pipe::os_services::fd::tagged_file_descriptor_ref<
-				Pipe::os_services::ipc::connected_socket_tag<SOCK_STREAM, sockaddr_un>
-			>(eh_registry.expected_do_add_call->registred_fd.get().native_handle()),
-			.id = Pipe::os_services::fd::event_handler_id{345},
-			.cookie = {},
-			.event_handler_store = &eh_registry,
-		}
-	);
-
 	subscriber.expected_conn_lost_ptr = &result.first.get();
 
 	auto const server_fd = accept(server_socket.get());
@@ -694,13 +678,18 @@ TESTCASE(Pipe_worker_fwk_make_sync_client)
 		::fcntl(fd, F_SETFL, O_NONBLOCK|flags);
 	}
 
+	eh_registry.expected_update_listening_status_call = my_event_handler_registry::update_listening_status_call{
+		.handle = Pipe::os_services::fd::event_handler_cookie{eh_registry.saved_event_handler_buffer.get()},
+		.new_status = Pipe::os_services::fd::activity_status::read_or_write
+	};
 	result.first.get().subscribe_to_port(
 		"port_name",
 		input_port_activity_subscriber::subscription_transaction{}
 	);
 	EXPECT_EQ(result.first.get().is_connected(), true);
-		eh_registry.expected_update_listening_status_call = my_event_handler_registry::update_listening_status_call{
-		.handle = Pipe::os_services::fd::event_handler_cookie{},
+
+	eh_registry.expected_update_listening_status_call = my_event_handler_registry::update_listening_status_call{
+		.handle = Pipe::os_services::fd::event_handler_cookie{eh_registry.saved_event_handler_buffer.get()},
 		.new_status = Pipe::os_services::fd::activity_status::read
 	};
 	std::ignore = result.first.get().send_pending_messages();
