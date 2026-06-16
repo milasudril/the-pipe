@@ -38,7 +38,7 @@ namespace
 		Pipe::os_services::fd::event_handler_id removed_id{};
 
 		void update_listening_status(
-			Pipe::os_services::fd::saved_event_handler_ref,
+			Pipe::os_services::fd::event_handler_cookie,
 			Pipe::os_services::fd::activity_status
 		) noexcept override
 		{ Pipe::log::terminate_with_message("Unexpected call update_listening_status"); }
@@ -67,7 +67,7 @@ TESTCASE(Pipe_json_io_reader_cannot_read)
 	reader.handle_event(Pipe::json_io::reader::activity_event_handler_registered_event{
 		.fd = logpipe.read_end(),
 		.id = my_id,
-		.event_handler = {},
+		.cookie = {},
 		.event_handler_store = &monitor
 	});
 
@@ -99,7 +99,7 @@ TESTCASE(Pipe_json_io_reader_read_full_read_partial_block_close_try_agian)
 	reader.handle_event(Pipe::json_io::reader::activity_event_handler_registered_event{
 		.fd = logpipe.read_end(),
 		.id = my_id,
-		.event_handler = {},
+		.cookie = {},
 		.event_handler_store = &monitor
 	});
 
@@ -145,7 +145,7 @@ TESTCASE(Pipe_json_io_reader_read_full_read_partial_block_try_agian_close)
 	reader.handle_event(Pipe::json_io::reader::activity_event_handler_registered_event{
 		.fd = logpipe.read_end(),
 		.id = my_id,
-		.event_handler = {},
+		.cookie = {},
 		.event_handler_store = &monitor
 	});
 
@@ -211,7 +211,7 @@ TESTCASE(Pipe_json_io_reader_read_jammed_parser)
 	reader.handle_event(Pipe::json_io::reader::activity_event_handler_registered_event{
 		.fd = logpipe.read_end(),
 		.id = my_id,
-		.event_handler = {},
+		.cookie = {},
 		.event_handler_store = &monitor
 	});
 	std::string str{"This is definitely not valid JSON {}"};

@@ -9,7 +9,7 @@ void Pipe::json_io::writer::enable_listening()
 	if(!m_is_listening)
 	{
 		m_registration.event_handler_store->update_listening_status(
-			m_registration.event_handler,
+			m_registration.cookie,
 			os_services::fd::activity_status::write
 		);
 		m_is_listening = true;
@@ -21,7 +21,7 @@ void Pipe::json_io::writer::disable_listening()
 	if(m_is_listening)
 	{
 		m_registration.event_handler_store->update_listening_status(
-			m_registration.event_handler,
+			m_registration.cookie,
 			os_services::fd::activity_status::none
 		);
 		m_is_listening = false;

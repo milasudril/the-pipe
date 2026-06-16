@@ -104,7 +104,7 @@ namespace
 		}
 
 		void update_listening_status(
-			Pipe::os_services::fd::saved_event_handler_ref handle,
+			Pipe::os_services::fd::event_handler_cookie handle,
 			Pipe::os_services::fd::activity_status new_status
 		) override
 		{
@@ -127,7 +127,7 @@ namespace
 
 		struct update_listening_status_call
 		{
-			Pipe::os_services::fd::saved_event_handler_ref handle;
+			Pipe::os_services::fd::event_handler_cookie handle;
 			Pipe::os_services::fd::activity_status new_status;
 		};
 		std::optional<update_listening_status_call> expected_update_listening_status_call;
@@ -191,21 +191,21 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_subscription_reque
 
 	auto const sockets = make_sockets();
 	eh_registry.expected_update_listening_status_call = my_event_handler_registry::update_listening_status_call{
-		.handle = Pipe::os_services::fd::saved_event_handler_ref{},
+		.handle = Pipe::os_services::fd::event_handler_cookie{},
 		.new_status = Pipe::os_services::fd::activity_status::read_or_write
 	};
 	conn.handle_event(
 		sync_client_connection::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
 	EXPECT_EQ(conn.num_messages_to_send(), 1);
 
 	eh_registry.expected_update_listening_status_call = my_event_handler_registry::update_listening_status_call{
-		.handle = Pipe::os_services::fd::saved_event_handler_ref{},
+		.handle = Pipe::os_services::fd::event_handler_cookie{},
 		.new_status = Pipe::os_services::fd::activity_status::read
 	};
 	auto const send_result = conn.send_pending_messages();
@@ -257,21 +257,21 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_port_activity_unsubscription)
 
 	auto const sockets = make_sockets();
 	eh_registry.expected_update_listening_status_call = my_event_handler_registry::update_listening_status_call{
-		.handle = Pipe::os_services::fd::saved_event_handler_ref{},
+		.handle = Pipe::os_services::fd::event_handler_cookie{},
 		.new_status = Pipe::os_services::fd::activity_status::read_or_write
 	};
 	conn.handle_event(
 		sync_client_connection::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
 	EXPECT_EQ(conn.num_messages_to_send(), 1);
 
 	eh_registry.expected_update_listening_status_call = my_event_handler_registry::update_listening_status_call{
-		.handle = Pipe::os_services::fd::saved_event_handler_ref{},
+		.handle = Pipe::os_services::fd::event_handler_cookie{},
 		.new_status = Pipe::os_services::fd::activity_status::read
 	};
 	auto const send_result = conn.send_pending_messages();
@@ -333,21 +333,21 @@ TESTCASE(Pipe_worker_fwk_sync_client_connection_notify_data_ready)
 
 	auto const sockets = make_sockets();
 	eh_registry.expected_update_listening_status_call = my_event_handler_registry::update_listening_status_call{
-		.handle = Pipe::os_services::fd::saved_event_handler_ref{},
+		.handle = Pipe::os_services::fd::event_handler_cookie{},
 		.new_status = Pipe::os_services::fd::activity_status::read_or_write
 	};
 	conn.handle_event(
 		sync_client_connection::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
 	EXPECT_EQ(conn.num_messages_to_send(), 1);
 
 	eh_registry.expected_update_listening_status_call = my_event_handler_registry::update_listening_status_call{
-		.handle = Pipe::os_services::fd::saved_event_handler_ref{},
+		.handle = Pipe::os_services::fd::event_handler_cookie{},
 		.new_status = Pipe::os_services::fd::activity_status::read
 	};
 	auto const send_result = conn.send_pending_messages();

@@ -64,7 +64,7 @@ namespace
 		}
 
 		void update_listening_status(
-			Pipe::os_services::fd::saved_event_handler_ref,
+			Pipe::os_services::fd::event_handler_cookie,
 			Pipe::os_services::fd::activity_status status
 		) noexcept override
 		{
@@ -216,7 +216,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_event_fd_activity_event_han
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
@@ -239,7 +239,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_event_fd_activity_event_han
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
@@ -264,7 +264,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_no_byte
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
@@ -283,7 +283,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_no_byte
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
@@ -303,7 +303,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_process
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
@@ -332,7 +332,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_process
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
@@ -360,7 +360,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_read_and_dispatch_requests_short_b
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
@@ -394,7 +394,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_message_before_registration)
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
@@ -411,7 +411,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_message_after_registration)
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
@@ -429,7 +429,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_no_pending_m
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
@@ -448,7 +448,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_no_pending_m
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
@@ -479,7 +479,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_no_pending_m
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
@@ -502,7 +502,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_write_partia
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
@@ -535,7 +535,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_write_full)
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
@@ -564,7 +564,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_send_pending_messages_write_full_s
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
@@ -596,7 +596,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_receive_unsupport_message_bad_numb
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
@@ -636,7 +636,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_receive_unsupport_message_bad)
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
@@ -676,7 +676,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_exception_while_handling_request)
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
@@ -720,7 +720,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_exception_while_handling_notificat
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
@@ -766,7 +766,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_event_error)
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
@@ -790,7 +790,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_read_connec
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
@@ -814,7 +814,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_read_read_r
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
@@ -848,7 +848,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_write_conne
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
@@ -873,7 +873,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_write)
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);
@@ -904,7 +904,7 @@ TESTCASE(Pipe_worker_fwk_sync_message_channel_handle_fd_activity_can_read_and_wr
 		msg_channel_traits::sync_fd_activity_event_handler_registred_event{
 			.fd = sockets.socket_a(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_registry,
 		}
 	);

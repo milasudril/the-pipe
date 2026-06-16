@@ -128,7 +128,7 @@ namespace
 				}
 				m_data_to_send = std::vector(std::begin(buffer),  std::begin(buffer) + res.bytes_transferred());
 				m_registration.event_handler_store->update_listening_status(
-					m_registration.event_handler,
+					m_registration.cookie,
 					Pipe::os_services::fd::activity_status::write
 				);
 			}
@@ -136,7 +136,7 @@ namespace
 			{
 				Pipe::os_services::io::write(m_registration.fd, m_data_to_send);
 				m_registration.event_handler_store->update_listening_status(
-					m_registration.event_handler,
+					m_registration.cookie,
 					Pipe::os_services::fd::activity_status::read
 				);
 			}

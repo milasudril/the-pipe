@@ -23,7 +23,7 @@ namespace
 		}
 
 		void update_listening_status(
-			Pipe::os_services::fd::saved_event_handler_ref handle,
+			Pipe::os_services::fd::event_handler_cookie handle,
 			Pipe::os_services::fd::activity_status new_status
 		) noexcept override
 		{
@@ -69,7 +69,7 @@ namespace
 
 		struct update_listening_status_call
 		{
-			Pipe::os_services::fd::saved_event_handler_ref handle;
+			Pipe::os_services::fd::event_handler_cookie handle;
 			Pipe::os_services::fd::activity_status new_status;
 		};
 		std::optional<update_listening_status_call> expected_update_listening_status_call;
@@ -177,7 +177,7 @@ TESTCASE(Pipe_worker_fwk_sync_server_register_and_accept_connection)
 		Pipe::worker_fwk::sync_server<std::reference_wrapper<my_output_port_activity_subscriber_registry>>::activity_event_handler_registered_event{
 			.fd = server_socket.get(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &event_handlers
 		}
 	);

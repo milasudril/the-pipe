@@ -123,7 +123,7 @@ namespace
 		blob obj;
 
 		void update_listening_status(
-			Pipe::os_services::fd::saved_event_handler_ref,
+			Pipe::os_services::fd::event_handler_cookie,
 			Pipe::os_services::fd::activity_status new_status
 		) noexcept override
 		{

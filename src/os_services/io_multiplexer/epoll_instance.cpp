@@ -9,11 +9,11 @@
 
 namespace
 {
-	struct saved_event_handler_ref:
-		Pipe::os_services::fd::saved_event_handler_ref
+	struct event_handler_cookie:
+		Pipe::os_services::fd::event_handler_cookie
 	{
-		explicit saved_event_handler_ref(void* ptr):
-			Pipe::os_services::fd::saved_event_handler_ref{ptr}
+		explicit event_handler_cookie(void* ptr):
+			Pipe::os_services::fd::event_handler_cookie{ptr}
 		{}
 	};
 }
@@ -61,7 +61,7 @@ Pipe::os_services::io_multiplexer::epoll_instance::do_add(
 		fd::activity_event_handler_registered_event<void, fd::generic_fd_tag>{
 			event_handler->fd,
 			eh_id,
-			saved_event_handler_ref{event_handler},
+			event_handler_cookie{event_handler},
 			this
 		}
 	);

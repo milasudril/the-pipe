@@ -273,7 +273,7 @@ namespace Pipe::worker_fwk
 			if(!m_is_listening_for_write)
 			{
 				m_registration.event_handler_store->update_listening_status(
-					m_registration.event_handler,
+					m_registration.cookie,
 					os_services::fd::activity_status::read_or_write
 				);
 				m_is_listening_for_write = true;
@@ -285,7 +285,7 @@ namespace Pipe::worker_fwk
 			if(m_is_listening_for_write)
 			{
 				m_registration.event_handler_store->update_listening_status(
-					m_registration.event_handler,
+					m_registration.cookie,
 					os_services::fd::activity_status::read
 				);
 				m_is_listening_for_write = false;

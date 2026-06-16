@@ -19,7 +19,7 @@ namespace
 		std::optional<Pipe::os_services::fd::event_handler_id> expected_remove_id;
 
 		void update_listening_status(
-			Pipe::os_services::fd::saved_event_handler_ref,
+			Pipe::os_services::fd::event_handler_cookie,
 			Pipe::os_services::fd::activity_status status
 		) noexcept override
 		{
@@ -53,7 +53,7 @@ TESTCASE(Pipe_json_io_writer_buffer_full_before_queue_empty_no_pending_data_to_w
 		Pipe::json_io::writer::activity_event_handler_registered_event{
 			.fd = io_channel.write_end(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_store
 		}
 	);
@@ -84,7 +84,7 @@ TESTCASE(Pipe_json_io_writer_buffer_full_before_queue_empty_no_pending_data_to_w
 		Pipe::json_io::writer::activity_event_handler_registered_event{
 			.fd = io_channel.write_end(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_store
 		}
 	);
@@ -229,7 +229,7 @@ TESTCASE(Pipe_json_io_writer_remote_fd_closed_when_trying_to_write_reminder)
 		Pipe::json_io::writer::activity_event_handler_registered_event{
 			.fd = io_channel.write_end(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_store
 		}
 	);
@@ -277,7 +277,7 @@ TESTCASE(Pipe_json_io_writer_remote_fd_closed_when_trying_to_write_new_data)
 		Pipe::json_io::writer::activity_event_handler_registered_event{
 			.fd = io_channel.write_end(),
 			.id = Pipe::os_services::fd::event_handler_id{345},
-			.event_handler = {},
+			.cookie = {},
 			.event_handler_store = &eh_store
 		}
 	);

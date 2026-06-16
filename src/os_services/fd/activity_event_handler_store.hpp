@@ -111,20 +111,20 @@ namespace Pipe::os_services::fd
 
 	class activity_event_handler_store;
 
-	class saved_event_handler_ref
+	class event_handler_cookie
 	{
 	public:
-		saved_event_handler_ref() = default;
+		event_handler_cookie() = default;
 
 		void* get() const
 		{ return m_ptr; }
 
-		constexpr bool operator==(saved_event_handler_ref const&) const = default;
+		constexpr bool operator==(event_handler_cookie const&) const = default;
 
-		constexpr bool operator!=(saved_event_handler_ref const&) const = default;
+		constexpr bool operator!=(event_handler_cookie const&) const = default;
 
 	protected:
-		explicit saved_event_handler_ref(void* ptr):
+		explicit event_handler_cookie(void* ptr):
 			m_ptr{ptr}
 		{}
 
@@ -291,7 +291,7 @@ namespace Pipe::os_services::fd
 		 */
 		virtual void remove(event_handler_id id) noexcept = 0;
 
-		virtual void update_listening_status(saved_event_handler_ref handle, activity_status new_status) = 0;
+		virtual void update_listening_status(event_handler_cookie handle, activity_status new_status) = 0;
 
 		virtual ~activity_event_handler_store() = default;
 
@@ -337,7 +337,7 @@ namespace Pipe::os_services::fd
 
 		tagged_file_descriptor_ref<FileDescriptorTag> fd;
 		event_handler_id id;
-		saved_event_handler_ref event_handler;
+		event_handler_cookie cookie;
 		activity_event_handler_store* event_handler_store{nullptr};
 
 		constexpr bool operator==(activity_event_handler_registered_event const&) const = default;

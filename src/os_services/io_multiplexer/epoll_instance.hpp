@@ -150,7 +150,7 @@ namespace Pipe::os_services::io_multiplexer
 		}
 
 		void update_listening_status(
-			Pipe::os_services::fd::saved_event_handler_ref handle,
+			Pipe::os_services::fd::event_handler_cookie handle,
 			Pipe::os_services::fd::activity_status new_status
 		) noexcept override
 		{
