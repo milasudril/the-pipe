@@ -114,6 +114,10 @@ namespace Pipe::os_services::fd
 	class event_handler_cookie
 	{
 	public:
+		explicit event_handler_cookie(void* ptr):
+			m_ptr{ptr}
+		{}
+
 		event_handler_cookie() = default;
 
 		void* get() const
@@ -123,10 +127,25 @@ namespace Pipe::os_services::fd
 
 		constexpr bool operator!=(event_handler_cookie const&) const = default;
 
-	protected:
-		explicit event_handler_cookie(void* ptr):
+	private:
+		void* m_ptr{nullptr};
+	};
+
+	class saved_event_handler
+	{
+	public:
+		explicit saved_event_handler(void* ptr):
 			m_ptr{ptr}
 		{}
+
+		saved_event_handler() = default;
+
+		void* get() const
+		{ return m_ptr; }
+
+		constexpr bool operator==(saved_event_handler const&) const = default;
+
+		constexpr bool operator!=(saved_event_handler const&) const = default;
 
 	private:
 		void* m_ptr{nullptr};
@@ -281,8 +300,8 @@ namespace Pipe::os_services::fd
 			);
 
 			return std::pair<std::reference_wrapper<EventHandler>, event_handler_id>{
-				*static_cast<EventHandler*>(res.first),
-				res.second
+				*static_cast<EventHandler*>(res.event_handler.get()),
+				res.id
 			};
 		}
 
@@ -321,8 +340,16 @@ namespace Pipe::os_services::fd
 			);
 		};
 
+		struct do_add_result
+		{
+			saved_event_handler event_handler;
+			event_handler_id id;
+			event_handler_cookie cookie;
+		};
+
 	private:
-		virtual std::pair<void*, event_handler_id> do_add(
+
+		virtual do_add_result do_add(
 			event_handler_info const& info,
 			fd::file_descriptor fd_to_watch,
 			activity_status initial_listening_status

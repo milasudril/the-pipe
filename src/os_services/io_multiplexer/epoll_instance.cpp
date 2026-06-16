@@ -7,18 +7,7 @@
 #include "src/os_services/fd/file_descriptor.hpp"
 #include "src/utils/utils.hpp"
 
-namespace
-{
-	struct event_handler_cookie:
-		Pipe::os_services::fd::event_handler_cookie
-	{
-		explicit event_handler_cookie(void* ptr):
-			Pipe::os_services::fd::event_handler_cookie{ptr}
-		{}
-	};
-}
-
-std::pair<void*, Pipe::os_services::fd::event_handler_id>
+Pipe::os_services::io_multiplexer::epoll_instance::do_add_result
 Pipe::os_services::io_multiplexer::epoll_instance::do_add(
 	event_handler_info const& info,
 	fd::file_descriptor fd_to_watch,
@@ -61,12 +50,16 @@ Pipe::os_services::io_multiplexer::epoll_instance::do_add(
 		fd::activity_event_handler_registered_event<void, fd::generic_fd_tag>{
 			event_handler->fd,
 			eh_id,
-			event_handler_cookie{event_handler},
+			fd::event_handler_cookie{event_handler},
 			this
 		}
 	);
 
-	return std::pair{event_handler + 1, eh_id};
+	return do_add_result{
+		.event_handler = fd::saved_event_handler{event_handler + 1},
+		.id = eh_id,
+		.cookie = fd::event_handler_cookie{event_handler}
+	};
 }
 
 Pipe::os_services::io_multiplexer::epoll_entry_data::epoll_entry_data(

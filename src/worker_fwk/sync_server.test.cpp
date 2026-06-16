@@ -35,7 +35,7 @@ namespace
 			expected_update_listening_status_call.reset();
 		}
 
-		std::pair<void*, Pipe::os_services::fd::event_handler_id> do_add(
+		do_add_result do_add(
 			event_handler_info const& event_handler,
 			Pipe::os_services::fd::file_descriptor fd,
 			Pipe::os_services::fd::activity_status activity_status
@@ -60,7 +60,11 @@ namespace
 				event_handler.destroy_event_handler_at
 			};
 
-			return std::pair{saved_event_handler.get(), expected_do_add_call->retval};
+			return do_add_result{
+				.event_handler = Pipe::os_services::fd::saved_event_handler{saved_event_handler.get()},
+				.id =  expected_do_add_call->retval,
+				.cookie = Pipe::os_services::fd::event_handler_cookie{ saved_event_handler_buffer.get()}
+			};
 		}
 
 		std::optional<Pipe::os_services::fd::event_handler_id> expected_remove_id;

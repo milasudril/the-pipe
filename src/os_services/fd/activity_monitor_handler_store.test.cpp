@@ -133,14 +133,18 @@ namespace
 		void remove(Pipe::os_services::fd::event_handler_id) noexcept override
 		{}
 
-		std::pair<void*, Pipe::os_services::fd::event_handler_id> do_add(
+		do_add_result do_add(
 			event_handler_info const& eh_info,
 			Pipe::os_services::fd::file_descriptor fd,
 			Pipe::os_services::fd::activity_status activity_status
 		) override
 		{
 			obj = blob{eh_info, std::move(fd), activity_status, Pipe::os_services::fd::event_handler_id{123}};
-			return std::pair{obj.get_event_handler_ptr(), Pipe::os_services::fd::event_handler_id{123}};
+			return do_add_result{
+				.event_handler = Pipe::os_services::fd::saved_event_handler{obj.get_event_handler_ptr()},
+				.id = Pipe::os_services::fd::event_handler_id{123},
+				.cookie = Pipe::os_services::fd::event_handler_cookie{&obj}
+			};
 		}
 
 

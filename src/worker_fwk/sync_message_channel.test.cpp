@@ -72,7 +72,7 @@ namespace
 			current_listening_status = status;
 		}
 
-		std::pair<void*, Pipe::os_services::fd::event_handler_id> do_add(
+		do_add_result do_add(
 			event_handler_info const&,
 			Pipe::os_services::fd::file_descriptor,
 			Pipe::os_services::fd::activity_status
