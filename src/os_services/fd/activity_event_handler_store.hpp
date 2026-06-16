@@ -184,6 +184,23 @@ namespace Pipe::os_services::fd
 		{utils::unwrap(obj).handle_event(activity_event_handler_registered_event)} -> std::same_as<void>;
 	};
 
+	class activity_event_handler_store;
+
+	template<class CallbackTag, class FileDescriptorTag>
+	struct activity_event_handler_registered_event
+	{
+		bool is_valid() const
+		{ return fd != nullptr; }
+
+		tagged_file_descriptor_ref<FileDescriptorTag> fd;
+		event_handler_id id;
+		event_handler_cookie cookie;
+		activity_event_handler_store* event_handler_store{nullptr};
+
+		constexpr bool operator==(activity_event_handler_registered_event const&) const = default;
+		constexpr bool operator!=(activity_event_handler_registered_event const&) const = default;
+	};
+
 	/**
 	 * \brief Stores (type-erased) activity_event_handlers
 	 */
@@ -258,7 +275,7 @@ namespace Pipe::os_services::fd
 			class FileDescriptorTag,
 			activity_event_handler<CallbackTag, FileDescriptorTag> EventHandler
 		>
-		[[nodiscard]] std::pair<std::reference_wrapper<EventHandler>, event_handler_id> add(
+		[[nodiscard]] auto add(
 			EventHandler eh,
 			tagged_file_descriptor<FileDescriptorTag> fd_to_watch,
 			activity_status initial_listening_status
@@ -299,10 +316,20 @@ namespace Pipe::os_services::fd
 				initial_listening_status
 			);
 
-			return std::pair<std::reference_wrapper<EventHandler>, event_handler_id>{
-				*static_cast<EventHandler*>(res.event_handler.get()),
-				res.id
-			};
+			if constexpr(utils::reftype<EventHandler>)
+			{
+				return std::pair{
+					*static_cast<EventHandler*>(res.event_handler.get()),
+					res.id
+				};
+			}
+			else
+			{
+				return std::pair{
+					std::ref(*static_cast<EventHandler*>(res.event_handler.get())),
+					res.id
+				};
+			}
 		}
 
 		/**
@@ -354,21 +381,6 @@ namespace Pipe::os_services::fd
 			fd::file_descriptor fd_to_watch,
 			activity_status initial_listening_status
 		) = 0;
-	};
-
-	template<class CallbackTag, class FileDescriptorTag>
-	struct activity_event_handler_registered_event
-	{
-		bool is_valid() const
-		{ return fd != nullptr; }
-
-		tagged_file_descriptor_ref<FileDescriptorTag> fd;
-		event_handler_id id;
-		event_handler_cookie cookie;
-		activity_event_handler_store* event_handler_store{nullptr};
-
-		constexpr bool operator==(activity_event_handler_registered_event const&) const = default;
-		constexpr bool operator!=(activity_event_handler_registered_event const&) const = default;
 	};
 
 	template<class CallbackTag, class FileDescriptorTag>
