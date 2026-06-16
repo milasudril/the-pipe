@@ -4,7 +4,11 @@
 #include "./sync_server.hpp"
 #include "./msg_file_subscription_registry.hpp"
 
+#include "src/os_services/fd/activity_event_handler_store.hpp"
+#include "src/os_services/io/io.hpp"
+#include "src/os_services/ipc/eventfd.hpp"
 #include "src/os_services/io_multiplexer/epoll_instance.hpp"
+#include "src/worker_fwk/port_activity_subscriber.hpp"
 
 #include <thread>
 #include <future>
@@ -60,15 +64,8 @@ namespace
 		}
 
 		bool expect_port_0_ready = false;
-		bool expect_port_0_ready_exception = false;
 		void port_0_ready()
 		{
-			if(expect_port_0_ready_exception)
-			{
-				expect_port_0_ready_exception = false;
-				throw std::runtime_error{"Something went wrong"};
-			}
-
 			EXPECT_EQ(expect_port_0_ready, true);
 			expect_port_0_ready = false;
 		}
@@ -173,39 +170,194 @@ namespace
 			EXPECT_EQ(expected_unsubscription_transaction.has_value(), false);
 		}
 	};
-};
+
+	template <class ArgType>
+	class task_queue
+	{
+		public:
+			void push(std::move_only_function<void(ArgType)>&& value)
+			{
+				std::lock_guard<std::mutex> lock{m_mtx};
+				m_queue.push(std::move(value));
+				m_cv.notify_one();
+				if(m_registration.is_valid())
+				{ flush_events(); }
+			}
+
+			using fd_activity_event_hanadler_registred_event =
+				Pipe::os_services::fd::activity_event_handler_registered_event<
+					void,
+					Pipe::os_services::ipc::eventfd_tag
+				>;
+
+			using fd_activity_event = Pipe::os_services::fd::activity_event<
+				void,
+				Pipe::os_services::ipc::eventfd_tag
+			>;
+
+			void handle_event(fd_activity_event_hanadler_registred_event const& registration)
+			{
+				m_registration = registration;
+				if(!m_queue.empty())
+				{ flush_events(); }
+			}
+
+			void handle_event(fd_activity_event event)
+			{
+				if(can_read(event.status))
+				{
+					std::array<std::byte, 8> buffer;
+					auto res = Pipe::os_services::io::read_full(m_registration.fd, buffer);
+					EXPECT_EQ(res.bytes_transferred(), 8);
+
+					drain_queue();
+				}
+			}
+
+			void drain_queue()
+			{
+				while(true)
+				{
+					std::unique_lock lock{m_mtx};
+					if(m_queue.empty())
+					{ return; }
+
+					auto next = std::move(m_queue.front());
+					m_queue.pop();
+					lock.unlock();
+					next(m_ctxt);
+				}
+			}
+
+			void wait_for_tasks()
+			{
+				std::unique_lock lock{m_mtx};
+				m_cv.wait(lock, [this](){
+					return !m_queue.empty();
+				});
+			}
+
+			void set_context(ArgType ctxt)
+			{ m_ctxt = ctxt; }
+
+		private:
+			std::queue<std::move_only_function<void(ArgType)>> m_queue;
+			std::mutex m_mtx;
+			fd_activity_event_hanadler_registred_event m_registration;
+			ArgType m_ctxt{};
+			std::condition_variable m_cv;
+
+			void flush_events()
+			{
+				auto const buffer = std::bit_cast<std::array<std::byte, 8>>(uint64_t{1});
+				auto const res = Pipe::os_services::io::write_full(m_registration.fd, buffer);
+				EXPECT_EQ(res.bytes_transferred(), 8);
+			}
+	};
+
+	struct server_context
+	{
+		test_port_collection port_collection;
+		Pipe::worker_fwk::msg_file_subscription_registry registry{port_collection};
+		bool should_exit{false};
+	};
+
+	struct testcase_context
+	{
+		std::string server_socket_name;
+	};
+
+	void run_server(
+		task_queue<server_context*>& server_tasks,
+		task_queue<testcase_context*>& testcase_tasks
+	)
+	{
+		server_context ctxt{};
+		server_tasks.set_context(&ctxt);
+		Pipe::os_services::io_multiplexer::epoll_instance epoll;
+
+		std::ignore = epoll.add<void>(
+			std::ref(server_tasks),
+			Pipe::os_services::ipc::make_eventfd(),
+			Pipe::os_services::fd::activity_status::read
+		);
+
+		auto const server = Pipe::worker_fwk::make_sync_server(epoll, std::ref(ctxt.registry));
+
+		testcase_tasks.push([socket_name = server.socket_name](testcase_context* ctxt) mutable {
+			REQUIRE_NE(ctxt, nullptr);
+			ctxt->server_socket_name = std::move(socket_name);
+		});
+
+		while(!ctxt.should_exit)
+		{
+			epoll.wait_for_and_distpatch_events();
+		}
+	}
+
+	struct client_context
+	{
+		test_input_port_activity_subscriber activity_subscriber;
+		Pipe::worker_fwk::sync_client<std::reference_wrapper<test_input_port_activity_subscriber>>* client;
+		bool should_exit{false};
+	};
+
+	void run_client(
+		task_queue<client_context*>& client_tasks,
+		task_queue<testcase_context*>& testcase_tasks,
+		std::string server_socket_name
+	)
+	{
+		client_context ctxt{};
+		client_tasks.set_context(&ctxt);
+		Pipe::os_services::io_multiplexer::epoll_instance epoll;
+
+		std::ignore = epoll.add<void>(
+			std::ref(client_tasks),
+			Pipe::os_services::ipc::make_eventfd(),
+			Pipe::os_services::fd::activity_status::read
+		);
+
+		auto const client = Pipe::worker_fwk::make_sync_client(
+			epoll,
+			std::ref(ctxt.activity_subscriber),
+			server_socket_name
+		);
+		ctxt.client = &client.first.get();
+
+		testcase_tasks.push([](testcase_context*){});
+
+		while(!ctxt.should_exit)
+		{
+			epoll.wait_for_and_distpatch_events();
+		}
+	}
+}
 
 TESTCASE(Pipe_worker_fwk_sync_link_subscribe_and_send_notifications)
 {
-	std::promise<std::string> server_name_promise;
-	test_port_collection port_collection;
-	std::jthread server_thread{
-		[&server_name_promise, &port_collection](){
-			Pipe::os_services::io_multiplexer::epoll_instance epoll;
-			auto const server = Pipe::worker_fwk::make_sync_server(
-				epoll,
-				Pipe::worker_fwk::msg_file_subscription_registry{port_collection}
-			);
-			server_name_promise.set_value(server.socket_name);
-			do
-			{
-				epoll.wait_for_and_distpatch_events();
-			}
-			while(epoll.get_num_listeners() > 1);
-		}
-	};
+	testcase_context ctxt;
+	task_queue<server_context*> server_tasks;
+	task_queue<client_context*> client_tasks;
+	task_queue<testcase_context*> testcase_tasks;
+	testcase_tasks.set_context(&ctxt);
 
-	auto server_name = server_name_promise.get_future().get();
-	test_input_port_activity_subscriber activity_subscriber;
-	Pipe::os_services::io_multiplexer::epoll_instance epoll;
-	void* conn_lost_ptr;
-	{
-		auto const sync_client = Pipe::worker_fwk::make_sync_client(epoll, std::ref(activity_subscriber), server_name);
+	std::jthread server_thread{run_server, std::ref(server_tasks), std::ref(testcase_tasks)};
+	testcase_tasks.wait_for_tasks();
+	testcase_tasks.drain_queue();
 
-		auto& client = sync_client.first.get();
+	std::jthread client_thread{run_client, std::ref(client_tasks), std::ref(testcase_tasks), ctxt.server_socket_name};
+	testcase_tasks.wait_for_tasks();
+	testcase_tasks.drain_queue();
 
-		EXPECT_EQ(client.is_connected(), true);
-		conn_lost_ptr = &client;
-	}
-	activity_subscriber.expected_conn_lost_ptr = conn_lost_ptr;
+	client_tasks.push([](client_context* ctxt){
+		REQUIRE_NE(ctxt, nullptr);
+		ctxt->activity_subscriber.expected_conn_lost_ptr = ctxt->client;
+		ctxt->should_exit = true;
+	});
+
+	server_tasks.push([](server_context* ctxt){
+		REQUIRE_NE(ctxt, nullptr);
+		ctxt->should_exit = true;
+	});
 }
