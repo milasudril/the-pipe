@@ -12,30 +12,30 @@
 
 namespace
 {
-	struct my_port_collection
+	struct test_port_collection
 	{
 		auto get_msg_file_output_ports()
 		{
 			return std::array{
 				std::pair{
 					Pipe::worker_fwk::port_id{0},
-					Pipe::utils::bind_member_function<&my_port_collection::port_0_ready>(*this)
+					Pipe::utils::bind_member_function<&test_port_collection::port_0_ready>(*this)
 				},
 				std::pair{
 					Pipe::worker_fwk::port_id{1},
-					Pipe::utils::bind_member_function<&my_port_collection::port_1_ready>(*this)
+					Pipe::utils::bind_member_function<&test_port_collection::port_1_ready>(*this)
 				},
 				std::pair{
 					Pipe::worker_fwk::port_id{2},
-					Pipe::utils::bind_member_function<&my_port_collection::port_2_ready>(*this)
+					Pipe::utils::bind_member_function<&test_port_collection::port_2_ready>(*this)
 				},
 				std::pair{
 					Pipe::worker_fwk::port_id{3},
-					Pipe::utils::bind_member_function<&my_port_collection::port_3_ready>(*this)
+					Pipe::utils::bind_member_function<&test_port_collection::port_3_ready>(*this)
 				},
 				std::pair{
 					Pipe::worker_fwk::port_id{4},
-					Pipe::utils::bind_member_function<&my_port_collection::port_4_ready>(*this)
+					Pipe::utils::bind_member_function<&test_port_collection::port_4_ready>(*this)
 				}
 			};
 		}
@@ -100,7 +100,7 @@ namespace
 			expect_port_4_ready = false;
 		}
 
-		~my_port_collection()
+		~test_port_collection()
 		{
 			EXPECT_EQ(expect_port_0_ready, false);
 			EXPECT_EQ(expect_port_1_ready, false);
@@ -172,7 +172,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_construct_with_port_coll
 		}
 	};
 
-	my_port_collection port_collection{};
+	test_port_collection port_collection{};
 	Pipe::worker_fwk::msg_file_subscription_registry registry{port_collection};
 
 	auto const& output_ports = registry.get_msg_file_output_ports();
@@ -182,7 +182,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_construct_with_port_coll
 	EXPECT_EQ(port_0.get_num_subscriptions(), 0);
 	EXPECT_EQ(
 		port_0.is_bound_to(
-			Pipe::utils::bind_member_function<&my_port_collection::port_0_ready>(port_collection)
+			Pipe::utils::bind_member_function<&test_port_collection::port_0_ready>(port_collection)
 		),
 		true
 	);
@@ -191,7 +191,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_construct_with_port_coll
 	EXPECT_EQ(port_1.get_num_subscriptions(), 0);
 	EXPECT_EQ(
 		port_1.is_bound_to(
-			Pipe::utils::bind_member_function<&my_port_collection::port_1_ready>(port_collection)
+			Pipe::utils::bind_member_function<&test_port_collection::port_1_ready>(port_collection)
 		),
 		true
 	);
@@ -200,7 +200,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_construct_with_port_coll
 	EXPECT_EQ(port_2.get_num_subscriptions(), 0);
 	EXPECT_EQ(
 		port_2.is_bound_to(
-			Pipe::utils::bind_member_function<&my_port_collection::port_2_ready>(port_collection)
+			Pipe::utils::bind_member_function<&test_port_collection::port_2_ready>(port_collection)
 		),
 		true
 	);
@@ -209,7 +209,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_construct_with_port_coll
 	EXPECT_EQ(port_3.get_num_subscriptions(), 0);
 	EXPECT_EQ(
 		port_3.is_bound_to(
-			Pipe::utils::bind_member_function<&my_port_collection::port_3_ready>(port_collection)
+			Pipe::utils::bind_member_function<&test_port_collection::port_3_ready>(port_collection)
 		),
 		true
 	);
@@ -218,7 +218,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_construct_with_port_coll
 	EXPECT_EQ(port_4.get_num_subscriptions(), 0);
 	EXPECT_EQ(
 		port_4.is_bound_to(
-			Pipe::utils::bind_member_function<&my_port_collection::port_4_ready>(port_collection)
+			Pipe::utils::bind_member_function<&test_port_collection::port_4_ready>(port_collection)
 		),
 		true
 	);
@@ -238,7 +238,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_try_to_add_subscriber_ba
 		}
 	};
 
-	my_port_collection port_collection{};
+	test_port_collection port_collection{};
 	Pipe::worker_fwk::msg_file_subscription_registry registry{port_collection};
 	try
 	{
@@ -268,7 +268,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_try_to_add_subscriber_wr
 		}
 	};
 
-	my_port_collection port_collection{};
+	test_port_collection port_collection{};
 	Pipe::worker_fwk::msg_file_subscription_registry registry{port_collection};
 	try
 	{
@@ -298,7 +298,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_try_to_add_subcriber_map
 		}
 	};
 
-	my_port_collection port_collection{};
+	test_port_collection port_collection{};
 	Pipe::worker_fwk::msg_file_subscription_registry registry{port_collection};
 	try
 	{
@@ -330,7 +330,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_add_subcriber_success)
 		}
 	};
 
-	my_port_collection port_collection{};
+	test_port_collection port_collection{};
 	Pipe::worker_fwk::msg_file_subscription_registry registry{port_collection};
 	port_collection.expect_port_0_ready = true;
 	auto const res = registry.add_port_activity_subscription(
@@ -349,7 +349,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_add_subcribers_notify_da
 		}
 	};
 
-	my_port_collection port_collection{};
+	test_port_collection port_collection{};
 	Pipe::worker_fwk::msg_file_subscription_registry registry{port_collection};
 
 	my_activity_subscriber subscriber_0{};
@@ -403,7 +403,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_notify_client_ready_subs
 		}
 	};
 
-	my_port_collection port_collection{};
+	test_port_collection port_collection{};
 	Pipe::worker_fwk::msg_file_subscription_registry registry{port_collection};
 
 	try
@@ -431,7 +431,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_notify_client_ready)
 	my_activity_subscriber subscriber_0{};
 	my_activity_subscriber subscriber_1{};
 
-	my_port_collection port_collection{};
+	test_port_collection port_collection{};
 	Pipe::worker_fwk::msg_file_subscription_registry registry{port_collection};
 
 	port_collection.expect_port_0_ready = true;
@@ -500,7 +500,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_remove_port_activity_sub
 		}
 	};
 
-	my_port_collection port_collection{};
+	test_port_collection port_collection{};
 	Pipe::worker_fwk::msg_file_subscription_registry registry{port_collection};
 
 	try
@@ -528,7 +528,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_remove_port_activity_sub
 	my_activity_subscriber subscriber_0{};
 	my_activity_subscriber subscriber_1{};
 
-	my_port_collection port_collection{};
+	test_port_collection port_collection{};
 	Pipe::worker_fwk::msg_file_subscription_registry registry{port_collection};
 
 	port_collection.expect_port_0_ready = true;
@@ -600,7 +600,7 @@ TESTCASE(Pipe_worker_fwk_msg_file_subscription_registry_remove_output_port_activ
 	my_activity_subscriber subscriber_0{};
 	my_activity_subscriber subscriber_1{};
 
-	my_port_collection port_collection{};
+	test_port_collection port_collection{};
 	Pipe::worker_fwk::msg_file_subscription_registry registry{port_collection};
 
 	port_collection.expect_port_0_ready = true;

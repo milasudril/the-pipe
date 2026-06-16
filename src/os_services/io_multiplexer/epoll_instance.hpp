@@ -170,6 +170,9 @@ namespace Pipe::os_services::io_multiplexer
 		bool is_empty() const
 		{ return m_listeners.empty(); }
 
+		size_t get_num_listeners() const
+		{ return std::size(m_listeners); }
+
 	private:
 		void remove(fd::event_handler_id event_handler) noexcept override
 		{

@@ -4,6 +4,7 @@
 #include <type_traits>
 #include <cstddef>
 #include <utility>
+#include <functional>
 
 namespace Pipe::utils
 {
@@ -56,6 +57,17 @@ namespace Pipe::utils
 		{ return static_cast<bool>(item); }
 		else
 		{ return true; }
+	}
+
+	template<class T>
+	inline constexpr decltype(auto) wrap(T&& obj)
+	{
+		static_assert(!is_dereferenceable<T> || is_c_style_array<T>);
+
+		if constexpr(is_refwrapper<T>)
+		{ return obj; }
+		else
+		{ return std::ref(obj); }
 	}
 }
 #endif

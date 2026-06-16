@@ -10,7 +10,7 @@
 
 namespace
 {
-	struct input_port_activity_subscriber
+	struct test_input_port_activity_subscriber
 	{
 		struct subscription_transaction
 		{
@@ -63,7 +63,7 @@ namespace
 			expected_unsubscription_transaction.reset();
 		}
 
-		~input_port_activity_subscriber()
+		~test_input_port_activity_subscriber()
 		{
 			EXPECT_EQ(expected_conn_lost_ptr.has_value(), false);
 			EXPECT_EQ(expected_data_ready_id.has_value(), false);
@@ -73,7 +73,7 @@ namespace
 		}
 	};
 
-	using sync_client = Pipe::worker_fwk::sync_client<std::reference_wrapper<input_port_activity_subscriber>>;
+	using sync_client = Pipe::worker_fwk::sync_client<std::reference_wrapper<test_input_port_activity_subscriber>>;
 
 	struct my_event_handler_registry:Pipe::os_services::fd::activity_event_handler_store
 	{
@@ -175,13 +175,13 @@ namespace
 
 TESTCASE(Pipe_worker_fwk_sync_client_construct)
 {
-	input_port_activity_subscriber subscriber;
+	test_input_port_activity_subscriber subscriber;
 	Pipe::worker_fwk::sync_client client{std::ref(subscriber)};
 }
 
 TESTCASE(Pipe_worker_fwk_sync_client_handle_error_response_without_tx_id)
 {
-	input_port_activity_subscriber subscriber;
+	test_input_port_activity_subscriber subscriber;
 	Pipe::worker_fwk::sync_client client{std::ref(subscriber)};
 	Pipe::worker_sync::exception_controller ec;
 	try
@@ -204,7 +204,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_error_response_without_tx_id)
 
 TESTCASE(Pipe_worker_fwk_sync_client_handle_error_response_no_ongoing_transaction)
 {
-	input_port_activity_subscriber subscriber;
+	test_input_port_activity_subscriber subscriber;
 	Pipe::worker_fwk::sync_client client{std::ref(subscriber)};
 	Pipe::worker_sync::exception_controller ec;
 	try
@@ -228,13 +228,13 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_error_response_no_ongoing_transactio
 
 TESTCASE(Pipe_worker_fwk_sync_client_handle_error_response_existing_transaction)
 {
-	input_port_activity_subscriber subscriber;
+	test_input_port_activity_subscriber subscriber;
 	Pipe::worker_sync::exception_controller ec;
 	Pipe::worker_fwk::sync_client client{std::ref(subscriber)};
 
 	client.subscribe_to_port(
 		"My port",
-		input_port_activity_subscriber::subscription_transaction{}
+		test_input_port_activity_subscriber::subscription_transaction{}
 	);
 
 	try
@@ -257,7 +257,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_error_response_existing_transaction)
 
 TESTCASE(Pipe_worker_fwk_sync_client_handle_data_ready_event)
 {
-	input_port_activity_subscriber subscriber;
+	test_input_port_activity_subscriber subscriber;
 	Pipe::worker_fwk::sync_client client{std::ref(subscriber)};
 	subscriber.expected_data_ready_id = Pipe::worker_sync::port_activity_subscription_id{3};
 	client.handle_message(
@@ -269,7 +269,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_data_ready_event)
 
 TESTCASE(Pipe_worker_fwk_sync_client_handle_subscription_response_no_transaction)
 {
-	input_port_activity_subscriber subscriber;
+	test_input_port_activity_subscriber subscriber;
 	Pipe::worker_sync::exception_controller ec;
 	Pipe::worker_fwk::sync_client client{std::ref(subscriber)};
 
@@ -292,13 +292,13 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_subscription_response_no_transaction
 
 TESTCASE(Pipe_worker_fwk_sync_client_handle_subscription_response_wrong_transaction_type)
 {
-	input_port_activity_subscriber subscriber;
+	test_input_port_activity_subscriber subscriber;
 	Pipe::worker_sync::exception_controller ec;
 	Pipe::worker_fwk::sync_client client{std::ref(subscriber)};
 
 	client.unsubscribe_from_port(
 		Pipe::worker_sync::port_activity_subscription_id{435},
-		input_port_activity_subscriber::unsubscription_transaction{}
+		test_input_port_activity_subscriber::unsubscription_transaction{}
 	);
 
 	try
@@ -320,16 +320,16 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_subscription_response_wrong_transact
 
 TESTCASE(Pipe_worker_fwk_sync_client_handle_subscription_response)
 {
-	input_port_activity_subscriber subscriber;
+	test_input_port_activity_subscriber subscriber;
 	Pipe::worker_sync::exception_controller ec;
 	Pipe::worker_fwk::sync_client client{std::ref(subscriber)};
 
 	client.subscribe_to_port(
 		"The port",
-		input_port_activity_subscriber::subscription_transaction{1}
+		test_input_port_activity_subscriber::subscription_transaction{1}
 	);
 
-	subscriber.expected_subscription_transaction = input_port_activity_subscriber::subscription_transaction{1};
+	subscriber.expected_subscription_transaction = test_input_port_activity_subscriber::subscription_transaction{1};
 	subscriber.expected_subscription_id = Pipe::worker_sync::port_activity_subscription_id{435};
 	client.handle_response(
 		Pipe::worker_sync::port_activity_subscription_response{
@@ -344,7 +344,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_subscription_response)
 
 TESTCASE(Pipe_worker_fwk_sync_client_handle_unsubscription_response_no_transaction)
 {
-	input_port_activity_subscriber subscriber;
+	test_input_port_activity_subscriber subscriber;
 	Pipe::worker_sync::exception_controller ec;
 	Pipe::worker_fwk::sync_client client{std::ref(subscriber)};
 
@@ -367,13 +367,13 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_unsubscription_response_no_transacti
 
 TESTCASE(Pipe_worker_fwk_sync_client_handle_unsubscription_response_wrong_transaction_type)
 {
-	input_port_activity_subscriber subscriber;
+	test_input_port_activity_subscriber subscriber;
 	Pipe::worker_sync::exception_controller ec;
 	Pipe::worker_fwk::sync_client client{std::ref(subscriber)};
 
 	client.subscribe_to_port(
 		"The port",
-		input_port_activity_subscriber::subscription_transaction{}
+		test_input_port_activity_subscriber::subscription_transaction{}
 	);
 
 	try
@@ -395,16 +395,16 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_unsubscription_response_wrong_transa
 
 TESTCASE(Pipe_worker_fwk_sync_client_handle_unsubscription_response)
 {
-	input_port_activity_subscriber subscriber;
+	test_input_port_activity_subscriber subscriber;
 	Pipe::worker_sync::exception_controller ec;
 	Pipe::worker_fwk::sync_client client{std::ref(subscriber)};
 
 	client.unsubscribe_from_port(
 		Pipe::worker_sync::port_activity_subscription_id{435},
-		input_port_activity_subscriber::unsubscription_transaction{1}
+		test_input_port_activity_subscriber::unsubscription_transaction{1}
 	);
 
-	subscriber.expected_unsubscription_transaction = input_port_activity_subscriber::unsubscription_transaction{1};
+	subscriber.expected_unsubscription_transaction = test_input_port_activity_subscriber::unsubscription_transaction{1};
 	client.handle_response(
 		Pipe::worker_sync::port_activity_unsubscription_response{
 			.id = Pipe::worker_sync::port_activity_subscription_id{435}
@@ -418,7 +418,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_unsubscription_response)
 
 TESTCASE(Pipe_worker_fwk_sync_client_notify_client_ready)
 {
-	input_port_activity_subscriber subscriber;
+	test_input_port_activity_subscriber subscriber;
 	Pipe::worker_sync::exception_controller ec;
 	Pipe::worker_fwk::sync_client client{std::ref(subscriber)};
 
@@ -463,7 +463,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_notify_client_ready)
 
 TESTCASE(Pipe_worker_fwk_sync_client_subscribe_to_port)
 {
-	input_port_activity_subscriber subscriber;
+	test_input_port_activity_subscriber subscriber;
 	Pipe::worker_sync::exception_controller ec;
 	Pipe::worker_fwk::sync_client client{std::ref(subscriber)};
 
@@ -483,7 +483,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_subscribe_to_port)
 	);
 	client.subscribe_to_port(
 		"some_port",
-		input_port_activity_subscriber::subscription_transaction{23}
+		test_input_port_activity_subscriber::subscription_transaction{23}
 	);
 
 	eh_registry.expected_update_listening_status_call = my_event_handler_registry::update_listening_status_call{
@@ -514,7 +514,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_subscribe_to_port)
 
 TESTCASE(Pipe_worker_fwk_sync_client_unsubscribe_from_port)
 {
-	input_port_activity_subscriber subscriber;
+	test_input_port_activity_subscriber subscriber;
 	Pipe::worker_sync::exception_controller ec;
 	Pipe::worker_fwk::sync_client client{std::ref(subscriber)};
 
@@ -534,7 +534,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_unsubscribe_from_port)
 	);
 	client.unsubscribe_from_port(
 		Pipe::worker_sync::port_activity_subscription_id{6},
-		input_port_activity_subscriber::unsubscription_transaction{23}
+		test_input_port_activity_subscriber::unsubscription_transaction{23}
 	);
 
 	eh_registry.expected_update_listening_status_call = my_event_handler_registry::update_listening_status_call{
@@ -565,13 +565,13 @@ TESTCASE(Pipe_worker_fwk_sync_client_unsubscribe_from_port)
 
 TESTCASE(Pipe_worker_fwk_sync_client_handle_subscription_response_nonexisting_transaction)
 {
-	input_port_activity_subscriber subscriber;
+	test_input_port_activity_subscriber subscriber;
 	Pipe::worker_sync::exception_controller ec;
 	Pipe::worker_fwk::sync_client client{std::ref(subscriber)};
 
 	client.subscribe_to_port(
 		"The port",
-		input_port_activity_subscriber::subscription_transaction{1}
+		test_input_port_activity_subscriber::subscription_transaction{1}
 	);
 
 	try
@@ -594,20 +594,20 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_subscription_response_nonexisting_tr
 
 TESTCASE(Pipe_worker_fwk_sync_client_handle_subscription_response_transactions_out_of_order)
 {
-	input_port_activity_subscriber subscriber;
+	test_input_port_activity_subscriber subscriber;
 	Pipe::worker_sync::exception_controller ec;
 	Pipe::worker_fwk::sync_client client{std::ref(subscriber)};
 
 	client.subscribe_to_port(
 		"port_a",
-		input_port_activity_subscriber::subscription_transaction{1}
+		test_input_port_activity_subscriber::subscription_transaction{1}
 	);
 	client.subscribe_to_port(
 		"port_b",
-		input_port_activity_subscriber::subscription_transaction{2}
+		test_input_port_activity_subscriber::subscription_transaction{2}
 	);
 
-	subscriber.expected_subscription_transaction = input_port_activity_subscriber::subscription_transaction{2};
+	subscriber.expected_subscription_transaction = test_input_port_activity_subscriber::subscription_transaction{2};
 	subscriber.expected_subscription_id = Pipe::worker_sync::port_activity_subscription_id{435};
 	ec.disable_exception_rethrow();
 	client.handle_response(
@@ -619,7 +619,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_subscription_response_transactions_o
 	);
 	EXPECT_EQ(ec.exceptions_should_be_rethrown(), true);
 
-	subscriber.expected_subscription_transaction = input_port_activity_subscriber::subscription_transaction{1};
+	subscriber.expected_subscription_transaction = test_input_port_activity_subscriber::subscription_transaction{1};
 	subscriber.expected_subscription_id = Pipe::worker_sync::port_activity_subscription_id{436};
 	ec.disable_exception_rethrow();
 	client.handle_response(
@@ -651,7 +651,7 @@ TESTCASE(Pipe_worker_fwk_sync_client_handle_subscription_response_transactions_o
 
 TESTCASE(Pipe_worker_fwk_make_sync_client)
 {
-	input_port_activity_subscriber subscriber;
+	test_input_port_activity_subscriber subscriber;
 	my_event_handler_registry eh_registry;
 
 	auto const socket_name = Pipe::utils::random_printable_ascii_string(
@@ -685,7 +685,7 @@ TESTCASE(Pipe_worker_fwk_make_sync_client)
 	};
 	result.first.get().subscribe_to_port(
 		"port_name",
-		input_port_activity_subscriber::subscription_transaction{}
+		test_input_port_activity_subscriber::subscription_transaction{}
 	);
 
 	eh_registry.expected_update_listening_status_call = my_event_handler_registry::update_listening_status_call{

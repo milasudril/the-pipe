@@ -34,7 +34,7 @@ namespace Pipe::worker_fwk
 			{
 				std::ignore = m_registration.event_handler_store->
 					template add<typename sync_client_connection<OutputPortActivitySubscriptionRegistry>::client_activity>(
-					sync_client_connection{m_output_port_activity_subscriber_registry},
+					sync_client_connection{utils::wrap(m_output_port_activity_subscriber_registry)},
 					accept(m_registration.fd),
 					Pipe::os_services::fd::activity_status::read
 				);
