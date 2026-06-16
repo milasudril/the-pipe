@@ -303,11 +303,6 @@ namespace Pipe::os_services::fd
 						source_object_location src
 					){
 						::new(dest.address)EventHandler(std::move(*static_cast<EventHandler*>(src.address)));
-					},
-					.handle_activity_event_handler_registered_event = [](
-						void*,
-						activity_event_handler_registered_event<void, generic_fd_tag> const&
-					){
 					}
 				},
 				make_generic_file_descriptor(std::move(fd_to_watch)),
@@ -367,10 +362,6 @@ namespace Pipe::os_services::fd
 			void (*construct_event_handler_at)(
 				dest_object_location dest,
 				source_object_location src
-			);
-			void (*handle_activity_event_handler_registered_event)(
-				void* object,
-				activity_event_handler_registered_event<void, generic_fd_tag> const& event
 			);
 		};
 

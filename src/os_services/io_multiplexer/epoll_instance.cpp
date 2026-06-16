@@ -45,16 +45,6 @@ Pipe::os_services::io_multiplexer::epoll_instance::do_add(
 		};
 	}
 
-	event_handler->vtable->handle_activity_event_handler_registered_event(
-		event_handler + 1,
-		fd::activity_event_handler_registered_event<void, fd::generic_fd_tag>{
-			event_handler->fd,
-			eh_id,
-			fd::event_handler_cookie{event_handler},
-			this
-		}
-	);
-
 	return do_add_result{
 		.event_handler = fd::saved_event_handler{event_handler + 1},
 		.id = eh_id,
@@ -89,7 +79,6 @@ Pipe::os_services::io_multiplexer::epoll_entry_data::epoll_entry_data(
 	saved_eh_info->handle_event = eh_info.handle_activity_event;
 	saved_eh_info->vtable->fd_deleter = fd.get_deleter();
 	saved_eh_info->vtable->destroy_event_handler_at = eh_info.destroy_event_handler_at;
-	saved_eh_info->vtable->handle_activity_event_handler_registered_event = eh_info.handle_activity_event_handler_registered_event;
 	saved_eh_info->fd = fd.release();
 
 	eh_info.construct_event_handler_at(
