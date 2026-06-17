@@ -467,6 +467,93 @@ TESTCASE(Pipe_worker_fwk_sync_link_subscribe_and_send_notifications)
 	});
 }
 
+TESTCASE(Pipe_worker_fwk_sync_link_two_consecutive_notify_client_ready)
+{
+	testcase_context ctxt;
+	task_queue<server_context*> server_tasks;
+	task_queue<testcase_context*> server_barry;
+	task_queue<client_context*> client_tasks;
+	task_queue<testcase_context*> client_barry;
+	server_barry.set_context(&ctxt);
+	client_barry.set_context(&ctxt);
+
+	std::jthread server_thread{run_server, std::ref(server_tasks), std::ref(server_barry)};
+	server_barry.synchronize();
+
+	std::jthread client_thread{
+		run_client,
+		std::ref(client_tasks),
+		std::ref(client_barry),
+		ctxt.server_socket_name
+	};
+	client_barry.synchronize();
+
+	// Subscribe to port_0
+	{
+		server_tasks.push([](server_context* ctxt){
+			ctxt->port_collection.expect_port_0_ready = true;
+		});
+		server_tasks.wait_for_empty();
+
+		client_tasks.push([](client_context* ctxt){
+			test_input_port_activity_subscriber::subscription_transaction transaction{1};
+			ctxt->activity_subscriber.expected_subscription_transaction = transaction;
+			ctxt->activity_subscriber.expected_subscription_id = Pipe::worker_sync::port_activity_subscription_id{0};
+			ctxt->client->subscribe_to_port(
+				"port_0",
+				std::move(transaction)
+			);
+		});
+		client_barry.synchronize();
+		server_barry.synchronize();
+	}
+
+	// Notify client that there is data
+	{
+		client_tasks.push([](client_context* ctxt) {
+			ctxt->activity_subscriber.expected_data_ready_id = Pipe::worker_sync::port_activity_subscription_id{0};
+		});
+		client_tasks.wait_for_empty();
+
+		server_tasks.push([](server_context* ctxt) {
+			ctxt->registry.notify_data_ready(Pipe::worker_fwk::port_id{0});
+		});
+		client_barry.synchronize();
+	}
+
+	// Notify server that data has been processed
+	{
+		server_tasks.push([](server_context* ctxt){
+			ctxt->port_collection.expect_port_0_ready = true;
+		});
+		server_tasks.wait_for_empty();
+
+		client_tasks.push([](client_context* ctxt) {
+			ctxt->client->notify_client_ready(Pipe::worker_sync::port_activity_subscription_id{0});
+		});
+		server_barry.synchronize();
+	}
+
+	// Notify server that data has been processed (again)
+	{
+		client_tasks.push([](client_context* ctxt) {
+			ctxt->expected_error_message = "The subscriber has already released this resource";
+			ctxt->client->notify_client_ready(Pipe::worker_sync::port_activity_subscription_id{0});
+		});
+		client_barry.synchronize();
+	}
+
+	client_tasks.push([](client_context* ctxt){
+		ctxt->activity_subscriber.expected_conn_lost_ptr = ctxt->client;
+		ctxt->should_exit = true;
+	});
+	client_tasks.wait_for_empty();
+
+	server_tasks.push([](server_context* ctxt){
+		ctxt->should_exit = true;
+	});
+}
+
 TESTCASE(Pipe_worker_fwk_sync_link_notify_client_ready_on_nonexisting_subscription)
 {
 	testcase_context ctxt;
@@ -716,6 +803,91 @@ TESTCASE(Pipe_worker_fwk_sync_link_notify_client_ready_from_wrong_client)
 		ctxt->should_exit = true;
 	});
 	client_2_tasks.wait_for_empty();
+
+	server_tasks.push([](server_context* ctxt){
+		ctxt->should_exit = true;
+	});
+}
+
+TESTCASE(Pipe_worker_fwk_sync_link_complete_unsubscribe)
+{
+	testcase_context ctxt;
+	task_queue<server_context*> server_tasks;
+	task_queue<testcase_context*> server_barry;
+	task_queue<client_context*> client_tasks;
+	task_queue<testcase_context*> client_barry;
+	server_barry.set_context(&ctxt);
+	client_barry.set_context(&ctxt);
+
+	std::jthread server_thread{run_server, std::ref(server_tasks), std::ref(server_barry)};
+	server_barry.synchronize();
+
+	std::jthread client_thread{
+		run_client,
+		std::ref(client_tasks),
+		std::ref(client_barry),
+		ctxt.server_socket_name
+	};
+	client_barry.synchronize();
+
+	// Subscribe to port_0
+	{
+		server_tasks.push([](server_context* ctxt){
+			ctxt->port_collection.expect_port_0_ready = true;
+		});
+		server_tasks.wait_for_empty();
+
+		client_tasks.push([](client_context* ctxt){
+			test_input_port_activity_subscriber::subscription_transaction transaction{1};
+			ctxt->activity_subscriber.expected_subscription_transaction = transaction;
+			ctxt->activity_subscriber.expected_subscription_id = Pipe::worker_sync::port_activity_subscription_id{0};
+			ctxt->client->subscribe_to_port(
+				"port_0",
+				std::move(transaction)
+			);
+		});
+		client_barry.synchronize();
+		server_barry.synchronize();
+	}
+
+	// Notify client that there is data
+	{
+		client_tasks.push([](client_context* ctxt) {
+			ctxt->activity_subscriber.expected_data_ready_id = Pipe::worker_sync::port_activity_subscription_id{0};
+		});
+		client_tasks.wait_for_empty();
+
+		server_tasks.push([](server_context* ctxt) {
+			ctxt->registry.notify_data_ready(Pipe::worker_fwk::port_id{0});
+		});
+		client_barry.synchronize();
+	}
+
+	// Notify server that data has been processed
+	{
+		server_tasks.push([](server_context* ctxt){
+			// When subscription is removed, port 0 becomes ready
+			ctxt->port_collection.expect_port_0_ready = true;
+		});
+		server_tasks.wait_for_empty();
+
+		client_tasks.push([](client_context* ctxt) {
+			test_input_port_activity_subscriber::unsubscription_transaction transaction{1};
+			ctxt->activity_subscriber.expected_unsubscription_transaction = transaction;
+			ctxt->client->unsubscribe_from_port(
+				Pipe::worker_sync::port_activity_subscription_id{0},
+				std::move(transaction)
+			);
+		});
+		server_barry.synchronize();
+		client_barry.synchronize();
+	}
+
+	client_tasks.push([](client_context* ctxt){
+		ctxt->activity_subscriber.expected_conn_lost_ptr = ctxt->client;
+		ctxt->should_exit = true;
+	});
+	client_tasks.wait_for_empty();
 
 	server_tasks.push([](server_context* ctxt){
 		ctxt->should_exit = true;
