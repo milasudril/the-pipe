@@ -340,6 +340,7 @@ namespace
 	{
 		test_input_port_activity_subscriber activity_subscriber;
 		Pipe::worker_fwk::sync_client<std::reference_wrapper<test_input_port_activity_subscriber>>* client;
+		std::optional<std::string> expected_error_message;
 		bool should_exit{false};
 	};
 
@@ -369,7 +370,22 @@ namespace
 		testcase_tasks.notify();
 
 		while(!ctxt.should_exit)
-		{ epoll.wait_for_and_distpatch_events(); }
+		{
+			if(ctxt.expected_error_message.has_value())
+			{
+				try
+				{ epoll.wait_for_and_distpatch_events(); }
+				catch(std::exception const& err)
+				{
+					EXPECT_EQ(err.what(), ctxt.expected_error_message);
+					ctxt.expected_error_message.reset();
+					testcase_tasks.notify();
+				}
+			}
+			else
+			{ epoll.wait_for_and_distpatch_events(); }
+		}
+		EXPECT_EQ(ctxt.expected_error_message.has_value(), false);
 	}
 }
 
@@ -439,6 +455,46 @@ TESTCASE(Pipe_worker_fwk_sync_link_subscribe_and_send_notifications)
 		});
 		server_barry.synchronize();
 	}
+
+	client_tasks.push([](client_context* ctxt){
+		ctxt->activity_subscriber.expected_conn_lost_ptr = ctxt->client;
+		ctxt->should_exit = true;
+	});
+	client_tasks.wait_for_empty();
+
+	server_tasks.push([](server_context* ctxt){
+		ctxt->should_exit = true;
+	});
+}
+
+TESTCASE(Pipe_worker_fwk_sync_link_notify_on_nonexisting_subscription)
+{
+	testcase_context ctxt;
+	task_queue<server_context*> server_tasks;
+	task_queue<testcase_context*> server_barry;
+	task_queue<client_context*> client_tasks;
+	task_queue<testcase_context*> client_barry;
+	server_barry.set_context(&ctxt);
+	client_barry.set_context(&ctxt);
+
+	std::jthread server_thread{run_server, std::ref(server_tasks), std::ref(server_barry)};
+	server_barry.synchronize();
+
+	std::jthread client_thread{
+		run_client,
+		std::ref(client_tasks),
+		std::ref(client_barry),
+		ctxt.server_socket_name
+	};
+	client_barry.synchronize();
+
+
+	client_tasks.push([](client_context* ctxt) {
+		// Causes exception at client side because client misbehaves
+		ctxt->expected_error_message = "Invalid subscription id";
+		ctxt->client->notify_client_ready(Pipe::worker_sync::port_activity_subscription_id{0});
+	});
+	client_barry.synchronize();
 
 	client_tasks.push([](client_context* ctxt){
 		ctxt->activity_subscriber.expected_conn_lost_ptr = ctxt->client;
