@@ -627,3 +627,97 @@ TESTCASE(Pipe_worker_fwk_sync_link_unsubscribe_from_wrong_client)
 		ctxt->should_exit = true;
 	});
 }
+
+TESTCASE(Pipe_worker_fwk_sync_link_notify_client_ready_from_wrong_client)
+{
+	testcase_context ctxt;
+	task_queue<server_context*> server_tasks;
+	task_queue<testcase_context*> server_barry;
+	task_queue<client_context*> client_1_tasks;
+	task_queue<testcase_context*> client_1_barry;
+	task_queue<client_context*> client_2_tasks;
+	task_queue<testcase_context*> client_2_barry;
+	server_barry.set_context(&ctxt);
+	client_1_barry.set_context(&ctxt);
+	client_2_barry.set_context(&ctxt);
+
+	std::jthread server_thread{run_server, std::ref(server_tasks), std::ref(server_barry)};
+	server_barry.synchronize();
+
+	std::jthread client_1_thread{
+		run_client,
+		std::ref(client_1_tasks),
+		std::ref(client_1_barry),
+		ctxt.server_socket_name
+	};
+	client_1_barry.synchronize();
+
+	std::jthread client_2_thread{
+		run_client,
+		std::ref(client_2_tasks),
+		std::ref(client_2_barry),
+		ctxt.server_socket_name
+	};
+	client_2_barry.synchronize();
+
+	// Subscribe to port_0
+	{
+		server_tasks.push([](server_context* ctxt){
+			ctxt->port_collection.expect_port_0_ready = true;
+		});
+		server_tasks.wait_for_empty();
+
+		client_1_tasks.push([](client_context* ctxt){
+			test_input_port_activity_subscriber::subscription_transaction transaction{1};
+			ctxt->activity_subscriber.expected_subscription_transaction = transaction;
+			ctxt->activity_subscriber.expected_subscription_id = Pipe::worker_sync::port_activity_subscription_id{0};
+			ctxt->client->subscribe_to_port(
+				"port_0",
+				std::move(transaction)
+			);
+		});
+		client_1_barry.synchronize();
+		server_barry.synchronize();
+	}
+
+	// Notify client that there is data
+	{
+		client_1_tasks.push([](client_context* ctxt) {
+			ctxt->activity_subscriber.expected_data_ready_id = Pipe::worker_sync::port_activity_subscription_id{0};
+		});
+		client_1_tasks.wait_for_empty();
+
+		server_tasks.push([](server_context* ctxt) {
+			ctxt->registry.notify_data_ready(Pipe::worker_fwk::port_id{0});
+		});
+		client_1_barry.synchronize();
+	}
+
+	client_2_tasks.push([](client_context* ctxt) {
+		// Causes exception in client_2 because client_2 misbehaves
+		ctxt->expected_error_message = "Invalid subscription id";
+		ctxt->client->notify_client_ready(Pipe::worker_sync::port_activity_subscription_id{0});
+	});
+	client_2_barry.synchronize();
+
+	// Since data data is ready on port 0, the server waits for client_1, which will be destroyed
+	// next, causing port 0 to become ready.
+	server_tasks.push([](server_context* ctxt){
+		ctxt->port_collection.expect_port_0_ready = true;
+	});
+	server_tasks.wait_for_empty();
+	client_1_tasks.push([](client_context* ctxt){
+		ctxt->activity_subscriber.expected_conn_lost_ptr = ctxt->client;
+		ctxt->should_exit = true;
+	});
+
+	client_2_tasks.push([](client_context* ctxt){
+		ctxt->activity_subscriber.expected_conn_lost_ptr = ctxt->client;
+		ctxt->should_exit = true;
+	});
+	client_2_tasks.wait_for_empty();
+
+	server_tasks.push([](server_context* ctxt){
+		ctxt->should_exit = true;
+	});
+}
