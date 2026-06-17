@@ -467,7 +467,7 @@ TESTCASE(Pipe_worker_fwk_sync_link_subscribe_and_send_notifications)
 	});
 }
 
-TESTCASE(Pipe_worker_fwk_sync_link_notify_on_nonexisting_subscription)
+TESTCASE(Pipe_worker_fwk_sync_link_notify_client_ready_on_nonexisting_subscription)
 {
 	testcase_context ctxt;
 	task_queue<server_context*> server_tasks;
@@ -493,6 +493,49 @@ TESTCASE(Pipe_worker_fwk_sync_link_notify_on_nonexisting_subscription)
 		// Causes exception at client side because client misbehaves
 		ctxt->expected_error_message = "Invalid subscription id";
 		ctxt->client->notify_client_ready(Pipe::worker_sync::port_activity_subscription_id{0});
+	});
+	client_barry.synchronize();
+
+	client_tasks.push([](client_context* ctxt){
+		ctxt->activity_subscriber.expected_conn_lost_ptr = ctxt->client;
+		ctxt->should_exit = true;
+	});
+	client_tasks.wait_for_empty();
+
+	server_tasks.push([](server_context* ctxt){
+		ctxt->should_exit = true;
+	});
+}
+
+TESTCASE(Pipe_worker_fwk_sync_link_unsubscribe_from_nonexisting_subscription)
+{
+	testcase_context ctxt;
+	task_queue<server_context*> server_tasks;
+	task_queue<testcase_context*> server_barry;
+	task_queue<client_context*> client_tasks;
+	task_queue<testcase_context*> client_barry;
+	server_barry.set_context(&ctxt);
+	client_barry.set_context(&ctxt);
+
+	std::jthread server_thread{run_server, std::ref(server_tasks), std::ref(server_barry)};
+	server_barry.synchronize();
+
+	std::jthread client_thread{
+		run_client,
+		std::ref(client_tasks),
+		std::ref(client_barry),
+		ctxt.server_socket_name
+	};
+	client_barry.synchronize();
+
+
+	client_tasks.push([](client_context* ctxt) {
+		// Causes exception at client side because client misbehaves
+		ctxt->expected_error_message = "Invalid subscription id";
+		ctxt->client->unsubscribe_from_port(
+			Pipe::worker_sync::port_activity_subscription_id{0},
+			test_input_port_activity_subscriber::unsubscription_transaction{23}
+		);
 	});
 	client_barry.synchronize();
 
