@@ -5,6 +5,7 @@
 #include "src/utils/unwrap.hpp"
 #include <concepts>
 #include <vector>
+#include <cstdint>
 
 namespace Pipe::os_services::fd
 {

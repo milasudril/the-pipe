@@ -40,6 +40,7 @@
               "-Wno-psabi",
               "-Wsuggest-override",
               "-Wno-error=deprecated-declarations",
+              "-Wno-uninitialized",
               "-I.",
               "-fconcepts-diagnostics-depth=10",
               "-fno-pie",
@@ -76,6 +77,7 @@
               "-Werror",
               "-fconcepts-diagnostics-depth=3",
               "-Wno-error=deprecated-declarations",
+              "-Wno-uninitialized",
               "-fno-pie",
               "-no-pie",
               "-fno-pic"

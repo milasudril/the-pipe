@@ -11,6 +11,7 @@
 #include <sys/wait.h>
 #include <filesystem>
 #include <variant>
+#include <syscall.h>
 
 /**
  * \brief Process management
